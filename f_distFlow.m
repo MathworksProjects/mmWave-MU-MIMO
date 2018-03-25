@@ -21,7 +21,7 @@
 %                    have a flow available at instant 't', the value is 0. 
 %                    The ID is used to map the requirements from variable 
 %                    'flow' further in the system.
-function [flows,selectedFlows] = f_distFlow(t,flows,aggregate)
+function [flows,selectedFlows] = f_distFlow(t,flows,Tslot,aggregate)
     Nusers = length(flows);  % Total number of users
     selectedFlows = zeros(Nusers,1);
     for id = 1:Nusers
@@ -45,9 +45,9 @@ function [flows,selectedFlows] = f_distFlow(t,flows,aggregate)
                 % policy across the deadlines. Traffic is evenly distributed
                 % between two periods:
                 % Delta = 2nd deadline - current
-                Delta = flows(id).deadlines(pkt+1) - t;
+                Delta = flows(id).deadlines(pkt+1) - t + 1;
                 % Delta1 = 1nd deadline - current
-                Delta1 = flows(id).deadlines(pkt) - t;
+                Delta1 = flows(id).deadlines(pkt) - t + 1;
                 % Delta2 = 2nd deadline - 1nd deadline
                 Delta2 = flows(id).deadlines(pkt+1) - flows(id).deadlines(pkt);
                 % Define proportional variables
@@ -59,11 +59,12 @@ function [flows,selectedFlows] = f_distFlow(t,flows,aggregate)
                 flows(id).remaining(pkt)   = alpha * (X+Y);
                 flows(id).remaining(pkt+1) =  beta * (X+Y);
                 % Redefine the TH
-                flows(id).TH(pkt) = flows(id).remaining(pkt)/Delta1;
-                flows(id).TH(pkt+1) = flows(id).remaining(pkt)/Delta2;
+                flows(id).TH(pkt) = flows(id).remaining(pkt) / (Delta1*Tslot*1e-3);
+                flows(id).TH(pkt+1) = flows(id).remaining(pkt+1) / (Delta2*Tslot*1e-3);
                 % Cut the number of slots for the second overlapping flow
                 flows(id).slots{pkt+1} = (max(flows(id).slots{pkt}) + 1 ...
-                                          : 1 : max(flows(id).slots{pkt+1}));                 
+                                          : 1 : max(flows(id).slots{pkt+1}));
+                selectedFlows(id) = pkt;
             elseif idx2 && ~aggregate
                 % (TODO)
                 % We DO NOT aggregate traffic, meaning that we disaggregate any

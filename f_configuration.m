@@ -1,7 +1,7 @@
 function conf = f_configuration
     % Define classes of traffic (Map to 5G applications)
     conf.Nclasses = 1;  % Number of classes (applications running)
-    conf.Nusers = 2;
+    conf.Nusers = 3;  % Number of users in the network
     % Define traffic types per users - For now, simplistic asumption of
     % same traffic per user
     for u = 1:conf.Nusers
@@ -11,4 +11,5 @@ function conf = f_configuration
         conf.class(u).Payload = 1500*8;  % Default payload in bits
     end
     conf.FLAGagg = true;  % Aggregate traffic
+    conf.DEBUG = true;    % Enable Debugger and logs
 end

@@ -27,6 +27,8 @@ function [combIds,combTH] = f_candidateSet(t,flows,selFlow)
     combIds = binMatrix .* repmat(priorID,N,1);
     % Compute aggregate priority amongst users
     sumVec = binMatrix*prior.';
+    % Replace NaN (priority=Inf when the Deadline is right now)
+    sumVec(isnan(sumVec)) = 0;
     % Sort the aggregated priority in a descending way
     [~,idxSort] = sort(sumVec,'descend');
     % Apply Greedy policy to create a sorted candidate set matrix

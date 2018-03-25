@@ -16,6 +16,10 @@
 %              the Payload.
 % - deadlines: The deadline of the actual packet in slot ID. 
 %              This is used in the future to set priorities.
+% - failed:    Mark whether the flow has failed to be served before the
+%              deadline (0 or 1).
+% - success:   Mark whether the flow has been succesfully served before the
+%              deadline (0 or 1).
 %
 % Example: flows(1).slots(4) = [11 12 13 14]. This means that flow 4 from
 % user 1 occupies slots 11, 12, 13 and 14 with an average traffic of
@@ -28,7 +32,7 @@ function [flows] = f_arrivalToFlow(Tslot,traffic)
     % empty since the length for slots is variable for each user (number of
     % packets). i.e. users(U).slots{5} is a list containing the slots where
     % the packet (flow) 5 from user U is present.
-    flows = struct('slots',{},'TH',[],'remaining',[],'deadlines',[],'failed',[]);
+    flows = struct('slots',{},'TH',[],'remaining',[],'deadlines',[],'failed',[],'success',[]);
     
     % Convert packets into demanded throughput following a uniform
     % distribution accros the interval <tArrival,tDeadline>
@@ -42,14 +46,18 @@ function [flows] = f_arrivalToFlow(Tslot,traffic)
         valor.remaining = zeros(Npkt,1);
         valor.deadlines = zeros(Npkt,1);
         for pkt = 1:Npkt
-            nSlots = (deadlines(pkt) - arrivals(pkt)) / Tslot;
+            % The first slot is the right next available slot after the
+            % moment of arrival (ceil). The last slot is the slots that
+            % comprises the deadline time (floor)
             valor.slots{pkt} = (ceil(arrivals(pkt)/Tslot) : 1 : ...
-                                ceil(arrivals(pkt)/Tslot) + nSlots);
-            % The requested Throughput is computed in bits per second
+                                floor(deadlines(pkt)/Tslot));
+            nSlots = length(valor.slots{pkt});
+            % The requested Throughput is computed in bits per second (bps)
             valor.TH(pkt) = traffic(id).Payload / (nSlots*Tslot*1e-3);
             valor.remaining(pkt) = traffic(id).Payload;
             valor.deadlines(pkt) = ceil(traffic(id).deadlines(pkt)/Tslot);
             valor.failed(pkt) = 0;
+            valor.success(pkt) = 0;
         end
         flows(id) = valor;
     end
