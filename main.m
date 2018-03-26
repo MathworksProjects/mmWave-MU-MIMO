@@ -73,6 +73,7 @@ end
 
 %% REPORT
 [~,~] = f_generateReport(flows);
+
 %% TODO LIST
 % TODO: Implement a more realistic traffic model (Apply Stratis' advice)
 % TODO: Come up with a closed for of the priority calculation, more complex
