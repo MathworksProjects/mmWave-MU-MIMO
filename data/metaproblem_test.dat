@@ -1,0 +1,26 @@
+/*********************************************
+ * OPL 12.6.2.0 Data
+ * Author: santirodrigo
+ * Creation Date: 19/05/2016 at 17:56:55
+ *********************************************/
+
+ realizations=5;
+ N_Antennas=10:10:100; Obtenemos la raíz cuadrada y a tomar...
+ NxSubarrays=3;
+ NySubarrays=3;
+ NmaxArray=0.2:0.2:1;
+ arrayRestriction='None';
+ invdAntennas=2;
+ freq=2.5e9;
+ gamma=1;
+ Noise = -104.5; % In dBs!!!
+ % Light speed constant
+ c = 299792458;
+ Bw = 0.2e9;
+ nUsers=2:2:8;
+ mindUsers=10;
+ maxdUsers=10;
+ MaxThr=Inf;
+ maxMinThr=2;
+ minMinThr=0.01
+ maxnChannelPaths=1:1:5;

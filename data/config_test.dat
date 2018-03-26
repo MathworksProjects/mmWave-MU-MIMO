@@ -1,0 +1,53 @@
+% Sets whether we will introduce the angles in radians or degrees 
+ anglesInRadians=false;
+% Weights used in the optimization function for each user alloc. subproblem
+ Fweights=[0.4 0.3 0];
+% Algorithm used for MATLAB optimization
+% Genetic -> 'GA'; PatternSearch -> 'PS'; Particle Swarm Optimization -> 'PSO'
+ algorithm=GA;
+% Sets whether we consider multi-path channel or LOS channel. In the first
+% case, we need the information of the paths in the input file
+ multiPath=true;
+% Verbosity level (0 no output, 1 some informative output, 2 DEBUG mode)
+ verbosity=0;
+% Sets whether we want to compute the beam pattern for every single
+% solution (MUST be true if conf.PlotAssignments == true) (TIME consuming)
+ IncludeBeamPattern=false;
+% If set to true, the Alg. 1 solution is random
+ randomSolution=false;
+% Solver 'LuckAndChoice' or 'BestOrRemove'
+ solver = 'BestOrRemove';
+% Objective function for 'LuckAndChoice'
+ ObjFunc = 'compute_avCap_maxminthr_LAC';
+% 
+ NoCut = false;
+% 
+ feasibility = true;
+% Sets whether we want to refine the solution given for a certain group of
+% users when there is room for improvement
+ RefineSolution=false;
+% Sets whether we want to plot the polar plots of the antenna radiation
+% patterns for each user (function parse_antenna_assignment). You should check
+% if conf.PlotAssignments is TRUE. (TIME consuming)
+ PlotAssignments=false;
+% Sets whether we want to plot all the combinations in get_all_feasible_combs
+ PlotCombinations=false;
+% Sets wether we want to plot the initial and final assignments for every
+% <user,Nmax> combination in Alg. 1
+ plotAssignmentInitialAndFinal=false;
+% Sets whether we want to plot the antenna selection displacements for
+% every <user,Nmax> combination in Alg. 2 (getComb function) (TIME and
+% MEMORY consuming)
+ PlotDisplacements=false;
+% Sets whether we want to compare our internal beamwidth function with
+% findLobes computations
+ findLobes=false;
+% Sets the data structure for the Algorithm 1 solver (either genetic or
+% pattern) 'onlyAssigned' recommended
+ genStructure=onlyAssigned;
+% Sets the initial figure Id for combination of assignments' plots (to
+% avoid collisions with radiation pattern plots)
+ figIdx=100;
+% Sets the minimum number of users to be considered when exploring all the
+% combinations possible (script get_all_feasible_combs)
+ nUsersMin=1;
