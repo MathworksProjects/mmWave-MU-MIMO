@@ -58,13 +58,14 @@ while(t<Tsym)
 %             [estSet,estTH] = f_heuristicsDummy(candSet,candTH);
             [sol_found,W,Cap] = f_heuristics(problem,conf,candSet);
             estTH = Cap*problem.Bw;
+            TXbits = estTH.*Tslot.*1e-3;
             % Decide whether to take the tentative TH or give it a
             % another round (This is Policy PLk)
             threshold = 0.7;  % Represents the ratio between the demanded 
                               % and the tentative achievable TH
             if ~any(estTH./candTH)<threshold
                 % Evaluate PER
-                finalSet = f_PERtentative(candSet,problem,W);
+                finalSet = f_PERtentative(candSet,problem,TXbits,W);
                 if ~isempty(finalSet); finalTH = estTH(candSet(finalSet));
                 else;                  finalTH = [];
                 end

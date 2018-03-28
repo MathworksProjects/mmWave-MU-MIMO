@@ -1,7 +1,7 @@
 %% finalSet = f_PERtentative(candSet)
 % Dummy function that emulates the PER Simulation using Matlab Toolboxes
 % (developped by Zhengnan Li)
-function finalSet = f_PERtentative(candSet,problem,W)
+function finalSet = f_PERtentative(candSet,problem,TXbits,W)
     % Create random PER values
     PER = rand(size(candSet));
     % Random threshold to determine whether or not a packets has been
