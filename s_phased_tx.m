@@ -6,11 +6,11 @@ classdef s_phased_tx < matlab.System
     %
     % This template includes most, but not all, possible properties,
     % attributes, and methods that you can implement for a System object.
-
+    
     properties
         
     end
-
+    
     properties(Nontunable)
         %% Antenna configurations
         numTxElements_row = 8;
@@ -24,11 +24,11 @@ classdef s_phased_tx < matlab.System
         %% Vis
         visualization = true;
     end
-
+    
     properties(DiscreteState)
-
+        
     end
-
+    
     % Pre-computed constants
     properties(Access = private)
         antenna_array;
@@ -36,14 +36,14 @@ classdef s_phased_tx < matlab.System
         transmitter;
         radiator;
     end
-
+    
     methods
         % Constructor
         function obj = s_phased_tx(varargin)
             setProperties(obj,nargin,varargin{:})
         end
     end
-
+    
     methods(Access = protected)
         %% Common functions
         function setupImpl(obj)
@@ -52,24 +52,24 @@ classdef s_phased_tx < matlab.System
             wavelength = light_speed / obj.center_frequency;
             
             % Antenna definition
-%             obj.antenna_array = phased.ULA( ...
-%                 obj.numTxElements, ...
-%                 'ElementSpacing',           0.5 * wavelength, ...
-%                 'Element',                  phased.IsotropicAntennaElement('BackBaffled', true));
+            %             obj.antenna_array = phased.ULA( ...
+            %                 obj.numTxElements, ...
+            %                 'ElementSpacing',           0.5 * wavelength, ...
+            %                 'Element',                  phased.IsotropicAntennaElement('BackBaffled', true));
             
             obj.antenna_array = phased.URA( ...
                 'Size',                     [obj.numTxElements_row, obj.numTxElements_col], ...
                 'ElementSpacing',           0.5 * wavelength, ...
                 'Element',                  phased.IsotropicAntennaElement('BackBaffled', true));
-
+            
             obj.steeringvec = phased.SteeringVector( ...
                 'SensorArray',              obj.antenna_array, ...
                 'PropagationSpeed',         light_speed);
             
             %Gain per antenna element
-%             obj.transmitter = phased.Transmitter( ...
-%                 'PeakPower',                obj.txPower / obj.numTxElements, ...
-%                 'Gain',                     obj.txGain);
+            %             obj.transmitter = phased.Transmitter( ...
+            %                 'PeakPower',                obj.txPower / obj.numTxElements, ...
+            %                 'Gain',                     obj.txGain);
             
             %Transmit array
             obj.radiator = phased.Radiator( ...
@@ -79,40 +79,42 @@ classdef s_phased_tx < matlab.System
                 'OperatingFrequency',       obj.center_frequency,...
                 'CombineRadiatedSignals',   false);
         end
-
-        function txWaveforms = stepImpl(obj, txBits, toRxAngle, W)
+        
+        function txWaveforms = stepImpl(obj, txBits, toRxAngle, varargin)
             
             %% Temp-debug part -- 2 sub array beamformings
-%             % Hybrid beamforming -- 2 sub arrays
-%             numSubarray = 2;
-%             numSubElem = obj.numTxElements_col * obj.numTxElements_row / numSubarray;
-%             
-%             subpos = (-(numSubarray-1)/2 : (numSubarray-1)/2)*(0.5*numSubElem);
-%             subelempos = (-(numSubElem-1)/2 : (numSubElem-1)/2)*0.5;
-%             
-%             % complex weights used as part of digital baseband precoding
-%             wT_digital = steervec(subpos, [toRxAngle(1); 0]);
-%             
-%             % analog phase shift values used as part of RF precoding
-%             wT_analog = exp(1i*angle(steervec(subelempos, [toRxAngle(1); 0])));
-%             
-%             % From the system perspective, the effect of the hybrid beamforming can be
-%             % represented by hybrid weights as shown below.
-%             
-%             wT_hybrid = kron(wT_digital, wT_analog);
-%             
-% %             % Model signal traveling to mobile by applying a phaseshift on the
-% %             % elements since phased.Radiator does not do it when radiated signals are
-% %             % uncombined.
-% %             wR = obj.steeringvec(obj.center_frequency, -toRxAngle);
-% %             weight = wT_hybrid .* wR;
-%             
-%             % Amplify this single carrier signal
-% %             txWaveforms_after_amplify = obj.transmitter(txBits);
-%             
-%             % then radiate it -- since we uses weights to "mimic" the
-%             % boresight, we do not need to steer them physically
-
+            if nargin == 3 %% W unspecified
+                % Hybrid beamforming -- 2 sub arrays
+                numSubarray = 2;
+                numSubElem = obj.numTxElements_col * obj.numTxElements_row / numSubarray;
+                
+                subpos = (-(numSubarray-1)/2 : (numSubarray-1)/2)*(0.5*numSubElem);
+                subelempos = (-(numSubElem-1)/2 : (numSubElem-1)/2)*0.5;
+                
+                % complex weights used as part of digital baseband precoding
+                wT_digital = steervec(subpos, [toRxAngle(1); 0]);
+                
+                % analog phase shift values used as part of RF precoding
+                wT_analog = exp(1i*angle(steervec(subelempos, [toRxAngle(1); 0])));
+                
+                % From the system perspective, the effect of the hybrid beamforming can be
+                % represented by hybrid weights as shown below.
+                
+                wT_hybrid = kron(wT_digital, wT_analog);
+                
+                %             % Model signal traveling to mobile by applying a phaseshift on the
+                %             % elements since phased.Radiator does not do it when radiated signals are
+                %             % uncombined.
+                %             wR = obj.steeringvec(obj.center_frequency, -toRxAngle);
+                %             weight = wT_hybrid .* wR;
+                
+                % Amplify this single carrier signal
+                %             txWaveforms_after_amplify = obj.transmitter(txBits);
+                
+                % then radiate it -- since we uses weights to "mimic" the
+                % boresight, we do not need to steer them physically
+                W = wT_hybrid;
+            end
             %% Simulation part -- When Santi's magic happens
             txWaveforms = obj.radiator(txBits, ...
                 repmat([0; 0], 1, obj.numTxElements_row * obj.numTxElements_col), conj(W));
@@ -129,7 +131,7 @@ classdef s_phased_tx < matlab.System
                 title('Transmitter Antenna Pattern');
             end
         end
-
+        
         function resetImpl(obj)
             
         end
