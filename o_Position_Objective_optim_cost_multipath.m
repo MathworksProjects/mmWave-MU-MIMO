@@ -14,22 +14,14 @@ function [Val] = o_Position_Objective_optim_cost_multipath(Position_Taper, conf,
     % Setting figures to invisible
     %set(groot,'defaultFigureVisible','off')
 
-%     azimuth = -180:2:180;
-%     elevation = -90:2:90;
+    azimuth = -180:2:180;
+    elevation = -90:2:90;
 
     [Position_Taper_elem,problem] = o_subarrayToAntennaElements(Position_Taper,conf,problem);
     % Extracting taper values from the input vector
     Taper_value = Position_Taper_elem(problem.ant_elem+1:problem.ant_elem*2) .* ...
         exp(1i.*Position_Taper_elem(problem.ant_elem*2+1:problem.ant_elem*3));
 
-    % Creating a Conformal Array with cosine elements.
-    % Conformal array will be limited to a single plane
-
-%     disp('Positions');
-%     [zeros(1,problem.ant_elem);...
-%         problem.possible_locations(2,Position_Taper_elem(1:problem.ant_elem));...
-%         problem.possible_locations(3,Position_Taper_elem(1:problem.ant_elem))]
-%     disp('Taper value');
     if isempty(Taper_value)
         disp('uyuyuy');
     end
@@ -40,66 +32,57 @@ function [Val] = o_Position_Objective_optim_cost_multipath(Position_Taper, conf,
         problem.possible_locations(3,Position_Taper_elem(1:problem.ant_elem))],...
         'Taper',Taper_value);
     
-%     bw_az = -Inf;
-%     for i=1:problem.maxnChannelPaths
-%         if problem.thetaChannels(problem.IDUserAssigned,i) ~= -Inf
-%             bw_az = max(bw_az,beamwidth(handle_Conf_Array,problem.freq,...
-%                 azimuth,problem.thetaChannels(problem.IDUserAssigned,i),3,...
-%                 conf.PlotAssignments));
-%         end
-%     end
-%     if conf.DEBUG
-%         fprintf('The HPBW (az) computed by the helper function is %f\n',bw_az);
-%     end
-%     bw_el = -Inf;
-%     for i=1:problem.maxnChannelPaths
-%         if problem.phiChannels(problem.IDUserAssigned,i) ~= -Inf
-%             bw_el = max(bw_el,beamwidth(handle_Conf_Array,problem.freq,...
-%                 problem.phiChannels(problem.IDUserAssigned,i),elevation,3,...
-%                 conf.PlotAssignments));
-%         end
-%     end
-%     if conf.DEBUG
-%         fprintf('The HPBW (el) computed by the helper function is %f\n',bw_el);
-%     end
-%     
-% 
-%     % Summing the azimuth and elevation values
-%     % Adding term to minimize the difference between the Az and El patterns
-% 
-%     HPBW = bw_az * bw_el;
+    if conf.Fweights(2) > 0
+        bw_az = o_beamwidth(handle_Conf_Array,problem.freq,...
+            azimuth,problem.thetaChannels(problem.IDUserAssigned),3,...
+            conf.PlotAssignments);
+        if conf.verbosity > 1
+            fprintf('The HPBW (az) computed by the helper function is %f\n',bw_az);
+        end
+        bw_el = o_beamwidth(handle_Conf_Array,problem.freq,...
+            problem.phiChannels(problem.IDUserAssigned),elevation,3,...
+            conf.PlotAssignments);
+        if conf.verbosity > 1
+            fprintf('The HPBW (el) computed by the helper function is %f\n',bw_el);
+        end
+
+        HPBW = bw_az * bw_el;
+    end
     
-    % Computing the received power in every user
-    PRx = zeros(1,problem.nUsers);
-    for u1=1:problem.nUsers
-        for i=1:problem.maxnChannelPaths
-            if problem.phiChannels(u1,i) ~= -Inf
-                PRx(u1) = PRx(u1) + problem.alphaChannels(u1,i)*...
-                    pattern(handle_Conf_Array,problem.freq,...
-                    problem.phiChannels(u1,i),...
-                    problem.thetaChannels(u1,i),...
-                    'Type','Power','Normalize',false);
+    if conf.Fweights(1) > 0
+        % Computing the received power in every user
+        PRx = zeros(1,problem.nUsers);
+        for u1=1:problem.nUsers
+            for i=1:problem.maxnChannelPaths
+                if problem.phiChannels(u1,i) ~= -Inf
+                    PRx(u1) = PRx(u1) + problem.alphaChannels(u1,i)*...
+                        pattern(handle_Conf_Array,problem.freq,...
+                        problem.phiChannels(u1,i),...
+                        problem.thetaChannels(u1,i),...
+                        'Type','Power','Normalize',false)*...
+                        (problem.lambda/(4*pi*problem.dUsers(u1)))^2;
+                        % We assume that alphaChannels include the increase in 
+                        % distance from dUsers(u1) to the real distance traver-
+                        % sed by the signal in on each path
+                end
             end
         end
-    end
-    if conf.verbosity > 1
-        fprintf('PRx: %f\n',PRx(problem.IDUserAssigned));
-        if PRx(problem.IDUserAssigned) == 0 && Position_Taper(end) ~= 0
-            fprintf('Chachi!');
+        if conf.verbosity > 1
+            fprintf('PRx: %f\n',PRx(problem.IDUserAssigned));
+            if PRx(problem.IDUserAssigned) == 0 && Position_Taper(end) ~= 0
+                fprintf('Chachi!');
+            end
         end
+        PR = PRx(problem.IDUserAssigned);
+        Int = sum(PRx)-PRx(problem.IDUserAssigned);
+        Int = Int/(numel(PRx)-1);
     end
-    PR = PRx(problem.IDUserAssigned);
-    Int = sum(PRx)-PRx(problem.IDUserAssigned);
-    Int = Int/(numel(PRx)-1);
-    
-    % Computing directivity
-    %D = directivity(handle_Conf_Array,conf.freq,[0;0]);
 
     % Computing the function value from the SL_Mag
     if problem.nUsers > 1
-        Val = Int/PR;% + HPBW/(360^2); %+ 1/10^(D/10)
+        Val = conf.Fweights(1)*Int/PR + conf.Fweights(2)*HPBW/(360^2);
     else
-        Val = 1/PR;
+        Val = conf.Fweights(1)*1/PR + conf.Fweights(2)*HPBW/(360^2);
     end
     if conf.verbosity > 1
         fprintf('Val = %f\n',Val);

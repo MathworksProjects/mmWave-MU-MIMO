@@ -1,7 +1,7 @@
-function [sol_found,W,averageCap,totTime] = o_luck_and_choice_solver(problem,conf)
+function [sol_found,W,averageCap,totTime,usersAssigned] = o_luck_and_choice_solver(problem,conf)
     % We will paralelize the solution computations: we need (if not already
     % created) a parallelization processes pool
-    p = gcp('nocreate');
+    gcp;
     
     %  Antenna allocation solver, Best or Remove method
     tic;
@@ -102,7 +102,7 @@ function [sol_found,W,averageCap,totTime] = o_luck_and_choice_solver(problem,con
         end
     end
     %% Alg. 2: We search for the best combination complying with the requirements
-    [aveCap, ~] = o_find_best_combination(problem,conf,PRx,I,patch,comb,combMat,arraysCell);
+    [aveCap, assignation] = o_find_best_combination(problem,conf,PRx,I,patch,comb,combMat,arraysCell);
     sol_found = false;
     if aveCap ~= -Inf
         sol_found = true;
@@ -115,5 +115,6 @@ function [sol_found,W,averageCap,totTime] = o_luck_and_choice_solver(problem,con
     W = [];
     averageCap = aveCap;
     totTime = toc;
+    usersAssigned = sum(find(assignation~=0));
 end
 

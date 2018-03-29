@@ -1,7 +1,7 @@
 % Sets whether we will introduce the angles in radians or degrees 
  anglesInRadians=false;
 % Weights used in the optimization function for each user alloc. subproblem
- Fweights=[0.4 0.3 0];
+ Fweights=[0.4 0.3];
 % Algorithm used for MATLAB optimization
 % Genetic -> 'GA'; PatternSearch -> 'PS'; Particle Swarm Optimization -> 'PSO'
  algorithm=GA;
@@ -9,7 +9,7 @@
 % case, we need the information of the paths in the input file
  multiPath=true;
 % Verbosity level (0 no output, 1 some informative output, 2 DEBUG mode)
- verbosity=0;
+ verbosity=1;
 % Sets whether we want to compute the beam pattern for every single
 % solution (MUST be true if conf.PlotAssignments == true) (TIME consuming)
  IncludeBeamPattern=false;
