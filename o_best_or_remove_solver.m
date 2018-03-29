@@ -1,4 +1,4 @@
-function [sol_found,W,averageCap,totTime] = o_best_or_remove_solver(problem,conf)
+function [sol_found,W,averageCap,totTime,usersAssigned] = o_best_or_remove_solver(problem,conf)
     %  Antenna allocation solver, Best or Remove method
     tic;
 
@@ -16,35 +16,21 @@ function [sol_found,W,averageCap,totTime] = o_best_or_remove_solver(problem,conf
 
     % Boolean flag indicating if we have already found a feasible solution
     sol_found = false;
-    while ~sol_found || isempty(usersToBeAssigned)
+    while ~sol_found && ~isempty(usersToBeAssigned)
         [sol_found,W,Cap] = f_heuristics(problem,conf,usersToBeAssigned);
-        
-        if conf.verbosity >= 1
-            % px, py and px are independent from Nmax or user ID:
-            pz = problem.possible_locations(1,:);
-            py = problem.possible_locations(2,:);
-            px = problem.possible_locations(3,:);
-
-            % Create Patch: 3 rows (x, y, z coordinates), 
-            % problem.NxPatch*problem.NyPatch columns (antennas in the patch)
-            patch = o_getPatch(problem.NxPatch,problem.NyPatch,px,py);
-
-            % Group array assignments: 3 rows (x, y, z coordinates), problem.Nmax 
-            % columns (antennas selected from the patch), and N layers (number of users
-            % i.e. number of different assignations from the same patch and Nmax)
-            arrays = o_getArrays(problem.nUsers,max(problem.NmaxArray),W,px,py,pz);
-            o_plot_feasible_comb(problem,conf,patch,arrays);
-        end
 
         % For the next iteration (we will only run it if no sol_found) we
         % remove the most consuming user
-        [~, maxIndex] = max(problem.MinThr(usersToBeAssigned));
-        usersToBeAssigned(maxIndex) = [];
-        if isempty(usersToBeAssigned)
-            fprintf('No feasible solution found to serve any user!\n');
+        if ~sol_found
+            [~, maxIndex] = max(problem.MinThr(usersToBeAssigned));
+            usersToBeAssigned(maxIndex) = [];
+            if isempty(usersToBeAssigned)
+                fprintf('No feasible solution found to serve any user!\n');
+            end
         end
     end
     averageCap = mean(Cap);
     totTime = toc;
+    usersAssigned = usersToBeAssigned;
 end
 

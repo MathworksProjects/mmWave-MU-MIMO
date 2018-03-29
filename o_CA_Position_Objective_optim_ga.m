@@ -14,8 +14,10 @@ options = optimoptions(options,'MaxGenerations', MaxGenerations_Data);
 options = optimoptions(options,'FunctionTolerance', FunctionTolerance_Data);
 options = optimoptions(options,'MaxStallGenerations', MaxStallGenerations_Data);
 options = optimoptions(options,'Display', 'off');
-options = optimoptions(options,'PlotFcn', {@gaplotbestf,@gaplotstopping});
-options = optimoptions(options,'UseParallel', false);
+if conf.verbosity >= 1
+    options = optimoptions(options,'PlotFcn', {@gaplotbestf,@gaplotstopping});
+end
+options = optimoptions(options,'UseParallel', true);
 nvar = numel(lb); % == numel(ub) == num. variables in the gen
 if strcmp(conf.genStructure, 'nchoosek')
     integervars = 1;

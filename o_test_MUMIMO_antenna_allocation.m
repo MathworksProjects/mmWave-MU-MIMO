@@ -1,4 +1,4 @@
-function [] = o_test_MUMIMO_antenna_allocation(conf_file,problem_file)
+function [solutions] = o_test_MUMIMO_antenna_allocation(conf_file,problem_file)
 %TEST_MUMIMO_ANTENNA_ALLOCATION Function to test MUMIMO antenna allocation
 %   conf_file is a path to a file in DAT format with the configuration 
 %   parameters for the execution
@@ -12,7 +12,10 @@ function [] = o_test_MUMIMO_antenna_allocation(conf_file,problem_file)
                     length(meta_problem.N_Antennas),...
                     length(meta_problem.maxnChannelPaths),...
                     meta_problem.realizations);
-    solutions = problems; % Equally sized cell
+    solutions = cell(length(meta_problem.nUsers),...
+                    length(meta_problem.N_Antennas),...
+                    length(meta_problem.maxnChannelPaths),...
+                    meta_problem.realizations); % Equally sized matrix
     
     for r=1:meta_problem.realizations
         for u=1:length(meta_problem.nUsers)
@@ -50,9 +53,23 @@ function [] = o_test_MUMIMO_antenna_allocation(conf_file,problem_file)
                     problems{u,a,c,r}.thetaChannels = thetaChannels;
                     problems{u,a,c,r}.phiChannels = phiChannels;
                     problems{u,a,c,r}.alphaChannels = alphaChannels;
-                    [averageCap,totTime] = o_MUMIMO_antenna_allocation(conf,problems{u,a,c,r});
+                    [sol_found,W,averageCap,totTime,usersAssigned] = ...
+                        o_MUMIMO_antenna_allocation(conf,problems{u,a,c,r});
+                    solutions{u,a,c,r}.sol_found = sol_found;
+                    solutions{u,a,c,r}.W = W;
                     solutions{u,a,c,r}.averageCap = averageCap;
                     solutions{u,a,c,r}.totTime = totTime;
+                    solutions{u,a,c,r}.usersAssigned = ...
+                        length(usersAssigned);
+                    if sol_found
+                        fprintf('Solution found!\n');
+                        fprintf('Av. cap = %f\n',averageCap);
+                        fprintf('Exec. time = %f\n',totTime);
+                        fprintf('Users assigned = %f\n\n',...
+                            length(usersAssigned));
+                    else
+                        fprintf('No solution found!\n');
+                    end
                 end
             end
         end

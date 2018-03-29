@@ -26,7 +26,10 @@ function [problem] = o_compute_antennas_per_user(problem,usersToBeAssigned)
         for u = usersToBeAssigned; sumAnt = sumAnt + problem.NmaxArray(u);end
         if sumAnt < problem.N_Subarrays
             [~,i] = max(problem.MinThr(usersToBeAssigned));
-            problem.NmaxArray(i) = problem.NmaxArray(i) + (problem.N_Subarrays-sumAnt);
+            userToAssignExtraAnt = usersToBeAssigned(i);
+            problem.NmaxArray(userToAssignExtraAnt) = ...
+                problem.NmaxArray(userToAssignExtraAnt) + ...
+                (problem.N_Subarrays-sumAnt);
         end
 end
 

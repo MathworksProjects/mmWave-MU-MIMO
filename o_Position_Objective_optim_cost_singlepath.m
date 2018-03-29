@@ -25,11 +25,6 @@ function [Val] = o_Position_Objective_optim_cost_singlepath(Position_Taper, conf
     % Creating a Conformal Array with cosine elements.
     % Conformal array will be limited to a single plane
 
-%     disp('Positions');
-%     [zeros(1,problem.ant_elem);...
-%         problem.possible_locations(2,Position_Taper_elem(1:problem.ant_elem));...
-%         problem.possible_locations(3,Position_Taper_elem(1:problem.ant_elem))]
-%     disp('Taper value');
     if isempty(Taper_value)
         disp('uyuyuy');
     end
@@ -39,123 +34,46 @@ function [Val] = o_Position_Objective_optim_cost_singlepath(Position_Taper, conf
         problem.possible_locations(2,Position_Taper_elem(1:problem.ant_elem));...
         problem.possible_locations(3,Position_Taper_elem(1:problem.ant_elem))],...
         'Taper',Taper_value);
-
-    % Extracting Azimuth and Elevation Patterns
-    [fieldval_az] = patternAzimuth(handle_Conf_Array,problem.freq,...
-        problem.thetaUsers(problem.IDUserAssigned),'Azimuth',azimuth,'Type','Power');
-    [fieldval_el] = patternElevation(handle_Conf_Array,problem.freq,...
-        problem.phiUsers(problem.IDUserAssigned),'Elevation',elevation,'Type','Power');
-
-    % Replacing any inf and zeros with a very low value
-    fieldval_az(isinf(fieldval_az)) = -400;
-    fieldval_az((fieldval_az == 0)) = -400;
-
-    % Genarating a polar plot with the extracted data
-    % the polar plot method "FindLobes" is used to fetch the required 
-    % information about the beam.
-    if conf.findLobes
-        figure(1);
-        subplot(1,2,2);
-        %f3 = figure('Visible','off');
-        handle_polar_az = polarpattern(azimuth,mag2db(fieldval_az));
-        handle_polar_az.AntennaMetrics = 1;
-        %close(gcf)
-        lobe_info = findLobes(handle_polar_az);
-    end
     
-    [bw_az,SLL_az] = o_helperFindLobes(handle_Conf_Array,problem.freq,azimuth,problem.thetaUsers(problem.IDUserAssigned),3,conf.PlotAssignments);
-    if conf.verbosity > 1
-        fprintf('The HPBW (az) computed by the helper function is %f\n',bw_az);
-        fprintf('The SLL (az) computed by the helper function is %f\n',SLL_az);
-    end
-        
-    if conf.findLobes
-        HPBW_az = lobe_info.HPBW;%sideLobes.magnitude;
-        SLL_az = lobe_info.SLL;
+    if conf.Fweights(2) > 0
+        bw_az = o_beamwidth(handle_Conf_Array,problem.freq,...
+            azimuth,problem.thetaUsers(problem.IDUserAssigned),3,...
+            conf.PlotAssignments);
         if conf.verbosity > 1
-            fprintf('The HPBW (az) computed by the findLobes function is %f\n',HPBW_az);
-            fprintf('The SLL (az) computed by the findLobes function is %f\n',SLL_az);
+            fprintf('The HPBW (az) computed by the helper function is %f\n',bw_az);
         end
-    else
-        HPBW_az = bw_az;
-    end
-
-    if(isempty(HPBW_az))
-
-        HPBW_az = 180;
-
-    end
-
-    % Replacing any inf and zeros with a very low value
-    fieldval_el(isinf(fieldval_el)) = -400;
-    fieldval_el((fieldval_el == 0)) = -400;
-
-    % Fetching the Sidelobe Magnitude 
-    % Magnitude of the elevation beam pattern
-    if conf.findLobes
-        figure(1);
-        subplot(1,2,1);
-        %f4 = figure('Visible','off');
-        handle_polar_el = polarpattern(elevation,mag2db(fieldval_el));
-        handle_polar_el.AntennaMetrics = 1;
-        %close(gcf)
-        lobe_info = findLobes(handle_polar_el);
-    end
-    
-    [bw_el, SLL_el] = o_helperFindLobes(handle_Conf_Array,problem.freq,problem.phiUsers(problem.IDUserAssigned),elevation,3,conf.PlotAssignments);
-    if conf.verbosity > 1
-        fprintf('The HPBW (el) computed by the helper function is %f\n',bw_el);
-        fprintf('The SLL (el) computed by the helper function is %f\n',SLL_el);
-    end
-    
-    if conf.findLobes
-        HPBW_el = lobe_info.HPBW;%sideLobes.magnitude;
-        SLL_el = lobe_info.SLL;
+        bw_el = o_beamwidth(handle_Conf_Array,problem.freq,...
+            problem.phiUsers(problem.IDUserAssigned),elevation,3,...
+            conf.PlotAssignments);
         if conf.verbosity > 1
-            fprintf('The HPBW (el) computed by the findLobes function is %f\n',HPBW_el);
-            fprintf('The SLL (el) computed by the findLobes function is %f\n',SLL_el);
+            fprintf('The HPBW (el) computed by the helper function is %f\n',bw_el);
         end
-    else
-        HPBW_el = bw_el;
+
+        HPBW = bw_az * bw_el;
     end
     
-    %Using a very high value if the value are empty
+    if conf.Fweights(1) > 0
+        % Computing the received power in every user
+        PRx = zeros(1,problem.nUsers);
+        for u=1:problem.nUsers
+            PRx(u) = pattern(handle_Conf_Array,problem.freq,...
+                    problem.phiUsers(u),...
+                    problem.thetaUsers(u),...
+                    'Type','Power')*...
+                    (problem.lambda/(4*pi*problem.dUsers(u1)))^2;
+        end
 
-    if(isempty(HPBW_el))
-
-        HPBW_el = 360;
-
+        PR = PRx(problem.IDUserAssigned);
+        Int = sum(PRx)-PRx(problem.IDUserAssigned);
+        Int = Int/(numel(PRx)-1);
     end
-
-    % Summing the azimuth and elevation values
-    % Adding term to minimize the difference between the Az and El patterns
-
-    HPBW = HPBW_az * HPBW_el;
-    SLL = min(SLL_az, SLL_el);
-    
-    % Computing the received power in every user
-    PRx = zeros(1,problem.nUsers);
-    for u=1:problem.nUsers
-        PRx(u) = pattern(handle_Conf_Array,problem.freq,...
-                problem.phiUsers(u),...
-                problem.thetaUsers(u),...
-                'Type','Power');
-    end
-    
-    PR = PRx(problem.IDUserAssigned);
-    Int = sum(PRx)-PRx(problem.IDUserAssigned);
-    Int = Int/(numel(PRx)-1);
-    
-    % Computing directivity
-    %D = directivity(handle_Conf_Array,conf.freq,[0;0]);
 
     % Computing the function value from the SL_Mag 
     if problem.nUsers > 1
-        Val = Int/PR + HPBW/(360^2) + 1/SLL; %+ 1/10^(D/10)
+        Val = conf.Fweights(1)*Int/PR + conf.Fweights(2)*HPBW/(360^2);
     else
-        Val = 1/PR + HPBW/(360^2) + 1/SLL; %+ 1/10^(D/10)
+        Val = conf.Fweights(1)*1/PR + conf.Fweights(2)*HPBW/(360^2);
     end
-    Val = Int/PR + HPBW/(360^2) + 1/SLL; %+ 1/10^(D/10)
     if conf.verbosity > 1
         fprintf('Val = %f\n',Val);
     end

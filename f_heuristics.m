@@ -1,7 +1,7 @@
 function [sol_found,W,Cap] = f_heuristics(problem,conf,usersToBeAssigned)
     % We will paralelize the solution computations: we need (if not already
     % created) a parallelization processes pool
-    p = gcp('nocreate');
+    gcp;
     
     %% Create subarray partition
     problem = o_create_subarray_partition(problem);
@@ -48,7 +48,8 @@ function [sol_found,W,Cap] = f_heuristics(problem,conf,usersToBeAssigned)
         if conf.verbosity >= 1
             display(problem.NmaxArray);
         end
-        for u = 1:problem.nUsers
+        [~,orderedIndices] = sort(problem.MinThr,'descend');
+        for u = orderedIndices
             problem.IDUserAssigned = u;      
             if conf.verbosity >= 1
                 fprintf('------------------------------------\n');
@@ -68,6 +69,7 @@ function [sol_found,W,Cap] = f_heuristics(problem,conf,usersToBeAssigned)
             W_temp = zeros(1,problem.NxPatch*problem.NyPatch);
             PRx_temp = -Inf;
             I_temp = ones(1,problem.nUsers)*-Inf;
+            sol_temp = ones(1,2*problem.NxPatch*problem.NyPatch)*-Inf;
             % if the user is not to be assigned, no need to do anything else
             if ismember(u,usersToBeAssigned)
                 % Actually solve the user's assignment (observe that Nmax index
@@ -166,6 +168,23 @@ function [sol_found,W,Cap] = f_heuristics(problem,conf,usersToBeAssigned)
         else
             RoomForImprovement = false;
         end
+    end
+    
+    if conf.verbosity > 1
+        % px, py and px are independent from Nmax or user ID:
+        pz = problem.possible_locations(1,:);
+        py = problem.possible_locations(2,:);
+        px = problem.possible_locations(3,:);
+
+        % Create Patch: 3 rows (x, y, z coordinates), 
+        % problem.NxPatch*problem.NyPatch columns (antennas in the patch)
+        patch = o_getPatch(problem.NxPatch,problem.NyPatch,px,py);
+
+        % Group array assignments: 3 rows (x, y, z coordinates), problem.Nmax 
+        % columns (antennas selected from the patch), and N layers (number of users
+        % i.e. number of different assignations from the same patch and Nmax)
+        arrays = o_getArrays(problem.nUsers,max(problem.NmaxArray),W,px,py,pz);
+        o_plot_feasible_comb(problem,conf,patch,arrays);
     end
 end
 
