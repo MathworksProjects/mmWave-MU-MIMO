@@ -80,10 +80,10 @@ classdef s_phased_tx < matlab.System
                 'CombineRadiatedSignals',   false);
         end
         
-        function txWaveforms = stepImpl(obj, txBits, toRxAngle, varargin)
+        function txWaveforms = stepImpl(obj, txBits, toRxAngle, W)
             
             %% Temp-debug part -- 2 sub array beamformings
-            if nargin == 3 %% W unspecified
+            if isempty(W) %% W unspecified
                 % Hybrid beamforming -- 2 sub arrays
                 numSubarray = 2;
                 numSubElem = obj.numTxElements_col * obj.numTxElements_row / numSubarray;

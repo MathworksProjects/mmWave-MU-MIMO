@@ -27,13 +27,13 @@ for SNR = 5
             'numOutputElements_col',    1, ...
             'SNR',                      SNR);
         
-        totPkt = 100;
+        totPkt = 1;
         numErr = 0;
         
         for i = 1 : totPkt
             psdu = randi([0 1], lengthPSDU*8, 1);
             [pkt, cfgDMG] = tx_phy(psdu);
-            waveform = tx_pha(pkt, randi([-30 30]));
+            waveform = tx_pha(pkt, randi([-30 30]), []);
             waveforms = channel_pha(waveform);
             [psdu_rx, rxflag] = rx_phy(waveforms, [], cfgDMG);
             if ~isempty(psdu_rx)
