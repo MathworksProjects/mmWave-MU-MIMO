@@ -3,6 +3,10 @@ function [sol_found,W,Cap] = f_heuristics(problem,conf,usersToBeAssigned)
     % created) a parallelization processes pool
     gcp;
     
+    %% Change of array orientation required for PhasedArrayTBx
+    problem.NzPatch = problem.NxPatch; 
+    problem.dz = problem.dx;
+    
     %% Create subarray partition
     problem = o_create_subarray_partition(problem);
 

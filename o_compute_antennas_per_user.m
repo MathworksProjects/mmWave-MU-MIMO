@@ -16,8 +16,8 @@ function [problem] = o_compute_antennas_per_user(problem,usersToBeAssigned)
         end
         for u = usersToBeAssigned
             % Now NmaxArray is the Nmax value chosen for each user
-            problem.NmaxArray(u) = problem.NmaxArray(u) + ...
-                floor(problem.MinThr(u)*thr_ant_converter);
+            problem.NmaxArray(u) = max(0,problem.NmaxArray(u) + ...
+                floor(problem.MinThr(u)*thr_ant_converter));
         end
         % The previous division might have left some antennas / subarrays
         % unassigned, due to rounding errors. Let's assign the remaining 

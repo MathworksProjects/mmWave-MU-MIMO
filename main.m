@@ -27,6 +27,10 @@ Tsym  = 1e2;  % Total simulation time in milliseconds
 %% Georgraphic distribution of users
 [problem.thetaUsers, problem.phiUsers, problem.dUsers] = ...
     o_generate_positions(conf, problem.nUsers, problem.maxdUsers,problem.mindUsers);
+%% First channel model (for the moment, including channel gains (alphas) !!!
+[problem.thetaChannels, problem.phiChannels, problem.alphaChannels] = ...
+                    o_generate_channels(conf,problem.nUsers,...
+                    problem.maxnChannelPaths);
 %% Handle traffic
 [traffic] = f_genDetTraffic(problem.class);
 % Convert traffic (arrivals) into individual Flow for each user. Flows may
@@ -54,6 +58,7 @@ while(t<Tsym)
             candTH = combTH(k,:);
             candTH = candTH(candTH~=0);
             problem.MinThr = candTH/problem.Bw;
+            problem.MaxThr = problem.MinThr*Inf;
             % Call Heuristic method
 %             [estSet,estTH] = f_heuristicsDummy(candSet,candTH);
             [sol_found,W,Cap] = f_heuristics(problem,conf,candSet);
