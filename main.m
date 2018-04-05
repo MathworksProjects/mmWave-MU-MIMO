@@ -23,7 +23,7 @@ conf = o_read_config('data/config_test.dat');
 %% Input parameters
 problem = f_configuration(problem);  % Struct with configuration parameters
 Tslot = 10;  % Time slot in milliseconds
-Tsym  = 1e2;  % Total simulation time in milliseconds
+Tsym  = 3e2;  % Total simulation time in milliseconds
 %% Georgraphic distribution of users
 [problem.thetaUsers, problem.phiUsers, problem.dUsers] = ...
     o_generate_positions(conf, problem.nUsers, problem.maxdUsers,problem.mindUsers);
@@ -36,10 +36,14 @@ Tsym  = 1e2;  % Total simulation time in milliseconds
 % Convert traffic (arrivals) into individual Flow for each user. Flows may
 % overlap in time as the inter-arrival time may be less than Tslot
 [flows] = f_arrivalToFlow(Tslot,traffic);
+% Copy initial flows for plotting purposes (to see progression of sim)
+baseFlows = flows;
 %% Main simulator
 % Represent the time (in slot ID) throughout the execution. It is the even
 % in our DES
-t = 0;
+t = 1;
+TXbitsTot = [];
+THTot = [];
 while(t<Tsym)
 %     fprintf('** SLOT ID: %d\n',t);
     % Distribute Flow accross users. Either we aggregate or disaggregate
@@ -63,31 +67,77 @@ while(t<Tsym)
 %             [estSet,estTH] = f_heuristicsDummy(candSet,candTH);
             [sol_found,W,Cap] = f_heuristics(problem,conf,candSet);
             estTH = Cap*problem.Bw;
-            TXbits = estTH.*Tslot.*1e-3;
             % Decide whether to take the tentative TH or give it a
             % another round (This is Policy PLk)
             threshold = 0.7;  % Represents the ratio between the demanded 
                               % and the tentative achievable TH
             if ~any(estTH./candTH)<threshold
                 % Evaluate PER
-                finalSet = f_PERtentative(candSet,problem,TXbits,W);
+                TXbits = estTH.*Tslot.*1e-3;
+                TXbitsTot = [TXbitsTot ; TXbits];               %#ok<AGROW>
+                THTot = [THTot ; estTH];                        %#ok<AGROW>
+                finalSet = f_PERtentative(candSet,[],[],[]);
                 if ~isempty(finalSet); finalTH = estTH(candSet(finalSet));
                 else;                  finalTH = [];
                 end
+                TXbitsTot(end,setdiff(candSet,finalSet)) = 0;
+                THTot(end,setdiff(candSet,finalSet)) = 0;
                 % Update remaining bits to be sent upon tx success
                 flows = f_updateFlow(t,flows,selFlow,finalSet,finalTH,candSet,Tslot,problem.DEBUG);
+                lastSelFlow = selFlow;
                 % Exit the for loop - we have served in this time slot,
                 % there's no way back even though some pkts didn't make it
                 break;
+            else
+                TXbitsTot = [TXbitsTot ; zeros(1,problem.nUsers)];   %#ok<AGROW>
+                THTot = [THTot ; zeros(1,problem.nUsers)];           %#ok<AGROW>
             end
         end
+    else
+        TXbitsTot = [TXbitsTot ; zeros(1,problem.nUsers)];   %#ok<AGROW>
+        THTot = [THTot ; zeros(1,problem.nUsers)];           %#ok<AGROW>
     end
     % Increment variable event in DES
     t = t + 1;
 end
 
+lastSlotSim = t - 1;
+
 %% REPORT
 [~,~] = f_generateReport(flows);
+
+%% PLOTTING
+for id = 1:problem.nUsers
+    figure(1); subplot(problem.nUsers,1,id); hold on;
+    bar((1:1:Tsym-1),TXbitsTot(:,id),'LineWidth',2,'EdgeColor','none','FaceColor','red');
+    for fl = 1:lastSelFlow
+        slots = baseFlows(id).slots{fl};
+        reqTXbits = baseFlows(id).TH(fl).*Tslot.*1e-3.*ones(1,length(slots));
+        bar(slots,reqTXbits,'LineWidth',3,'EdgeColor','none','FaceColor','blue','FaceAlpha',0.4);
+    end
+%     title('Number of Bits transmitted','FontSize',12);
+    xlabel('Slot index','FontSize',12);
+    ylabel('Bits transmitted','FontSize',12);
+    lg = legend('TX Bits over the channel','Baseline required Bits to be TX');
+    set(lg,'FontSize',12,'Location','Northeast');
+    grid minor;
+
+    figure(2); subplot(problem.nUsers,1,id); hold on;
+    bar((1:1:Tsym-1),THTot(:,id).*1e-6,'LineWidth',3,'EdgeColor','none','FaceColor','red');
+    for fl = 1:lastSelFlow
+        slots = baseFlows(id).slots{fl};
+        reqTH = baseFlows(id).TH(fl).*1e-6.*ones(1,length(slots));
+        bar(slots,reqTH,'LineWidth',2,'EdgeColor','none','FaceColor','blue','FaceAlpha',0.4);
+    end
+%     title('Throughput required per slot','FontSize',12);
+    xlabel('Slot index','FontSize',12);
+    ylabel('Throughput (Mbps)','FontSize',12);
+    lg = legend('Achieved','Initially Required');
+    set(lg,'FontSize',12,'Location','Northeast');
+    grid minor;
+    a = get(gcf,'Position');
+    set(gcf,'Position',[a(1) a(2) 560 168])
+end
 
 %% TODO LIST
 % TODO: Implement a more realistic traffic model (Apply Stratis' advice)
