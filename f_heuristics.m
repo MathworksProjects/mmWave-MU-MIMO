@@ -40,6 +40,9 @@ function [sol_found,W,handle_ConformalArray,Cap] = f_heuristics(problem,conf,use
     
     %% Create subarray partition
     problem = o_create_subarray_partition(problem);
+    
+    problem.NzPatch = problem.NxPatch;
+    problem.dz = problem.dx;
 
     %% Create the antenna handler and the data structure with all possible pos.
     problem.handle_Ant = phased.CosineAntennaElement('FrequencyRange',...
@@ -96,7 +99,7 @@ function [sol_found,W,handle_ConformalArray,Cap] = f_heuristics(problem,conf,use
             % select them again
             already_assigned_elem = nonzeros(assignments_status)';
             problem.Partition = initial_partition;
-            problem.Partition(:,already_assigned_elem) = [];
+            problem.Partition = o_delete_subarrays_from_partition(problem.Partition,already_assigned_elem);
             problem.N_Subarrays = initial_N_Subarrays - ...
                 numel(already_assigned_elem);
             W_temp = zeros(1,problem.NxPatch*problem.NyPatch);
