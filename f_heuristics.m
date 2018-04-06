@@ -1,4 +1,4 @@
-function [sol_found,W,Cap] = f_heuristics(problem,conf,usersToBeAssigned)
+function [sol_found,W,handle_URA,Cap] = f_heuristics(problem,conf,usersToBeAssigned)
     % We will paralelize the solution computations: we need (if not already
     % created) a parallelization processes pool
     gcp;

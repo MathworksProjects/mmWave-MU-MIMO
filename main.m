@@ -65,7 +65,7 @@ while(t<Tsym)
             problem.MaxThr = problem.MinThr*Inf;
             % Call Heuristic method
 %             [estSet,estTH] = f_heuristicsDummy(candSet,candTH);
-            [sol_found,W,Cap] = f_heuristics(problem,conf,candSet);
+            [sol_found,W,array_Handle,Cap] = f_heuristics(problem,conf,candSet);
             estTH = Cap*problem.Bw;
             % Decide whether to take the tentative TH or give it a
             % another round (This is Policy PLk)
