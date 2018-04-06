@@ -1,4 +1,4 @@
-function subarrays = antennas_to_subarrays(antenna_list,partition)
+function subarrays = o_antennas_to_subarrays(antenna_list,partition)
 %UNTITLED2 Summary of this function goes here
 %   Detailed explanation goes here
 subarrays = [];
