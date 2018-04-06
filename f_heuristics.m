@@ -3,10 +3,6 @@ function [sol_found,W,Cap] = f_heuristics(problem,conf,usersToBeAssigned)
     % created) a parallelization processes pool
     gcp;
     
-    %% Change of array orientation required for PhasedArrayTBx
-    problem.NzPatch = problem.NxPatch; 
-    problem.dz = problem.dx;
-    
     %% Create subarray partition
     problem = o_create_subarray_partition(problem);
 
@@ -64,12 +60,10 @@ function [sol_found,W,Cap] = f_heuristics(problem,conf,usersToBeAssigned)
             % subarrays, we remove them from the Partition in order to not to
             % select them again
             already_assigned_elem = nonzeros(assignments_status)';
-            if u > 1
-                problem.Partition = initial_partition;
-                problem.Partition(:,already_assigned_elem) = [];
-                problem.N_Subarrays = initial_N_Subarrays - ...
-                    numel(already_assigned_elem);
-            end
+            problem.Partition = initial_partition;
+            problem.Partition(:,already_assigned_elem) = [];
+            problem.N_Subarrays = initial_N_Subarrays - ...
+                numel(already_assigned_elem);
             W_temp = zeros(1,problem.NxPatch*problem.NyPatch);
             PRx_temp = -Inf;
             I_temp = ones(1,problem.nUsers)*-Inf;
@@ -89,9 +83,13 @@ function [sol_found,W,Cap] = f_heuristics(problem,conf,usersToBeAssigned)
                         problem.NmaxArray(problem.IDUserAssigned));
                 end
                 % Update the already assigned antennas
+                n_selected = length(sol_temp)/3;
+                subarrays_selected = ...
+                    antennas_to_subarrays(sol_temp(1:n_selected),problem.Partition);
                 assignments_status = padarray([already_assigned_elem,...
-                    sol_temp(1:problem.NmaxArray(u))], [0 initial_N_Subarrays - ...
-                    problem.NmaxArray(u) - nnz(assignments_status)],'post');
+                    subarrays_selected], [0 initial_N_Subarrays - ...
+                    length(subarrays_selected) - ...
+                    nnz(assignments_status)],'post');
             end
             sol{u} = sol_temp;
             W(u,:) = W_temp;

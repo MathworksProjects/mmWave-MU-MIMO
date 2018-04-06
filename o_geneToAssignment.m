@@ -53,9 +53,10 @@ function [handle_Conf_Array,W,PRx,I] = o_geneToAssignment(gene,problem,conf)
             I(m) = PotRx(m+shift);
         end
     end
-    amplitude = gene(problem.Nmax+1:2*problem.Nmax);
-    phase = gene(2*problem.Nmax+1:end);
+    n_selected = length(gene)/3;
+    amplitude = gene(n_selected+1:2*n_selected);
+    phase = gene(2*n_selected+1:end);
     W = zeros(1,problem.NxPatch*problem.NyPatch);
-    W(gene(1:problem.Nmax)) = amplitude.*cos(phase) + 1i*amplitude.*sin(phase);
+    W(gene(1:n_selected)) = amplitude.*cos(phase) + 1i*amplitude.*sin(phase);
 end
 

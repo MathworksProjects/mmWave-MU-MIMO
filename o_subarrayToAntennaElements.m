@@ -23,43 +23,31 @@ function [Assignment_elem, problem] = o_subarrayToAntennaElements(Assignment,con
         
         antenna_selection = Assignment(1:num_subarrays_selected);
     end
-    
-    
-    
-    
+        
     ant_elem = [problem.Partition{antenna_selection}];
-    subpos = problem.possible_locations(:,ant_elem);
         % This is OK always in the case where we only have phase shifters 
         % for the elements in the subarray (i.e. in the analog weighting)
         
-    [~,index] = max(problem.alphaChannels(problem.IDUserAssigned,:));
-    wT_analog = exp(1i*angle(steervec(subpos/problem.lambda,...
-    [problem.phiChannels(problem.IDUserAssigned,index);...
-    problem.thetaChannels(problem.IDUserAssigned,index)])));
-%         wT_analog = steervec(subpos/problem.lambda,...
-%         [pi/2-problem.phiUsers(problem.IDUserAssigned);...
-%         pi/2-problem.thetaUsers(problem.IDUserAssigned)]);
+    % From the system perspective, the effect of the hybrid beamforming can
+    % be represented by hybrid weights as shown below.
+    Taper = zeros(1,length(ant_elem));
+    pointer = 1;
+    for n=1:num_subarrays_selected
+        ant = problem.Partition{antenna_selection(n)};
+        subpos = problem.possible_locations(:,ant);
+        % This is OK always in the case where we only have phase shifters 
+        % for the elements in the subarray (i.e. in the analog weighting)
+        
+        [~,index] = max(problem.alphaChannels(problem.IDUserAssigned,:));
+        wT_analog = exp(1i*angle(steervec(subpos/problem.lambda,...
+        [problem.phiChannels(problem.IDUserAssigned,index);...
+        problem.thetaChannels(problem.IDUserAssigned,index)])));
         % From the system perspective, the effect of the hybrid beamforming can
         % be represented by hybrid weights as shown below.
-    Taper = (Taper_value.*wT_analog');
-    %Taper = kron(Taper_value,wT_analog)';
-%     for n=1:num_subarrays_selected
-%         ant = problem.Partition{antenna_selection(n)};
-%         subpos = problem.possible_locations(:,ant);
-%         % This is OK always in the case where we only have phase shifters 
-%         % for the elements in the subarray (i.e. in the analog weighting)
-%         
-%         wT_analog = exp(1i*angle(steervec(subpos/problem.lambda,...
-%         [problem.phiUsers(problem.IDUserAssigned);...
-%         problem.thetaUsers(problem.IDUserAssigned)])));
-% %         wT_analog = steervec(subpos/problem.lambda,...
-% %         [pi/2-problem.phiUsers(problem.IDUserAssigned);...
-% %         pi/2-problem.thetaUsers(problem.IDUserAssigned)]);
-%         ant_elem = [ant_elem,ant];
-%         % From the system perspective, the effect of the hybrid beamforming can
-%         % be represented by hybrid weights as shown below.
-%         Taper = [Taper,kron(Taper_value(n),wT_analog)'];
-%     end
+        temp = kron(Taper_value(n),wT_analog)';
+        Taper(pointer:pointer+length(temp)-1) = temp;
+        pointer = pointer+length(temp);
+    end
     %ant_elem = sort(ant_elem);
        
     problem.ant_elem = numel(ant_elem); % refresh the actual number of antenna elements

@@ -8,6 +8,11 @@ function [sol_found,W,averageCap,totTime,usersAssigned] = o_best_or_remove_solve
     % iteration, if no solution found. In principle, we should try assigning
     % all
     usersToBeAssigned = 1:problem.nUsers;
+    
+    % change of orientation required for PhasedArrayTBx
+    problem.NzPatch = problem.NxPatch; 
+    % change of orientation required for PhasedArray TBx
+    problem.dz = problem.dx;
 
     % Boolean flag indicating if we have already found a feasible solution
     sol_found = false;

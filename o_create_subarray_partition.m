@@ -30,7 +30,6 @@ function [problem] = o_create_subarray_partition(problem)
         % partition contains the antenna arrangement into the different
         % subarrays, i.e. for each subarrays, you will find the set of antenna
         % indexes associated to it.
-        problem.Partition = cell(1,problem.N_Subarrays);
         if problem.NxSubarrays ~= problem.NySubarrays
             if  (problem.NxSubarrays <= problem.NySubarrays && ...
                     problem.NxPatch ~= problem.NxSubarrays) || ...
@@ -45,6 +44,7 @@ function [problem] = o_create_subarray_partition(problem)
             end
         end
         problem.N_Subarrays = max(problem.NxSubarrays,problem.NySubarrays);
+        problem.Partition = cell(1,problem.N_Subarrays);
         for x=0:(problem.NxPatch-1)
             for y=0:(problem.NyPatch-1)
                 problem.Partition{mod(x+y,problem.NySubarrays)+1} = ...

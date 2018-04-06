@@ -15,7 +15,8 @@ function [solutions] = o_test_MUMIMO_antenna_allocation(conf_file,problem_file)
     solutions = cell(length(meta_problem.nUsers),...
                     length(meta_problem.N_Antennas),...
                     length(meta_problem.maxnChannelPaths),...
-                    meta_problem.realizations); % Equally sized matrix
+                    meta_problem.realizations,...
+                    4); % Equally sized matrix, different geometries
     
     for r=1:meta_problem.realizations
         for u=1:length(meta_problem.nUsers)
@@ -53,14 +54,74 @@ function [solutions] = o_test_MUMIMO_antenna_allocation(conf_file,problem_file)
                     problems{u,a,c,r}.thetaChannels = thetaChannels;
                     problems{u,a,c,r}.phiChannels = phiChannels;
                     problems{u,a,c,r}.alphaChannels = alphaChannels;
+                    % arrayRestriction = 'None'
                     [sol_found,W,averageCap,totTime,usersAssigned] = ...
                         o_MUMIMO_antenna_allocation(conf,problems{u,a,c,r});
-                    solutions{u,a,c,r}.sol_found = sol_found;
-                    solutions{u,a,c,r}.W = W;
-                    solutions{u,a,c,r}.averageCap = averageCap;
-                    solutions{u,a,c,r}.totTime = totTime;
-                    solutions{u,a,c,r}.usersAssigned = ...
+                    solutions{u,a,c,r,1}.sol_found = sol_found;
+                    solutions{u,a,c,r,1}.W = W;
+                    solutions{u,a,c,r,1}.averageCap = averageCap;
+                    solutions{u,a,c,r,1}.totTime = totTime;
+                    solutions{u,a,c,r,1}.usersAssigned = ...
                         length(usersAssigned);
+                    if sol_found
+                        fprintf('Solution found!\n');
+                        fprintf('Av. cap = %f\n',averageCap);
+                        fprintf('Exec. time = %f\n',totTime);
+                        fprintf('Users assigned = %f\n\n',...
+                            length(usersAssigned));
+                    else
+                        fprintf('No solution found!\n');
+                    end
+%                     % arrayRestriction = 'Localized'
+%                     problems{u,a,c,r}.arrayRestriction = 'Localized';
+%                     [sol_found,W,averageCap,totTime,usersAssigned] = ...
+%                         o_MUMIMO_antenna_allocation(conf,problems{u,a,c,r});
+%                     solutions{u,a,c,r,2}.sol_found = sol_found;
+%                     solutions{u,a,c,r,2}.W = W;
+%                     solutions{u,a,c,r,2}.averageCap = averageCap;
+%                     solutions{u,a,c,r,2}.totTime = totTime;
+%                     solutions{u,a,c,r,2}.usersAssigned = ...
+%                         length(usersAssigned);
+%                     if sol_found
+%                         fprintf('Solution found!\n');
+%                         fprintf('Av. cap = %f\n',averageCap);
+%                         fprintf('Exec. time = %f\n',totTime);
+%                         fprintf('Users assigned = %f\n\n',...
+%                             length(usersAssigned));
+%                     else
+%                         fprintf('No solution found!\n');
+%                     end
+%                     % arrayRestriction = 'Interleaved'
+%                     problems{u,a,c,r}.arrayRestriction = 'Interleaved';
+%                     [sol_found,W,averageCap,totTime,usersAssigned] = ...
+%                         o_MUMIMO_antenna_allocation(conf,problems{u,a,c,r});
+%                     solutions{u,a,c,r,3}.sol_found = sol_found;
+%                     solutions{u,a,c,r,3}.W = W;
+%                     solutions{u,a,c,r,3}.averageCap = averageCap;
+%                     solutions{u,a,c,r,3}.totTime = totTime;
+%                     solutions{u,a,c,r,3}.usersAssigned = ...
+%                         length(usersAssigned);
+%                     if sol_found
+%                         fprintf('Solution found!\n');
+%                         fprintf('Av. cap = %f\n',averageCap);
+%                         fprintf('Exec. time = %f\n',totTime);
+%                         fprintf('Users assigned = %f\n\n',...
+%                             length(usersAssigned));
+%                     else
+%                         fprintf('No solution found!\n');
+%                     end
+%                     % arrayRestriction = 'DiagInterleaved'
+%                     problems{u,a,c,r}.NxSubarrays = meta_problem.nUsers(u);
+%                     problems{u,a,c,r}.NySubarrays = meta_problem.nUsers(u);
+%                     problems{u,a,c,r}.arrayRestriction = 'DiagInterleaved';
+%                     [sol_found,W,averageCap,totTime,usersAssigned] = ...
+%                         o_MUMIMO_antenna_allocation(conf,problems{u,a,c,r});
+%                     solutions{u,a,c,r,4}.sol_found = sol_found;
+%                     solutions{u,a,c,r,4}.W = W;
+%                     solutions{u,a,c,r,4}.averageCap = averageCap;
+%                     solutions{u,a,c,r,4}.totTime = totTime;
+%                     solutions{u,a,c,r,4}.usersAssigned = ...
+%                         length(usersAssigned);
                     if sol_found
                         fprintf('Solution found!\n');
                         fprintf('Av. cap = %f\n',averageCap);
