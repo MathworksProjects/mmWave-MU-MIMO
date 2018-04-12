@@ -4,11 +4,6 @@ lengthPSDU = 1000;
 nTx_row = 8;
 nTx_col = 8;
 
-%% Todos today
-% 1. Configure channel -- delay profile vs custom?
-% 3. Customized Radiator?
-% 4. multiple receiver elements?
-
 tic
 for SNR = 5
     for MCS = 1
