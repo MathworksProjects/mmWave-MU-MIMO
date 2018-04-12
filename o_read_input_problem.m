@@ -25,7 +25,10 @@ function [problem] = o_read_input_problem(problem_file)
                 struct('name','Noise','type','float');
                 struct('name','c','type','float');
                 struct('name','Bw','type','float');
-                struct('name','realizations','type','int')};
+                struct('name','realizations','type','int');
+                struct('name','trafficType','type','char');
+                struct('name','manuallyAssignApp','type','bool');
+                };
     problem = o_readDATInputData(problem_file,inputArgList);
     
     problem.NxPatch = floor(sqrt(problem.N_Antennas));

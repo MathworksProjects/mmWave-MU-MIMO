@@ -2,24 +2,31 @@
  * Author: santirodrigo
  * Creation Date: 29/03/2018 at 13:12:55
  *********************************************/
-
+% ---- SIMULATION ---- %
  realizations=5;
  N_Antennas=64; % Obtenemos la raíz cuadrada y a tomar...
  NxSubarrays=3;
  NySubarrays=3;
  NmaxArray=0.2:0.2:1;
- arrayRestriction='None';
- invdAntennas=2;
- freq=60e9;
- gamma=1;
- Noise = -104.5; % In dBs!!!
- % Light speed constant
- c = 299792458;
- Bw = 2e9;
  nUsers=4;
  mindUsers=5;
  maxdUsers=5;
  MaxThr=Inf;
  maxMinThr=2;
  minMinThr=0.01;
+% ---- COMMS CONFIG ---- %
+ freq=60e9;
+ gamma=1;
+ Noise = -104.5; % In dBs
+ Bw = 2e9;
+ c = 299792458;  % Light speed constant
+% ---- HEURISTICS ---- %
+ arrayRestriction='None';
+ invdAntennas=2;
+% ---- CHANNEL ---- %
  maxnChannelPaths=5;
+% ---- TRAFFIC ---- %
+ trafficType='dataSet';  % Traffic generation type: 'synthetic' (deterministic) or 'dataSet' (extracted from DataSet-UPC)
+ manuallyAssignApp=true;  % Manually distribute applications across users. Only one application
+ % appNameInteretList={'Youtube','Justin TV','Facebook','Web Browsing','Twitter'};  % Applications to be considered in the simulations
+ % appPresence=[0.3,0.3,0.05,0.3,0.05];  % Presence of the application types specified in 'appNameInteretList' across users 
