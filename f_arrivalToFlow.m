@@ -27,7 +27,7 @@
 function [flows] = f_arrivalToFlow(Tslot,traffic)
     Nusers = length(traffic);  % Total number of users. Consider 1 
                                % application per user.
-
+    
     % Prealocate memory for structure users. Initialize the two fields to
     % empty since the length for slots is variable for each user (number of
     % packets). i.e. users(U).slots{5} is a list containing the slots where
@@ -39,7 +39,7 @@ function [flows] = f_arrivalToFlow(Tslot,traffic)
     for id = 1:Nusers
         arrivals = traffic(id).arrivalTimes;
         deadlines = traffic(id).deadlines;
-        Npkt = traffic(id).numPkts;
+        Npkt = length(traffic(id).arrivalTimes);
         % Pre-allocate memory for a faster execution
         valor.slots = cell(Npkt,1);
         valor.TH = zeros(Npkt,1);
@@ -53,8 +53,8 @@ function [flows] = f_arrivalToFlow(Tslot,traffic)
                                 floor(deadlines(pkt)/Tslot));
             nSlots = length(valor.slots{pkt});
             % The requested Throughput is computed in bits per second (bps)
-            valor.TH(pkt) = traffic(id).Payload / (nSlots*Tslot*1e-3);
-            valor.remaining(pkt) = traffic(id).Payload;
+            valor.TH(pkt) = traffic(id).payload(pkt)*8 / (nSlots*Tslot*1e-3);  % Conversion from bytes to bits;
+            valor.remaining(pkt) = traffic(id).payload(pkt)*8;  % Conversion from bytes to bits;
             valor.deadlines(pkt) = ceil(traffic(id).deadlines(pkt)/Tslot);
             valor.failed(pkt) = 0;
             valor.success(pkt) = 0;

@@ -15,8 +15,9 @@ function [combIds,combTH] = f_candidateSet(t,flows,selFlow)
         end
     end
     % Sort Priorities and return candidate set
-    idxPrior = priority~=0;  % Index of the users with non 0 priority
+    idxPrior = priority~=0;      % Index of the users with non 0 priority
     prior = priority(idxPrior);  % Priorities
+    prior(isinf(prior)) = 1.1;   % Inf is substituted by value slightly bigger than 1.
     priorID = userID(idxPrior);  % User IDs with non-0 priorities. 
                                  % This is the candidate set to be
                                  % scheduled in the slot

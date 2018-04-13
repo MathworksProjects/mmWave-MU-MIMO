@@ -21,9 +21,14 @@
 %                    have a flow available at instant 't', the value is 0. 
 %                    The ID is used to map the requirements from variable 
 %                    'flow' further in the system.
-function [flows,selectedFlows] = f_distFlow(t,flows,Tslot,aggregate)
+function [flows,selectedFlows] = f_distFlow(t,flows,Tslot,aggregate,DEBUG)
     Nusers = length(flows);  % Total number of users
     selectedFlows = zeros(Nusers,1);
+    
+%     if DEBUG
+%         ha = tight_subplot(Nusers,1,[.05 .03],[.05 .01],[.1 .2]);
+%     end
+    
     for id = 1:Nusers
         numPkt = length(flows(id).slots);  % Maximum number of packets to iterate over
         for pkt = 1:numPkt
@@ -81,5 +86,6 @@ function [flows,selectedFlows] = f_distFlow(t,flows,Tslot,aggregate)
                 break;
             end
         end
+        
     end
 end

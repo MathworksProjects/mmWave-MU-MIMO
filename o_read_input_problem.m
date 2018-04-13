@@ -28,6 +28,8 @@ function [problem] = o_read_input_problem(problem_file)
                 struct('name','realizations','type','int');
                 struct('name','trafficType','type','char');
                 struct('name','manuallyAssignApp','type','bool');
+                struct('name','FLAGagg','type','bool');
+                struct('name','DEBUG','type','bool');
                 };
     problem = o_readDATInputData(problem_file,inputArgList);
     

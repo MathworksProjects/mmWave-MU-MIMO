@@ -17,6 +17,7 @@
 %% ===================================================================== %%
 %% Clear workspace
 clear; clc; close all;
+addpath('utilities','-end');  % Add utilities folder at the end of search path
 %% Load configuration
 problem = o_read_input_problem('data/metaproblem_test.dat');
 conf = o_read_config('data/config_test.dat');
@@ -32,12 +33,16 @@ Tsym  = 3e2;  % Total simulation time in milliseconds
                     o_generate_channels(conf,problem.nUsers,...
                     problem.maxnChannelPaths);
 %% Handle traffic
-[traffic] = f_genDetTraffic(problem.class);
+[traffic,maxTime] = f_genDetTraffic(problem.class,problem.trafficType,problem.DEBUG);
+if maxTime~=0
+    Tsym = maxTime;  % Adequate Simulation time to the last packet arrival
+end
 % Convert traffic (arrivals) into individual Flow for each user. Flows may
 % overlap in time as the inter-arrival time may be less than Tslot
 [flows] = f_arrivalToFlow(Tslot,traffic);
 % Copy initial flows for plotting purposes (to see progression of sim)
-baseFlows = flows;
+baseFlows = flows;  % For printing purposes at the end of execution
+lastSelFlow = zeros(problem.nUsers,1);  % For printing purposes at the end of execution
 %% Main simulator
 % Represent the time (in slot ID) throughout the execution. It is the even
 % in our DES
@@ -49,7 +54,7 @@ while(t<Tsym)
     % Distribute Flow accross users. Either we aggregate or disaggregate
     % overlapping flows in the current slot. Select the current flow for
     % each user
-    [flows,selFlow] = f_distFlow(t,flows,Tslot,problem.FLAGagg);
+    [flows,selFlow] = f_distFlow(t,flows,Tslot,problem.FLAGagg,problem.DEBUG);
     % Compute priorities. As of now, priorities are computed as the inverse
     % of the time_to_deadline (for simplicity)
     if any(selFlow)~=0
@@ -60,31 +65,36 @@ while(t<Tsym)
             candSet = combIds(k,:);
             candSet = candSet(candSet~=0);
             candTH = combTH(k,:);
-            candTH = candTH(candTH~=0);
+%             candTH = candTH(candTH~=0);
             problem.MinThr = candTH/problem.Bw;
             problem.MaxThr = problem.MinThr*Inf;
             % Call Heuristic method
-%             [estSet,estTH] = f_heuristicsDummy(candSet,candTH);
-            [sol_found,W,array_Handle,Cap] = f_heuristics(problem,conf,candSet);
-            estTH = Cap*problem.Bw;
+            [estSet,estTH] = f_heuristicsDummy(candSet,candTH);
+%             [sol_found,W,array_Handle,Cap] = f_heuristics(problem,conf,candSet);
+%             estTH = Cap*problem.Bw;
             % Decide whether to take the tentative TH or give it a
             % another round (This is Policy PLk)
             threshold = 0.7;  % Represents the ratio between the demanded 
                               % and the tentative achievable TH
             if ~any(estTH./candTH)<threshold
-                % Evaluate PER
-                TXbits = estTH.*Tslot.*1e-3;
+                % Append bits transmitted in slot
+                TXbits = zeros(1,problem.nUsers);
+                TXbits(1,estSet) = estTH.*Tslot.*1e-3;
                 TXbitsTot = [TXbitsTot ; TXbits];               %#ok<AGROW>
-                THTot = [THTot ; estTH];                        %#ok<AGROW>
+                % Append throughput achieved in slot
+                THiter = zeros(1,problem.nUsers);
+                THiter(estSet) = estTH;
+                THTot = [THTot ; THiter];                       %#ok<AGROW>
+                % Evaluate PER
                 finalSet = f_PERtentative(candSet,[],[],[]);
-                if ~isempty(finalSet); finalTH = estTH(candSet(finalSet));
+                if ~isempty(finalSet); finalTH = THiter(finalSet);
                 else;                  finalTH = [];
                 end
                 TXbitsTot(end,setdiff(candSet,finalSet)) = 0;
                 THTot(end,setdiff(candSet,finalSet)) = 0;
                 % Update remaining bits to be sent upon tx success
                 flows = f_updateFlow(t,flows,selFlow,finalSet,finalTH,candSet,Tslot,problem.DEBUG);
-                lastSelFlow = selFlow;
+                lastSelFlow(selFlow~=0) = selFlow(selFlow~=0);
                 % Exit the for loop - we have served in this time slot,
                 % there's no way back even though some pkts didn't make it
                 break;
@@ -108,23 +118,42 @@ lastSlotSim = t - 1;
 
 %% PLOTTING
 for id = 1:problem.nUsers
-    figure(1); subplot(problem.nUsers,1,id); hold on;
+    figure(1); subplot(problem.nUsers,2,2*id - 1); hold on;
     bar((1:1:Tsym-1),TXbitsTot(:,id),'LineWidth',2,'EdgeColor','none','FaceColor','red');
-    for fl = 1:lastSelFlow
+    bitsToTxTot = zeros(1,max(baseFlows(id).slots{lastSelFlow(id)}));
+    for fl = 1:lastSelFlow(id)
         slots = baseFlows(id).slots{fl};
         reqTXbits = baseFlows(id).TH(fl).*Tslot.*1e-3.*ones(1,length(slots));
-        bar(slots,reqTXbits,'LineWidth',3,'EdgeColor','none','FaceColor','blue','FaceAlpha',0.4);
+        bitsToTxTot(slots) = bitsToTxTot(slots) + reqTXbits;
     end
+    lastSlot = max(slots);
+    bar((1:1:lastSlot),bitsToTxTot,'LineWidth',3,'EdgeColor','none','FaceColor','blue','FaceAlpha',0.4);
 %     title('Number of Bits transmitted','FontSize',12);
     xlabel('Slot index','FontSize',12);
-    ylabel('Bits transmitted','FontSize',12);
+    ylabel('Bits TX','FontSize',12);
     lg = legend('TX Bits over the channel','Baseline required Bits to be TX');
+    set(lg,'FontSize',12,'Location','Northeast');
+    grid minor;
+    
+    figure(1); subplot(problem.nUsers,2,2*id); hold on;
+    bitsToTxTot = zeros(1,max(baseFlows(id).slots{lastSelFlow(id)}));
+    for fl = 1:lastSelFlow(id)
+        slots = baseFlows(id).slots{fl};
+        reqTXbits = baseFlows(id).TH(fl).*Tslot.*1e-3.*ones(1,length(slots));
+        bitsToTxTot(slots) = bitsToTxTot(slots) + reqTXbits;
+        bar(slots ,bitsToTxTot(slots),'LineWidth',3,'EdgeColor','none','FaceAlpha',0.8);
+    end
+%     lastSlot = max(slots);
+%     bar((1:1:lastSlot),reqTXbits,'LineWidth',3,'EdgeColor','none','FaceAlpha',0.1);
+    xlabel('Slot index','FontSize',12);
+    ylabel('Bits to be TX','FontSize',12);
+    lg = legend('Agg. bits flow 1','Agg. bits flow 1+2','Agg. bits flow 1+2+3');
     set(lg,'FontSize',12,'Location','Northeast');
     grid minor;
 
     figure(2); subplot(problem.nUsers,1,id); hold on;
     bar((1:1:Tsym-1),THTot(:,id).*1e-6,'LineWidth',3,'EdgeColor','none','FaceColor','red');
-    for fl = 1:lastSelFlow
+    for fl = 1:lastSelFlow(id)
         slots = baseFlows(id).slots{fl};
         reqTH = baseFlows(id).TH(fl).*1e-6.*ones(1,length(slots));
         bar(slots,reqTH,'LineWidth',2,'EdgeColor','none','FaceColor','blue','FaceAlpha',0.4);
@@ -140,7 +169,6 @@ for id = 1:problem.nUsers
 end
 
 %% TODO LIST
-% TODO: Implement a more realistic traffic model (Apply Stratis' advice)
 % TODO: Come up with a closed for of the priority calculation, more complex
 %       than just the inverse of the time_to_deadline.
 % TODO: Implement the non_aggregate method inside f_distFlow()

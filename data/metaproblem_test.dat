@@ -8,12 +8,13 @@
  NxSubarrays=3;
  NySubarrays=3;
  NmaxArray=0.2:0.2:1;
- nUsers=4;
+ nUsers=2;
  mindUsers=5;
  maxdUsers=5;
  MaxThr=Inf;
  maxMinThr=2;
  minMinThr=0.01;
+ DEBUG = true;    % Enable Debugger and logs for scheduling part
 % ---- COMMS CONFIG ---- %
  freq=60e9;
  gamma=1;
@@ -26,7 +27,8 @@
 % ---- CHANNEL ---- %
  maxnChannelPaths=5;
 % ---- TRAFFIC ---- %
- trafficType='dataSet';  % Traffic generation type: 'synthetic' (deterministic) or 'dataSet' (extracted from DataSet-UPC)
+ FLAGagg = true;  % Aggregate traffic
+ trafficType='synthetic';  % 'synthetic' (deterministic) or 'dataSet' (extracted from DataSet-UPC)
  manuallyAssignApp=true;  % Manually distribute applications across users. Only one application
  % appNameInteretList={'Youtube','Justin TV','Facebook','Web Browsing','Twitter'};  % Applications to be considered in the simulations
- % appPresence=[0.3,0.3,0.05,0.3,0.05];  % Presence of the application types specified in 'appNameInteretList' across users 
+ % appPresence=[0.3,0.3,0.05,0.3,0.05];  % Presence of the application types specified in 'appNameInteretList' across users
