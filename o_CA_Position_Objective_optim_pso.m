@@ -2,7 +2,7 @@ function [x,fval,exitflag,output] = o_CA_Position_Objective_optim_pso(x0,conf,pr
 %% This is an auto generated MATLAB file from Optimization Tool.
 % Copyright 2017  The MathWorks, Inc.
 %% Add path
-addpath('../constrainedpso');
+addpath('./constrainedpso');
 %% Start with the default options
 if conf.verbosity > 1
     options = psooptimset('InitialPopulation',InitialPopulation_Data,...
