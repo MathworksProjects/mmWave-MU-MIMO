@@ -32,7 +32,8 @@
 %    Cap:     [1 x N] vector containing the capacity (bits/s/Hz) 
 %             estimation per user for the assignment obtained as a result
 %             of the optimization
-
+%             If conf.MinThrIsSINR = true, this is no longer a capacity but
+%             a SINR in dBs
 function [sol_found,W,handle_ConformalArray,Cap] = f_heuristics(problem,conf,usersToBeAssigned)
     % We will paralelize the solution computations: we need (if not already
     % created) a parallelization processes pool
@@ -137,9 +138,17 @@ function [sol_found,W,handle_ConformalArray,Cap] = f_heuristics(problem,conf,use
                 fprintf('Solved!\n')
             end
         end
-
-        [aveCap, Cap] = o_compute_averageCap_maxminthr(PRx,I,problem.Noise,...
+        if conf.MinThrIsSINR
+            TempMinCapacity = log2(problem.MinThr+1);
+            TempMaxCapacity = log2(problem.MaxThr+1);
+            [aveCap, Cap] = o_compute_averageCap_maxminthr(PRx,I,problem.Noise,...
+                TempMaxCapacity,TempMinCapacity,usersToBeAssigned);
+            aveCap = 2^aveCap - 1;
+            Cap = 2.^Cap - 1;
+        else
+            [aveCap, Cap] = o_compute_averageCap_maxminthr(PRx,I,problem.Noise,...
             problem.MaxThr,problem.MinThr,usersToBeAssigned);
+        end
         if aveCap ~= -Inf
             sol_found = true;
             if conf.verbosity >= 1

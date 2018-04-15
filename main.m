@@ -67,11 +67,18 @@ while(t<Tsym)
             candTH = combTH(k,:);
 %             candTH = candTH(candTH~=0);
             problem.MinThr = candTH/problem.Bw;
+            if conf.MinThrIsSNR
+                problem.MinThr = 2.^problem.MinThr - 1;
+            end
             problem.MaxThr = problem.MinThr*Inf;
             % Call Heuristic method
-            [estSet,estTH] = f_heuristicsDummy(candSet,candTH);
-%             [sol_found,W,array_Handle,Cap] = f_heuristics(problem,conf,candSet);
-%             estTH = Cap*problem.Bw;
+            %[estSet,estTH] = f_heuristicsDummy(candSet,candTH);
+            [sol_found,W,array_Handle,Cap] = f_heuristics(problem,conf,candSet);
+            if conf.MinThrIsSNR
+                estTH = log2(Cap+1)*problem.Bw;
+            else
+                estTH = Cap*problem.Bw;
+            end
             % Decide whether to take the tentative TH or give it a
             % another round (This is Policy PLk)
             threshold = 0.7;  % Represents the ratio between the demanded 
