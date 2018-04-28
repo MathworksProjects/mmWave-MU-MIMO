@@ -5,7 +5,7 @@ function [conf] = o_read_config(config_file)
         % Genetic -> 'GA'; PatternSearch -> 'PS'; Particle Swarm Optimization -> 'PSO'
         conf.algorithm = 'GA';
         % Sets whether f_heuristics will work with SINR or capacities
-        conf.MinThrIsSNR=true;
+        conf.MinObjFIsSNR=true;
         % Sets whether we consider multi-path channel or LOS channel. In the first
         % case, we need the information of the paths in the input file
         conf.multiPath = true;
@@ -68,7 +68,7 @@ function [conf] = o_read_config(config_file)
         % Arguments that will be read by the readDATInputData function
         % We read first all those that are not related to the number of users
         inputArgList = { struct('name','algorithm','type','char');
-                    struct('name','MinThrIsSNR','type','bool');
+                    struct('name','MinObjFIsSNR','type','bool');
                     struct('name','multiPath','type','bool');
                     struct('name','verbosity','type','int');
                     struct('name','IncludeBeamPattern','type','bool');

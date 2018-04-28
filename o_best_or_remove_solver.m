@@ -22,7 +22,7 @@ function [sol_found,W,averageCap,totTime,usersAssigned] = o_best_or_remove_solve
         % For the next iteration (we will only run it if no sol_found) we
         % remove the most consuming user
         if ~sol_found
-            [~, maxIndex] = max(problem.MinThr(usersToBeAssigned));
+            [~, maxIndex] = max(problem.MinObjF(usersToBeAssigned));
             usersToBeAssigned(maxIndex) = [];
             if isempty(usersToBeAssigned)
                 fprintf('No feasible solution found to serve any user!\n');

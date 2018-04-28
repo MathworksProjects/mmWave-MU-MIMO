@@ -1,12 +1,12 @@
-function [MaxThr,MinThr] = o_generate_maxmin_throughput(nUsers,...
-            maxMinThr,minMinThr,cteMaxThr)
+function [MaxObjF,MinObjF] = o_generate_maxmin_throughput(nUsers,...
+            maxMinObjF,minMinObjF,cteMaxObjF)
 %UNTITLED6 Summary of this function goes here
 %   Detailed explanation goes here
-    MaxThr = repmat(cteMaxThr,1,nUsers);
+    MaxObjF = repmat(cteMaxObjF,1,nUsers);
     pd = makedist('Normal');
-    pd.sigma = (maxMinThr-minMinThr)/4;
-    pd.mu = (maxMinThr-minMinThr)/2 + minMinThr;
-    t = truncate(pd,minMinThr,maxMinThr);
-    MinThr = random(t,1,nUsers);
+    pd.sigma = (maxMinObjF-minMinObjF)/4;
+    pd.mu = (maxMinObjF-minMinObjF)/2 + minMinObjF;
+    t = truncate(pd,minMinObjF,maxMinObjF);
+    MinObjF = random(t,1,nUsers);
 end
 

@@ -11,9 +11,9 @@
  nUsers=2;
  mindUsers=5;
  maxdUsers=5;
- MaxThr=Inf;
- maxMinThr=2;
- minMinThr=0.01;
+ MaxObjF=Inf;
+ maxMinObjF=2;
+ minMinObjF=0.01;
  DEBUG = true;    % Enable Debugger and logs for scheduling part
 % ---- COMMS CONFIG ---- %
  freq=60e9;
@@ -24,10 +24,11 @@
 % ---- HEURISTICS ---- %
  arrayRestriction='None';
  invdAntennas=2;
+ heuristicsDummy=true;  % True for debugging with dummy function. False to call the Heuristic method.
 % ---- CHANNEL ---- %
  maxnChannelPaths=5;
 % ---- TRAFFIC ---- %
- FLAGagg = true;  % Aggregate traffic
+ FLAGagg=true;  % Aggregate traffic
  trafficType='synthetic';  % 'synthetic' (deterministic) or 'dataSet' (extracted from DataSet-UPC)
  manuallyAssignApp=true;  % Manually distribute applications across users. Only one application
  % appNameInteretList={'Youtube','Justin TV','Facebook','Web Browsing','Twitter'};  % Applications to be considered in the simulations

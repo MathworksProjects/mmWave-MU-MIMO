@@ -1,4 +1,4 @@
-function [Cap_tot] = o_compute_avCap_maxminthr_LAC(selection,PRx,I,Noise,MaxThr,MinThr)
+function [Cap_tot] = o_compute_avCap_maxminthr_LAC(selection,PRx,I,Noise,MaxObjF,MinObjF)
 %UNTITLED2 Summary of this function goes here
 %   Detailed explanation goes here
     interf = zeros(1,length(selection));
@@ -15,10 +15,10 @@ function [Cap_tot] = o_compute_avCap_maxminthr_LAC(selection,PRx,I,Noise,MaxThr,
     end
     SNR = PRx_sel./(interf+10^(Noise/10)); % In watts for the capacity computation!!
     Cap = log2(1+SNR);
-    % If there is any Cap below the MinThr, or above the MaxThr (we
-    % consider MaxThr and MinThr to be in bits/Hz...), the total Cap is
+    % If there is any Cap below the MinObjF, or above the MaxObjF (we
+    % consider MaxObjF and MinObjF to be in bits/Hz...), the total Cap is
     % capped to -Inf (infeasible)
-    if any((Cap-MinThr)<0) || any((MaxThr-Cap)<0)
+    if any((Cap-MinObjF)<0) || any((MaxObjF-Cap)<0)
         Cap_tot = -Inf;
     else
         Cap_tot = sum(Cap)/length(selection);

@@ -1,8 +1,8 @@
-function [aveCap, cap] = o_compute_averageCap_maxminthr(PRx,I,Noise,MaxThr,MinThr,...
+function [aveCap, cap] = o_compute_averageCap_maxminthr(PRx,I,Noise,MaxObjF,MinObjF,...
     usersToBeAssigned)
 %UNTITLED2 Summary of this function goes here
 %   Detailed explanation goes here
-    nUsers = length(MinThr);
+    nUsers = length(MinObjF);
     interf = zeros(1,nUsers); % linear!
     PRx_sel = zeros(1,nUsers); % linear!
     for u2=1:nUsers
@@ -15,11 +15,11 @@ function [aveCap, cap] = o_compute_averageCap_maxminthr(PRx,I,Noise,MaxThr,MinTh
     end
     SNR = PRx_sel./(interf+10^(Noise/10)); % In watts for the capacity computation!!
     cap = log2(1+SNR);
-    % If there is any Cap below the MinThr, or above the MaxThr (we
-    % consider MaxThr and MinThr to be in bits/Hz...), the total Cap is
+    % If there is any Cap below the MinObjF, or above the MaxObjF (we
+    % consider MaxObjF and MinObjF to be in bits/Hz...), the total Cap is
     % capped to -Inf (infeasible)
-    if any((cap(usersToBeAssigned)-MinThr(usersToBeAssigned))<0) || ...
-            any((MaxThr(usersToBeAssigned)-cap(usersToBeAssigned))<0)
+    if any((cap(usersToBeAssigned)-MinObjF(usersToBeAssigned))<0) || ...
+            any((MaxObjF(usersToBeAssigned)-cap(usersToBeAssigned))<0)
         aveCap = -Inf;
     else
         aveCap = sum(cap(usersToBeAssigned))/length(usersToBeAssigned);

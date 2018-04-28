@@ -22,9 +22,9 @@ function [solutions] = o_test_MUMIMO_antenna_allocation(conf_file,problem_file)
         for u=1:length(meta_problem.nUsers)
             [thetaPos, phiPos, dPos] = o_generate_positions(conf,meta_problem.nUsers(u),...
                 meta_problem.maxdUsers,meta_problem.mindUsers);
-            [MaxThr,MinThr] = o_generate_maxmin_throughput(meta_problem.nUsers(u),...
-                meta_problem.maxMinThr,meta_problem.minMinThr,...
-                meta_problem.MaxThr);
+            [MaxObjF,MinObjF] = o_generate_maxmin_throughput(meta_problem.nUsers(u),...
+                meta_problem.maxMinObjF,meta_problem.minMinObjF,...
+                meta_problem.MaxObjF);
             for c=1:length(meta_problem.maxnChannelPaths)
                 [thetaChannels, phiChannels, alphaChannels] = ...
                     o_generate_channels(conf,meta_problem.nUsers(u),...
@@ -49,8 +49,8 @@ function [solutions] = o_test_MUMIMO_antenna_allocation(conf_file,problem_file)
                     problems{u,a,c,r}.thetaUsers = thetaPos;
                     problems{u,a,c,r}.phiUsers = phiPos;
                     problems{u,a,c,r}.dUsers = dPos;
-                    problems{u,a,c,r}.MinThr = MinThr;
-                    problems{u,a,c,r}.MaxThr = MaxThr;
+                    problems{u,a,c,r}.MinObjF = MinObjF;
+                    problems{u,a,c,r}.MaxObjF = MaxObjF;
                     problems{u,a,c,r}.thetaChannels = thetaChannels;
                     problems{u,a,c,r}.phiChannels = phiChannels;
                     problems{u,a,c,r}.alphaChannels = alphaChannels;

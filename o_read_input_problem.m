@@ -19,9 +19,9 @@ function [problem] = o_read_input_problem(problem_file)
                 struct('name','maxnChannelPaths','type','interval');
                 struct('name','mindUsers','type','float');
                 struct('name','maxdUsers','type','float');
-                struct('name','MaxThr','type','float');
-                struct('name','maxMinThr','type','float');
-                struct('name','minMinThr','type','float');
+                struct('name','MaxObjF','type','float');
+                struct('name','maxMinObjF','type','float');
+                struct('name','minMinObjF','type','float');
                 struct('name','Noise','type','float');
                 struct('name','c','type','float');
                 struct('name','Bw','type','float');
@@ -30,6 +30,7 @@ function [problem] = o_read_input_problem(problem_file)
                 struct('name','manuallyAssignApp','type','bool');
                 struct('name','FLAGagg','type','bool');
                 struct('name','DEBUG','type','bool');
+                struct('name','heuristicsDummy','type','bool');
                 };
     problem = o_readDATInputData(problem_file,inputArgList);
     

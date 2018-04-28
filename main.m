@@ -43,7 +43,7 @@ end
 % Copy initial flows for plotting purposes (to see progression of sim)
 baseFlows = flows;  % For printing purposes at the end of execution
 lastSelFlow = zeros(problem.nUsers,1);  % For printing purposes at the end of execution
-%% Main simulator
+%% Main simulator - MAIN SECTION
 % Represent the time (in slot ID) throughout the execution. It is the even
 % in our DES
 t = 1;
@@ -66,31 +66,60 @@ while(t<Tsym)
             candSet = candSet(candSet~=0);
             candTH = combTH(k,:);
 %             candTH = candTH(candTH~=0);
-            problem.MinThr = candTH/problem.Bw;
-            if conf.MinThrIsSNR
-                problem.MinThr = 2.^problem.MinThr - 1;
-            end
-            problem.MaxThr = problem.MinThr*Inf;
-            % Call Heuristic method
-            %[estSet,estTH] = f_heuristicsDummy(candSet,candTH);
-            [sol_found,W,array_Handle,Cap] = f_heuristics(problem,conf,candSet);
-            if conf.MinThrIsSNR
-                estTH = log2(Cap+1)*problem.Bw;
+            %% SECTION HEURISTICS METHOD
+            if problem.heuristicsDummy
+                [estSet,estTH] = f_heuristicsDummy(candSet,candTH);
+                SNRList = 2.^(estTH/problem.Bw) - 1;
             else
-                estTH = Cap*problem.Bw;
+                % Heuristics - Preprocessing
+                problem.MaxObjF = Inf(1,length(candSet));
+                problem.MinObjF = candTH/problem.Bw;
+                if conf.MinObjFIsSNR
+                    problem.MinObjF = 2.^problem.MinObjF - 1;
+                end
+                % Heuristics call
+                [sol_found,W,array_Handle,estObj] = f_heuristics(problem,conf,candSet);
+                estSet = candSet;  % Heuristics always return the achieved solution for both
+                % Heuristics - Post Processing
+                if conf.MinObjFIsSNR
+                    estTH = log2(estObj+1)*problem.Bw;
+                    SNRList = estObj;
+                else
+                    estTH = estObj*problem.Bw;
+                    SNRList = 2.^(estTH/problem.Bw) - 1;
+                end
             end
+            %% SECTION POST HEURISTICS
+            % Select MCS for estimated SNR
+            [MCS,estPER] = f_selectMCS(candSet,SNRList,problem.targetPER,problem.MCSPER,problem.DEBUG);
             % Decide whether to take the tentative TH or give it a
             % another round (This is Policy PLk)
             threshold = 0.7;  % Represents the ratio between the demanded 
                               % and the tentative achievable TH
             if ~any(estTH./candTH)<threshold
-                % Append bits transmitted in slot
-                TXbits = zeros(1,problem.nUsers);
-                TXbits(1,estSet) = estTH.*Tslot.*1e-3;
+                % Compute bits that can be transmitted and map it with the 
+                % bits remaining to be transmitted
+                estTXbits = zeros(1,problem.nUsers);  % Possibility - bits
+                TXbits = zeros(1,problem.nUsers);  % Reality - bits
+                THiter = zeros(1,problem.nUsers);  % Reality - throughput
+                for id = candSet
+                    myID = id==candSet;
+                    estTXbits(myID) = estTH(myID).*Tslot.*1e-3;
+                    if estTXbits(myID) > flows(myID).remaining(selFlow(myID))
+                        % Bits transmitted in slot
+                        TXbits(1,myID) = flows(myID).remaining(selFlow(myID));
+                        % Throughput achieved in slot
+                        THiter(myID) = TXbits(1,myID)./(Tslot.*1e-3);
+                    else
+                        % Bits transmitted in slot
+                        TXbits(1,myID) = estTXbits(myID);
+                        % Throughput achieved in slot
+                        THiter(myID) = estTH(myID);
+                    end
+                end
+                % Append bits transmitted and throughput achieved in slot. 
                 TXbitsTot = [TXbitsTot ; TXbits];               %#ok<AGROW>
                 % Append throughput achieved in slot
-                THiter = zeros(1,problem.nUsers);
-                THiter(estSet) = estTH;
                 THTot = [THTot ; THiter];                       %#ok<AGROW>
                 % Evaluate PER
                 finalSet = f_PERtentative(candSet,[],[],[]);

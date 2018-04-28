@@ -2,6 +2,7 @@ function problem = f_configuration(problem)
     % To be included in data/metaproblem_test.dat once fixed o_read_in*.m
     problem.appPresence=[0.3,0.3,0.05,0.3,0.05];  % Presence of the application types specified in 'appNameInteretList' across users 
     problem.appNameInteretList={'Youtube','Justin TV','Facebook','Web Browsing','Twitter'};  % Applications to be considered in the simulations
+    problem.targetPER = 1e-2;  % The target PER specified linearly (i.e. 1e-2 is PER of 1%)
     problem.numPkts = 100;
 
     % Define Application types and parametrize them - 5G applications Times
@@ -93,4 +94,8 @@ function problem = f_configuration(problem)
     else
         error('ERROR - Traffic type not valid. Please introduce "synthetic" or "dataSet"\n');
     end
+    
+    % Load the PER-MCS table in the problem struct
+    load('data/MCSPERTable.mat','mcsTable');
+    problem.MCSPER = mcsTable;
 end

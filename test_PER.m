@@ -1,8 +1,8 @@
 % clear; close all;
 
 lengthPSDU = 1000;
-nTx_row = 8;
-nTx_col = 8;
+nTx_row = 2;
+nTx_col = 2;
 
 tic
 for SNR = 5

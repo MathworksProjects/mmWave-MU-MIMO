@@ -1,4 +1,4 @@
-function [Set_ret,obj_vals_ret] = o_add_children_comb(comb,maxN,PRx,I,Noise,MaxThr,MinThr,Set,objs_val,orderedIndices,ObjFunc,avoid_rep)
+function [Set_ret,obj_vals_ret] = o_add_children_comb(comb,maxN,PRx,I,Noise,MaxObjF,MinObjF,Set,objs_val,orderedIndices,ObjFunc,avoid_rep)
 %UNTITLED6 Summary of this function goes here
 %   Detailed explanation goes heres
     Set_ret = Set;
@@ -11,7 +11,7 @@ function [Set_ret,obj_vals_ret] = o_add_children_comb(comb,maxN,PRx,I,Noise,MaxT
         tmp = o_sumOneToCombPos(comb,maxNarray,n);
         if ~isempty(tmp)
             selection = o_compute_selection(tmp,orderedIndices);
-            obj_vals_ret = [obj_vals_ret;eval([ObjFunc,'(selection,PRx,I,Noise,MaxThr,MinThr)'])];
+            obj_vals_ret = [obj_vals_ret;eval([ObjFunc,'(selection,PRx,I,Noise,MaxObjF,MinObjF)'])];
             Set_ret = [Set_ret,tmp]; % Column vector!!
         end
     end

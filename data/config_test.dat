@@ -1,7 +1,7 @@
 % Sets whether we will introduce the angles in radians or degrees 
  anglesInRadians=false;
 % Sets whether f_heuristics will work with SINR or capacities
- MinThrIsSNR=true;
+ MinObjFIsSNR=true;
 % Weights used in the optimization function for each user alloc. subproblem
  Fweights=[0.4 0.3];
 % Algorithm used for MATLAB optimization
