@@ -2,6 +2,8 @@
  anglesInRadians=false;
 % Sets whether f_heuristics will work with SINR or capacities
  MinObjFIsSNR=true;
+% Sets whether we use a real 5G 3GPP TR 138 901 complaint channel or a basic one
+ Use5GChannel=true;
 % Weights used in the optimization function for each user alloc. subproblem
  Fweights=[0.4 0.3];
 % Algorithm used for MATLAB optimization

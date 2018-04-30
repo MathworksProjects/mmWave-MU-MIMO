@@ -24,9 +24,9 @@
 % ---- HEURISTICS ---- %
  arrayRestriction='None';
  invdAntennas=2;
- heuristicsDummy=true;  % True for debugging with dummy function. False to call the Heuristic method.
+ heuristicsDummy=false;  % True for debugging with dummy function. False to call the Heuristic method.
 % ---- CHANNEL ---- %
- maxnChannelPaths=5;
+ maxnChannelPaths=6;
 % ---- TRAFFIC ---- %
  FLAGagg=true;  % Aggregate traffic
  trafficType='synthetic';  % 'synthetic' (deterministic) or 'dataSet' (extracted from DataSet-UPC)

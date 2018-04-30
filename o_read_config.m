@@ -69,6 +69,7 @@ function [conf] = o_read_config(config_file)
         % We read first all those that are not related to the number of users
         inputArgList = { struct('name','algorithm','type','char');
                     struct('name','MinObjFIsSNR','type','bool');
+                    struct('name','Use5GChannel','type','bool');
                     struct('name','multiPath','type','bool');
                     struct('name','verbosity','type','int');
                     struct('name','IncludeBeamPattern','type','bool');
