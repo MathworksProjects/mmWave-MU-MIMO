@@ -89,7 +89,7 @@ function [sol_found,W,handle_ConformalArray,Cap] = f_heuristics(problem,conf,use
         end
         [~,orderedIndices] = sort(problem.MinObjF,'descend');
         for u = orderedIndices
-            problem.IDUserAssigned = u;      
+            problem.IDUserAssigned = usersToBeAssigned(u);      
             if conf.verbosity >= 1
                 fprintf('------------------------------------\n');
                 fprintf('Solving sub-problem for the user %d:\n',...
@@ -103,33 +103,24 @@ function [sol_found,W,handle_ConformalArray,Cap] = f_heuristics(problem,conf,use
             problem.Partition = o_delete_subarrays_from_partition(problem.Partition,already_assigned_elem);
             problem.N_Subarrays = initial_N_Subarrays - ...
                 numel(already_assigned_elem);
-            W_temp = zeros(1,problem.NxPatch*problem.NyPatch);
-            PRx_temp = -Inf;
-            I_temp = ones(1,problem.nUsers)*-Inf;
-            sol_temp = ones(1,2*problem.NxPatch*problem.NyPatch)*-Inf;
-            % if the user is not to be assigned, no need to do anything else
-            if ismember(u,usersToBeAssigned)
-                % Actually solve the user's assignment (observe that Nmax index
-                % is 1)
-                if conf.randomSolution
-                    [sol_temp,W_temp,PRx_temp,I_temp] = ...
-                        o_solveSingleNmaxUserInstance(conf,problem,...
-                        problem.NmaxArray(problem.IDUserAssigned),...
-                        'random');
-                else
-                    [sol_temp,W_temp,PRx_temp,I_temp] = ...
-                        o_solveSingleNmaxUserInstance(conf,problem,...
-                        problem.NmaxArray(problem.IDUserAssigned));
-                end
-                % Update the already assigned antennas
-                n_selected = length(sol_temp)/3;
-                subarrays_selected = ...
-                    o_antennas_to_subarrays(sol_temp(1:n_selected),problem.Partition);
-                assignments_status = padarray([already_assigned_elem,...
-                    subarrays_selected], [0 initial_N_Subarrays - ...
-                    length(subarrays_selected) - ...
-                    nnz(assignments_status)],'post');
+            if conf.randomSolution
+                [sol_temp,W_temp,PRx_temp,I_temp] = ...
+                    o_solveSingleNmaxUserInstance(conf,problem,...
+                    problem.NmaxArray(problem.IDUserAssigned),...
+                    'random');
+            else
+                [sol_temp,W_temp,PRx_temp,I_temp] = ...
+                    o_solveSingleNmaxUserInstance(conf,problem,...
+                    problem.NmaxArray(problem.IDUserAssigned));
             end
+            % Update the already assigned antennas
+            n_selected = length(sol_temp)/3;
+            subarrays_selected = ...
+                o_antennas_to_subarrays(sol_temp(1:n_selected),problem.Partition);
+            assignments_status = padarray([already_assigned_elem,...
+                subarrays_selected], [0 initial_N_Subarrays - ...
+                length(subarrays_selected) - ...
+                nnz(assignments_status)],'post');
             sol{u} = sol_temp;
             W(u,:) = W_temp;
             PRx(u) = PRx_temp;
@@ -142,12 +133,12 @@ function [sol_found,W,handle_ConformalArray,Cap] = f_heuristics(problem,conf,use
             TempMinCapacity = log2(problem.MinObjF+1);
             TempMaxCapacity = log2(problem.MaxObjF+1);
             [aveCap, Cap] = o_compute_averageCap_maxminthr(PRx,I,problem.Noise,...
-                TempMaxCapacity,TempMinCapacity,usersToBeAssigned);
+                TempMaxCapacity,TempMinCapacity);
             aveCap = 2^aveCap - 1;
             Cap = 2.^Cap - 1;
         else
             [aveCap, Cap] = o_compute_averageCap_maxminthr(PRx,I,problem.Noise,...
-            problem.MaxObjF,problem.MinObjF,usersToBeAssigned);
+            problem.MaxObjF,problem.MinObjF);
         end
         if aveCap ~= -Inf
             sol_found = true;
@@ -237,9 +228,11 @@ function [sol_found,W,handle_ConformalArray,Cap] = f_heuristics(problem,conf,use
     end
     
     if problem.DEBUG
+        nAntennasTot = 0;
         for id =1:problem.nUsers
             nAntennas = length(W(id,W(id,:)~=0));
             fprintf("\t\t\tID=%d\t#Ant=%d\n",id,nAntennas);
+            nAntennasTot = nAntennasTot + nAntennas;
         end
     end
 end

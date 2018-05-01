@@ -3,7 +3,7 @@ function problem = f_configuration(problem)
     problem.appPresence=[0.3,0.3,0.05,0.3,0.05];  % Presence of the application types specified in 'appNameInteretList' across users 
     problem.appNameInteretList={'Youtube','Justin TV','Facebook','Web Browsing','Twitter'};  % Applications to be considered in the simulations
     problem.targetPER = 1e-2;  % The target PER specified linearly (i.e. 1e-2 is PER of 1%)
-    problem.numPkts = 100;
+    problem.numPkts = 4;
 
     % Define Application types and parametrize them - 5G applications Times
     % are defined following the specification "TS 23.203 standard Policy

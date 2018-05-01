@@ -1,5 +1,4 @@
-function [aveCap, cap] = o_compute_averageCap_maxminthr(PRx,I,Noise,MaxObjF,MinObjF,...
-    usersToBeAssigned)
+function [aveCap, cap] = o_compute_averageCap_maxminthr(PRx,I,Noise,MaxObjF,MinObjF)
 %UNTITLED2 Summary of this function goes here
 %   Detailed explanation goes here
     nUsers = length(MinObjF);
@@ -15,14 +14,8 @@ function [aveCap, cap] = o_compute_averageCap_maxminthr(PRx,I,Noise,MaxObjF,MinO
     end
     SNR = PRx_sel./(interf+10^(Noise/10)); % In watts for the capacity computation!!
     cap = log2(1+SNR);
-    % If there is any Cap below the MinObjF, or above the MaxObjF (we
-    % consider MaxObjF and MinObjF to be in bits/Hz...), the total Cap is
-    % capped to -Inf (infeasible)
-    if any((cap(usersToBeAssigned)-MinObjF(usersToBeAssigned))<0) || ...
-            any((MaxObjF(usersToBeAssigned)-cap(usersToBeAssigned))<0)
-        aveCap = -Inf;
-    else
-        aveCap = sum(cap(usersToBeAssigned))/length(usersToBeAssigned);
+    if any((cap-MinObjF)<0) || any((MaxObjF-cap)<0); aveCap = -Inf;
+    else;                                            aveCap = sum(cap)/nUsers;
     end
 end
 

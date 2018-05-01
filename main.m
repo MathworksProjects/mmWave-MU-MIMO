@@ -77,10 +77,12 @@ while(t<Tsym)
             candTH = combTH(k,:);
 %             candTH = candTH(candTH~=0);
             %% SECTION HEURISTICS METHOD
-            if problem.heuristicsDummy
+            if problem.heuristicsDummy && ~isempty(candSet)
+                % Dummy heuristics
                 [estSet,estTH] = f_heuristicsDummy(candSet,candTH);
                 SNRList = 2.^(estTH/problem.Bw) - 1;
-            else
+            elseif ~problem.heuristicsDummy && ~isempty(candSet)
+                % Real Heuristics - GA, PS or PSO
                 % Heuristics - Preprocessing
                 problem.MaxObjF = Inf(1,length(candSet));
                 problem.MinObjF = candTH/problem.Bw;
@@ -93,38 +95,42 @@ while(t<Tsym)
                 % Heuristics - Post Processing
                 if conf.MinObjFIsSNR
                     estTH = log2(estObj+1)*problem.Bw;
-                    SNRList = estObj;
+                    SNRList = 10*log10(estObj);  % in dB
                 else
                     estTH = estObj*problem.Bw;
-                    SNRList = 2.^(estTH/problem.Bw) - 1;
+                    SNRList = 10*log10(2.^(estTH/problem.Bw) - 1);  % in dB
                 end
+            else
+                % candSet is empty, heuristics failed to fullfil the
+                % throughput demands. Force the Post heuristics condition 
+                % to fail
+                estTH = 0.*candTH;
             end
             %% SECTION POST HEURISTICS
-            % Select MCS for estimated SNR
-            [MCS,estPER] = f_selectMCS(candSet,SNRList,problem.targetPER,problem.MCSPER,problem.DEBUG);
             % Decide whether to take the tentative TH or give it a
             % another round (This is Policy PLk)
             threshold = 0.7;  % Represents the ratio between the demanded 
                               % and the tentative achievable TH
             if ~any(estTH./candTH)<threshold
+                % Select MCS for estimated SNR
+                [MCS,estPER] = f_selectMCS(candSet,SNRList,problem.targetPER,problem.MCSPER,problem.DEBUG);
                 % Compute bits that can be transmitted and map it with the 
                 % bits remaining to be transmitted
                 estTXbits = zeros(1,problem.nUsers);  % Possibility - bits
                 TXbits = zeros(1,problem.nUsers);  % Reality - bits
                 THiter = zeros(1,problem.nUsers);  % Reality - throughput
                 for id = candSet
-                    myID = id==candSet;
-                    estTXbits(myID) = estTH(myID).*Tslot.*1e-3;
-                    if estTXbits(myID) > flows(myID).remaining(selFlow(myID))
+                    estTXbits = estTH(id==candSet).*Tslot.*1e-3;
+                    if estTXbits > flows(id).remaining(selFlow(id))  %#ok  % estTXbits is always scalar
                         % Bits transmitted in slot
-                        TXbits(1,myID) = flows(myID).remaining(selFlow(myID));
+                        TXbits(1,id) = flows(id).remaining(selFlow(id));
                         % Throughput achieved in slot
-                        THiter(myID) = TXbits(1,myID)./(Tslot.*1e-3);
+                        THiter(id) = TXbits(1,id)./(Tslot.*1e-3);
                     else
                         % Bits transmitted in slot
-                        TXbits(1,myID) = estTXbits(myID);
+                        TXbits(1,id) = estTXbits;
                         % Throughput achieved in slot
-                        THiter(myID) = estTH(myID);
+                        THiter(id) = estTH(id==candSet);
                     end
                 end
                 % Append bits transmitted and throughput achieved in slot. 
