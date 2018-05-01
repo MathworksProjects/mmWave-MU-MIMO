@@ -235,5 +235,12 @@ function [sol_found,W,handle_ConformalArray,Cap] = f_heuristics(problem,conf,use
         arrays = o_getArrays(problem.nUsers,max(problem.NmaxArray),W,px,py,pz);
         o_plot_feasible_comb(problem,conf,patch,arrays);
     end
+    
+    if problem.DEBUG
+        for id =1:problem.nUsers
+            nAntennas = length(W(id,W(id,:)~=0));
+            fprintf("\t\t\tID=%d\t#Ant=%d\n",id,nAntennas);
+        end
+    end
 end
 

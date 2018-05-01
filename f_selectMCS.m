@@ -44,9 +44,9 @@ function [MCS,PER] = f_selectMCS(candSet,SNRList,PERtarget,MCSPER,DEBUG)
         PER(k) = table(snrIdx,mcsIdx);
         
         if DEBUG==1 * risky==0
-            fprintf('User %d - SNR %.2f - MCS %d - PER %.3f\n',candSet(k),SNRList(k),MCS(k),PER(k));
+            fprintf('\t\t\tID=%d\tMCS=%d\tPER=%.1f(%%)\tSNR=%.2f\n',candSet(k),MCS(k),PER(k).*1e2,SNRList(k));
         elseif DEBUG==1 && risky==1
-            fprintf('User %d - SNR %.2f - MCS %d - PER %.3f (Failed to meet PER required)\n',candSet(k),SNRList(k),MCS(k),PER(k));
+            fprintf('\t\t\tID=%d\tMCS=%d\tPER=%.1f(%%)\tSNR=%.2f  (Failed to meet PER required)\n',candSet(k),MCS(k),PER(k).*1e2,SNRList(k));
         end
     end
 end

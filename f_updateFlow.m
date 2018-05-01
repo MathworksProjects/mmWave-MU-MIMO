@@ -18,16 +18,25 @@ function flows = f_updateFlow(t,flows,selFlow,finalSet,finalTH,candSet,Tslot,DEB
         % Check if the flow has no time left to be transmitted
         deadlineSlot = max(flows(id).slots{succFlow});
         nSlotsRem = deadlineSlot - t;
+        % Determine if we have met the deadline for the indicated packet
         if (nSlotsRem==0) && (flows(id).remaining(succFlow)>0)
             % We succesfully transmitted the packet but there are still
             % bits to be tx and this was the last chance we've got.
             % Increment failed flow count
             flows(id).failed(succFlow) =  1;
             if DEBUG; fprintf('NOK\tTS=%d\tID=%d\tFLOW=%d\n',t,id,succFlow); end
-        elseif (nSlotsRem==0) && (flows(id).remaining(succFlow)<=0)
-            % We increment the number of flows that we served succesfully!
+        elseif flows(id).remaining(succFlow)<=0
+            % We increment the number of flows that we served succesfully.
+            % (It can happen that we serve them way before the deadline)
             flows(id).success(succFlow) = 1;
             if DEBUG; fprintf('OK\tTS=%d\tID=%d\tFLOW=%d\n',t,id,succFlow); end
+        end
+        % Update slots in the flow. If we have served all the bits before
+        % the deadline, need to remove the slots pertaining to that flow.
+        if nSlotsRem>0 && flows(id).remaining(succFlow)<=0
+            updSlots = (t+1:deadlineSlot);
+            [~,idxUpdate] = intersect(flows(id).slots{succFlow},updSlots);
+            flows(id).slots{succFlow}(idxUpdate) = [];
         end
     end
     % Packets with PER=1. Redistribute flows for packets that didn't made it
