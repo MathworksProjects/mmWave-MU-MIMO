@@ -5,7 +5,7 @@
 % channel model available in Matlab.
 % INPUTS
 % - candSet: User ID being considered in the current slot
-% - SNRList: SNR estimated by the heuristics
+% - SNRList: SNR estimated by the heuristics (dB)
 % - PERtarget: The maximum tolerable PER.
 % - DEBUG: If True, it plots the results
 % OUTPUTS:
