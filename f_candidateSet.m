@@ -45,4 +45,7 @@ function [combIds,combTH] = f_candidateSet(t,flows,selFlow)
             end
         end
     end
+    % Trim output - remove last combination (empty)
+    combIds(end,:) = [];
+    combTH(end,:) = [];
 end

@@ -55,9 +55,9 @@ function problem = f_configuration(problem)
     
     % Assign traffic type to users
     if problem.DEBUG
-        % Select one application type across users
+        % Select one application type across users - Manually assign here
 %         appTypePerUser = [1 2 3 4].';
-        appTypePerUser = [1 1 1 1].';
+        appTypePerUser = 1.*ones(problem.nUsers);
     else
         % Distribute application proportionaly to the presence selected
         % and configured in 'problem.appPresence'

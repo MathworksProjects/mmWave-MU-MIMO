@@ -77,34 +77,24 @@ while(t<Tsym)
             candTH = combTH(k,:);
 %             candTH = candTH(candTH~=0);
             %% SECTION HEURISTICS METHOD
+            % Heuristics - Preprocessing
+            problem.MaxObjF = Inf(1,length(candSet));
+            problem.MinObjF = candTH/problem.Bw;
+            if conf.MinObjFIsSNR;     problem.MinObjF = 2.^problem.MinObjF - 1;
+            end
+            % Heuristics - Call
             if problem.heuristicsDummy && ~isempty(candSet)
                 % Dummy heuristics
-                [estSet,estTH] = f_heuristicsDummy(candSet,candTH);
-                SNRList = 2.^(estTH/problem.Bw) - 1;
+                [estObj] = f_heuristicsDummy(problem.MinObjF,conf.MinObjFIsSNR,problem.MCSPER.snrRange);
             elseif ~problem.heuristicsDummy && ~isempty(candSet)
-                % Real Heuristics - GA, PS or PSO
-                % Heuristics - Preprocessing
-                problem.MaxObjF = Inf(1,length(candSet));
-                problem.MinObjF = candTH/problem.Bw;
-                if conf.MinObjFIsSNR
-                    problem.MinObjF = 2.^problem.MinObjF - 1;
-                end
-                % Heuristics call
+                % Real Heuristics
                 [sol_found,W,array_Handle,estObj] = f_heuristics(problem,conf,candSet);
-                estSet = candSet;  % Heuristics always return the achieved solution for both
-                % Heuristics - Post Processing
-                if conf.MinObjFIsSNR
-                    estTH = log2(estObj+1)*problem.Bw;
-                    SNRList = 10*log10(estObj);  % in dB
-                else
-                    estTH = estObj*problem.Bw;
-                    SNRList = 10*log10(2.^(estTH/problem.Bw) - 1);  % in dB
-                end
-            else
-                % candSet is empty, heuristics failed to fullfil the
-                % throughput demands. Force the Post heuristics condition 
-                % to fail
-                estTH = 0.*candTH;
+            end
+            % Heuristics - Post Processing
+            if conf.MinObjFIsSNR;     estTH   = log2(estObj+1)*problem.Bw;  % in bps/Hz
+                                      SNRList = 10*log10(estObj);  % in dB
+            else;                     estTH   = estObj*problem.Bw;  % in bps/Hz
+                                      SNRList = 10*log10(2.^(estTH/problem.Bw) - 1);  % in dB
             end
             %% SECTION POST HEURISTICS
             % Decide whether to take the tentative TH or give it a

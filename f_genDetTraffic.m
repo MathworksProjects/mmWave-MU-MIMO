@@ -43,7 +43,7 @@ function [traffic,maxTime] = f_genDetTraffic(traffic,trafficType,DEBUG)
     elseif strcmp(trafficType,'dataSet')
         % Traffic is generated in a synthetic and deterministic way
         if DEBUG
-            ha = tight_subplot(4,1,[.05 .03],[.05 .01],[.1 .2]);
+            ha = tight_subplot(Nclasses,1,[.05 .03],[.05 .01],[.1 .2]);
         end
         for id = 1:Nclasses
             traffic(id).payload = [];
