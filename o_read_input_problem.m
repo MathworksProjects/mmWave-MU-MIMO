@@ -27,9 +27,16 @@ function [problem] = o_read_input_problem(problem_file)
                 struct('name','Bw','type','float');
                 struct('name','realizations','type','int');
                 struct('name','trafficType','type','char');
+                struct('name','iat','type','float');
+                struct('name','payload','type','float');
                 struct('name','manuallyAssignApp','type','bool');
                 struct('name','FLAGagg','type','bool');
                 struct('name','DEBUG','type','bool');
+                struct('name','DEBUG','type','bool');
+                struct('name','numPkts','type','float');
+                struct('name','Tslot','type','float');
+                struct('name','Tsym','type','float');
+                struct('name','targetPER','type','float');
                 struct('name','heuristicsDummy','type','bool');
                 };
     problem = o_readDATInputData(problem_file,inputArgList);

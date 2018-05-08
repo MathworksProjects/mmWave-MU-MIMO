@@ -19,8 +19,8 @@ function [MCS,PER] = f_selectMCS(candSet,SNRList,PERtarget,MCSPER,DEBUG)
     risky = 'false';
     
     Nusers = length(SNRList);
-    MCS = zeros(Nusers,1);
-    PER = zeros(Nusers,1);
+    MCS = zeros(1,Nusers);
+    PER = zeros(1,Nusers);
     for k =1:Nusers
         [~,snrIdx] = min(abs(SNRList(k)-snrRange));
         possibilities = table(snrIdx,:);
