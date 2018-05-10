@@ -2,40 +2,51 @@
  * Author: santirodrigo
  * Creation Date: 29/03/2018 at 13:12:55
  *********************************************/
-% ---- SIMULATION ---- %
- realizations=5;
- N_Antennas=16; % Obtenemos la raíz cuadrada y a tomar...
- NxSubarrays=3;
- NySubarrays=3;
- NmaxArray=0.2:0.2:1;
- mindUsers=5;
- maxdUsers=5;
- MaxObjF=Inf;
- maxMinObjF=2;
- minMinObjF=0.01;
- nUsers=2;  % Number of users in the coverage area receiving traffic
- Tslot=10;   % Time slot in milliseconds
- Tsym=3e2;  % Total simulation time in milliseconds
- targetPER=1e-2;  % The target PER specified linearly (i.e. 1e-2 is PER of 1%)
- DEBUG=true;  % Enable Debugger and logs for scheduling part
-% ---- COMMS CONFIG ---- %
- freq=60e9;  % Frequency of operation in Hz
- gamma=1;
- Noise = -104.5; % Noise figure in dBs
- Bw = 2e9;  % Available Bandwidth in Hz
- c = 299792458;  % Light speed constant
-% ---- HEURISTICS ---- %
- arrayRestriction='None';  % Possibilities: "None", "Localized", "Interleaved", "DiagInterleaved"
- invdAntennas=2;
- heuristicsDummy=false;  % True for debugging with dummy function. False to call the Heuristic method.
-% ---- CHANNEL ---- %
- maxnChannelPaths=6;
-% ---- TRAFFIC ---- %
- FLAGagg=true;  % Aggregate traffic
- trafficType='synthetic';  % 'synthetic' (deterministic) or 'dataSet' (extracted from DataSet-UPC)
- manuallyAssignApp=true;  % Manually distribute applications across users. Only one application
- numPkts=4;  % Number of (upper layer) packets incoming to every user (only used when trafficType is set to 'synthetic')
- iat=60;  % Deterministic (constant) inter-arrival times (iat)
- payload=1500*8;  % Default payload in bits
+% ---------------- SIMULATION PARAMETERS ---------------- %
+realizations     = 100;
+N_Antennas       = 16; % Obtenemos la raíz cuadrada y a tomar...
+NxSubarrays      = 3;
+NySubarrays      = 3;
+NmaxArray        = 0.2:0.2:1;
+mindUsers        = 5;
+maxdUsers        = 5;
+MaxObjF          = Inf;
+maxMinObjF       = 2;
+minMinObjF       = 0.01;
+nUsers           = 2;  % Number of users in the coverage area receiving traffic
+Tslot            = 10;  % Time slot in milliseconds
+Tsym             = 3e2;  % Total simulation time in milliseconds
+targetPER        = 1e-2;  % The target PER specified linearly (i.e. 1e-2 is PER of 1%)
+DEBUG            = true;  % Enable Debugger and logs for scheduling part
+% ----------------------------------------------------- %
+
+% ---------------- COMMS CONFIG PARAMETERS ---------------- %
+freq             = 60e9;  % Frequency of operation in Hz
+gamma            = 1;
+Noise            = -104.5; % Noise figure in dBs
+Bw               = 2e9;  % Available Bandwidth in Hz
+c                = 299792458;  % Light speed constant
+% ----------------------------------------------------- %
+
+% ---------------- HEURISTICS PARAMETERS ---------------- %
+ arrayRestriction = 'None';  % Possibilities: "None", "Localized", "Interleaved", "DiagInterleaved"
+ invdAntennas     = 2;
+ heuristicsDummy  = false;  % True for debugging with dummy function. False to call the Heuristic method.
+% ----------------------------------------------------- %
+
+% ---------------- CHANNEL PARAMETERS ---------------- %
+maxnChannelPaths = 6;
+% ----------------------------------------------------- %
+
+% ---------------- TRAFFIC PARAMETERS ---------------- %
+FLAGagg           = true;  % Aggregate traffic
+trafficType       = 'synthetic';  % 'synthetic' (deterministic) or 'dataSet' (extracted from DataSet-UPC)
+manuallyAssignApp = true;  % Manually distribute applications across users. Only one application
+numPkts           = 4;  % Number of (upper layer) packets incoming to every user (only used when trafficType is set to 'synthetic')
+iat               = 60;  % Deterministic (constant) inter-arrival times (iat)
+payload           = 1500*8;  % Default payload in bits
  % appNameInteretList={'Youtube','Justin TV','Facebook','Web Browsing','Twitter'};  % Applications to be considered in the simulations
  % appPresence=[0.3,0.3,0.05,0.3,0.05];  % Presence of the application types specified in 'appNameInteretList' across users
+% ----------------------------------------------------- %
+
+% EOF
