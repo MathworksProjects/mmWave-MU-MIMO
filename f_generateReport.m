@@ -1,4 +1,4 @@
-function [ratioOK,ratioNOK] = f_generateReport(flows)
+function [ratioOK,ratioNOK] = f_generateReport(flows, DEBUG)
 %F_GENERATEREPORT - Generate a report containing the number of PHY-flows
 %that delivered the bits to the receiver before the application deadline.
 %
@@ -32,10 +32,14 @@ for id = 1:Nusers
     totNOK = sum(flows(id).failed);
     ratioOK(id) = 100 * totOK / (totOK+totNOK);
     ratioNOK(id) = 100 * totNOK / (totOK+totNOK);
-    fprintf('ID=%d\n\tOK=%.2f(%%)\n\tNOK=%.2f(%%)\n',...
-                                          id,ratioOK(id),ratioNOK(id));
+    if DEBUG
+        fprintf('ID=%d\n\tOK=%.2f(%%)\n\tNOK=%.2f(%%)\n',...
+                                              id,ratioOK(id),ratioNOK(id));
+    end
 end
-fprintf('Overall Performance: OK=%.2f(%%)\n',mean(ratioOK));
-fprintf('******************\n');
+if DEBUG
+    fprintf('Overall Performance: OK=%.2f(%%)\n',mean(ratioOK));
+    fprintf('******************\n');
+end
 
 %EOF
