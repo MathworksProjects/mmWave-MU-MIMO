@@ -38,10 +38,16 @@ function [Assignment_elem, problem] = o_subarrayToAntennaElements(Assignment,con
         % This is OK always in the case where we only have phase shifters 
         % for the elements in the subarray (i.e. in the analog weighting)
         
-        [~,index] = max(problem.alphaChannels(problem.IDUserAssigned,:));
-        wT_analog = exp(1i*angle(steervec(subpos/problem.lambda,...
-        [problem.phiChannels(problem.IDUserAssigned,index);...
-        problem.thetaChannels(problem.IDUserAssigned,index)])));
+        if conf.multiPath
+            [~,index] = max(problem.alphaChannels(problem.IDUserAssigned,:));
+            wT_analog = exp(1i*angle(steervec(subpos/problem.lambda,...
+            [problem.phiChannels(problem.IDUserAssigned,index);...
+            problem.thetaChannels(problem.IDUserAssigned,index)])));
+        else
+            wT_analog = exp(1i*angle(steervec(subpos/problem.lambda,...
+            [problem.phiUsers(problem.IDUserAssigned);...
+            problem.thetaUsers(problem.IDUserAssigned)])));
+        end
         % From the system perspective, the effect of the hybrid beamforming can
         % be represented by hybrid weights as shown below.
         temp = kron(Taper_value(n),wT_analog)';
