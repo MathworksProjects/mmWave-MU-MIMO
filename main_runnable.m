@@ -9,8 +9,8 @@ if any(experimentList(:)==3);    experiment3();   end
 if any(experimentList(:)==4);    experiment4();   end
 if any(experimentList(:)==5)
     %     nAntennasList = 2.^4;
-    nAntennasList = 2.^[3 4 5 6];
-    nIter = 1;
+    nAntennasList = 2.^[3 4];
+    nIter = 3;
     plotFLAG = true;
     [CapTot,SINRTot,PrxTot,IntTot] = experiment5(nIter,nAntennasList,plotFLAG);
 end
@@ -71,23 +71,25 @@ function [CapTot,SINRTot,PrxTot,IntTot] = experiment5(nIter,nAntennasList,plotFL
     problem.nUsers = 2;
     problem.MinObjFIsSNR = true;  % (arbitrary)
     problem.MinObjF = 100.*ones(1,problem.nUsers);  % Same #ant per user. Random SNR (30dB)
+    problem.arrayRestriction = 'None';  % Possibilities: "None", "Localized", "Interleaved", "DiagInterleaved"
     % Override (conf) parameters
     conf.algorithm = 'GA';
-    conf.Maxgenerations_Data = 30;  % Increase the number of generations for GA
-    conf.MaxStallgenerations_Data = 30;  % Force it to cover all the generations
+    conf.PopulationSize_Data = 40;
+    conf.Maxgenerations_Data = 20;  % Increase the number of generations for GA
+    conf.EliteCount_Data = ceil(conf.PopulationSize_Data/2);
+    conf.MaxStallgenerations_Data = conf.Maxgenerations_Data;  % Force it to cover all the generations
     conf.multiPath = false;  % LoS channel (for now)
 	% Configure basic parameters
     candSet = (1:1:problem.nUsers);  % Set of users to be considered
 	% Create output variables
     CapTot = zeros(problem.nUsers,length(nAntennasList),nIter);
-    CapAv = zeros(problem.nUsers,length(nAntennasList));
     SINRTot = zeros(problem.nUsers,length(nAntennasList),nIter);
-    SINRAv = zeros(problem.nUsers,length(nAntennasList));
     PrxTot = zeros(problem.nUsers,length(nAntennasList),nIter);
     IntTot = zeros(problem.nUsers,problem.nUsers,length(nAntennasList),nIter);
     % Main execution
     for idxAnt = 1:length(nAntennasList)
         for idxIter = 1:nIter
+            fprintf('Iteration %d\n',idxIter);
             % Configure the simulation environment. Need to place users in new
             % locations and create new channels to have statistically
             % meaningful results
@@ -99,7 +101,7 @@ function [CapTot,SINRTot,PrxTot,IntTot] = experiment5(nIter,nAntennasList,plotFL
             problem.NyPatch = floor(problem.N_Antennas./problem.NxPatch);
             problem.N_Antennas = problem.NxPatch.*problem.NyPatch;
             % Call heuristics
-            fprintf('Solving problem with %d antennas and %d users...\n',problem.N_Antennas,problem.nUsers);
+            fprintf('\t** %d Antennas and %d Users...\n',problem.N_Antennas,problem.nUsers);
             [~,W,~,estObj] = f_heuristics(problem,conf,candSet);
             % Heuristics - Post Processing
             if conf.MinObjFIsSNR;     CapTot(:,idxAnt,idxIter)  = log2(estObj+1);  % in bps/Hz
@@ -119,7 +121,6 @@ function [CapTot,SINRTot,PrxTot,IntTot] = experiment5(nIter,nAntennasList,plotFL
                                     'Lattice','Rectangular','Element',problem1.handle_Ant,...
                                     'ElementSpacing',[problem1.dy,problem1.dz]);
             problem1.possible_locations = handle_ConformalArray.getElementPosition;
-            save('temp/playful_results','problem','W');
             for id = 1:1:problem1.nUsers
                 problem1.ant_elem = sum(W(id,:)~=0);
                 relevant_positions = (W(id,:)~=0);
@@ -132,13 +133,14 @@ function [CapTot,SINRTot,PrxTot,IntTot] = experiment5(nIter,nAntennasList,plotFL
                                       'Taper',Taper_user);
                 % Extract Rx Power (in dB)
                 PrxTot(id,idxAnt,idxIter) = patternAzimuth(handle_Conf_Array,problem.freq,problem.thetaUsers(id),'Azimuth',problem.phiUsers(id),'Type','powerdb');
+                fprintf('* Directivity IDmax: %.2f (dB)\n',PrxTot(id,idxAnt,idxIter));
                 % Extract interference generated to others (in dB)
                 for id1 = 1:1:problem1.nUsers
                     if id1~=id
                         IntTot(id,id1,idxAnt,idxIter) = patternAzimuth(handle_Conf_Array,problem.freq,problem.thetaUsers(id1),'Azimuth',problem.phiUsers(id1),'Type','powerdb');
+                        fprintf('  Directivity IDmin(%d): %.2f (dB)\n',id1,IntTot(id,id1,idxAnt,idxIter));
                     end
                 end
-                problem.nUsers
                 problem1.IDUserAssigned = id;
                 if plotFLAG
                     % Plot beam pattern obtained with assignation and BF configuration
@@ -152,9 +154,8 @@ function [CapTot,SINRTot,PrxTot,IntTot] = experiment5(nIter,nAntennasList,plotFL
                     o_plot_feasible_comb(problem1,conf,patch,arrays);
                 end
             end
+            save('temp/exp5-results_so_far','PrxTot','IntTot');
         end
-        CapAv(:,idxAnt) = mean(CapTot(:,idxAnt,:),2);  % Store average value
-        SINRAv(:,idxAnt) = mean(SINRTot(:,idxAnt,:),2);  % Store average value
     end
 end
 
