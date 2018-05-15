@@ -67,35 +67,46 @@ function [conf] = o_read_config(config_file)
     else
         % Arguments that will be read by the readDATInputData function
         % We read first all those that are not related to the number of users
-        inputArgList = { struct('name','algorithm','type','char');
-                    struct('name','MinObjFIsSNR','type','bool');
-                    struct('name','Use5GChannel','type','bool');
-                    struct('name','multiPath','type','bool');
-                    struct('name','verbosity','type','int');
-                    struct('name','IncludeBeamPattern','type','bool');
-                    struct('name','randomSolution','type','bool');
-                    struct('name','RefineSolution','type','bool');
-                    struct('name','PlotAssignments','type','bool');
-                    struct('name','PlotCombinations','type','bool');
-                    struct('name','plotAssignmentInitialAndFinal','type','bool');
-                    struct('name','PlotDisplacements','type','bool');
-                    struct('name','findLobes','type','bool');
-                    struct('name','genStructure','type','char');
+        inputArgList = {
+                    % Basic parameters
                     struct('name','anglesInRadians','type','bool');
-                    struct('name','figIdx','type','int');
+                    struct('name','detLocation','type','bool');
+                    struct('name','thetaUsers','type','floatArray','size',16);
+                    struct('name','phiUsers','type','floatArray','size',16);
+                    struct('name','dUsers','type','floatArray','size',16);
+                    % Optimization parameters
+                    struct('name','algorithm','type','char');
                     struct('name','Fweights','type','floatArray','size',3);
                     struct('name','solver','type','char');
                     struct('name','ObjFunc','type','char');
+                    struct('name','RefineSolution','type','bool');
+                    struct('name','findLobes','type','bool');
+                    struct('name','randomSolution','type','bool');
+                    struct('name','MinObjFIsSNR','type','bool');
+                    struct('name','nUsersMin','type','int');
+                    struct('name','genStructure','type','char');
                     struct('name','NoCut','type','bool');
                     struct('name','feasibility','type','bool');
-                    struct('name','nUsersMin','type','int');
+                    % Extra Optimization parameters
+                    struct('name','NumPhaseShifterBits','type','int');
                     struct('name','PopulationSize_Data','type','float');
                     struct('name','EliteCount_Data','type','float');
                     struct('name','CrossoverFraction_Data','type','float');
                     struct('name','Maxgenerations_Data','type','float');
                     struct('name','MaxStallgenerations_Data','type','float');
                     struct('name','FunctionTolerance_Data','type','float');
-                    struct('name','NumPhaseShifterBits','type','int')
+                    % Channel parameters
+                    struct('name','Use5GChannel','type','bool');
+                    struct('name','multiPath','type','bool');
+                    % Debugging parameters
+                    struct('name','verbosity','type','int');
+                    % Plotting parameters
+                    struct('name','PlotAssignments','type','bool');
+                    struct('name','IncludeBeamPattern','type','bool');
+                    struct('name','PlotCombinations','type','bool');
+                    struct('name','PlotDisplacements','type','bool');
+                    struct('name','figIdx','type','int');
+                    struct('name','plotAssignmentInitialAndFinal','type','bool');
                     };
         conf = o_readDATInputData(config_file,inputArgList);
         conf.colorList = {[255 51 51]./255, [128 255 0]./255,...

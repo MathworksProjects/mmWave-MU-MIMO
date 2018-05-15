@@ -23,7 +23,6 @@ function [FullChannels, thetaChannels, phiChannels, alphaChannels] = o_generate_
         cdlChan.CarrierFrequency = freq;
         cdlChan.AngleScaling = true;
         cdlChan.MeanAngles = [AOD_LOS 180-AOD_LOS 90+ZOD_LOS 90-ZOD_LOS];
-        disp(cdlChan.MeanAngles);
         cdlChan.MaximumDopplerShift = (5 / 3.6) / ...
             physconst('lightspeed') * freq; % 5km/h pedestrian    
         FullChannels{u} = s_phased_channel_SRM( ...
@@ -46,17 +45,14 @@ function [FullChannels, thetaChannels, phiChannels, alphaChannels] = o_generate_
     thetaChannels(:,c) = [];
     phiChannels(:,c) = [];
     alphaChannels(:,c) = [];
+    
     if conf.verbosity >= 1
+        fprintf('Channel Mean Angles:\n');
+        disp(cdlChan.MeanAngles);
         fprintf('New elevations assigned:\n');
         disp(thetaChannels);
-    end
-    
-    if conf.verbosity >= 1
         fprintf('New azimuths assigned:\n');
         disp(phiChannels);
-    end
-    
-    if conf.verbosity >= 1
         fprintf('New gains assigned:\n');
         display(alphaChannels);
     end
