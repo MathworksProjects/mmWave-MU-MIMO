@@ -1,5 +1,7 @@
 anglesInRadians= false;  % angles in radians or degrees
 
+NumPhaseShifterBits=2;   % put this variable to 0 to have no quantization effects
+
 % ---------------- OPTIMIZATION PARAMETERS ---------------- %
 algorithm      = PSO;  % Genetic -> 'GA'; PatternSearch -> 'PS'; Particle Swarm Optimization -> 'PSO'
 solver         = 'BestOrRemove';  % Solver 'LuckAndChoice' or 'BestOrRemove'

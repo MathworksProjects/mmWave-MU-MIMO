@@ -95,6 +95,7 @@ function [conf] = o_read_config(config_file)
                     struct('name','Maxgenerations_Data','type','float');
                     struct('name','MaxStallgenerations_Data','type','float');
                     struct('name','FunctionTolerance_Data','type','float');
+                    struct('name','NumPhaseShifterBits','type','int')
                     };
         conf = o_readDATInputData(config_file,inputArgList);
         conf.colorList = {[255 51 51]./255, [128 255 0]./255,...
