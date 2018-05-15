@@ -17,7 +17,7 @@ nUsers           = 2;  % Number of users in the coverage area receiving traffic
 Tslot            = 10;  % Time slot in milliseconds
 Tsym             = 3e2;  % Total simulation time in milliseconds
 targetPER        = 1e-2;  % The target PER specified linearly (i.e. 1e-2 is PER of 1%)
-DEBUG            = true;  % Enable Debugger and logs for scheduling part
+DEBUG            = false;  % Enable Debugger and logs for scheduling part
 % ----------------------------------------------------- %
 
 % ---------------- COMMS CONFIG PARAMETERS ---------------- %
