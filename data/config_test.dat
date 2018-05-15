@@ -1,7 +1,7 @@
 anglesInRadians= false;  % angles in radians or degrees
 
 % ---------------- OPTIMIZATION PARAMETERS ---------------- %
-algorithm      = GA;  % Genetic -> 'GA'; PatternSearch -> 'PS'; Particle Swarm Optimization -> 'PSO'
+algorithm      = PSO;  % Genetic -> 'GA'; PatternSearch -> 'PS'; Particle Swarm Optimization -> 'PSO'
 solver         = 'BestOrRemove';  % Solver 'LuckAndChoice' or 'BestOrRemove'
 ObjFunc        = 'compute_avCap_maxminthr_LAC';  % Objective function for 'LuckAndChoice'
 RefineSolution = false;  % Sets whether we want to refine the solution given for a certain group of users when there is room for improvement
@@ -13,11 +13,17 @@ nUsersMin      = 1;  % Sets the minimum number of users to be considered when ex
 genStructure   = onlyAssigned;  % Sets the data structure for the Algorithm 1 solver (either genetic or pattern) 'onlyAssigned' recommended
 NoCut          = false;
 feasibility    = true;
+PopulationSize_Data      = 40;  % Heuristics
+EliteCount_Data          = 15;  % Heuristics
+CrossoverFraction_Data   = 0.3;  % Heuristics
+Maxgenerations_Data      = 10;  % Maximum number of Generations in the algorithm
+MaxStallgenerations_Data = 10;  % Maximum number of Generations after which, if not outperforming previous generations, stop the algorithm
+FunctionTolerance_Data   = 1e-6;  % Heuristics
 % ----------------------------------------------------- %
 
 % ---------------- CHANNEL PARAMETERS ---------------- %
 Use5GChannel   = true;  % Sets whether we use a real 5G 3GPP TR 138 901 complaint channel or a basic one
-multiPath      = true;  % multi-path channel or LOS channel. The former requires information of the paths in the input file
+multiPath      = false;  % multi-path channel or LOS channel. The former requires information of the paths in the input file
 % ----------------------------------------------------- %
 
 % ---------------- DEBUGGING PARAMETERS ---------------- %

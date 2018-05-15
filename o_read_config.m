@@ -88,7 +88,14 @@ function [conf] = o_read_config(config_file)
                     struct('name','ObjFunc','type','char');
                     struct('name','NoCut','type','bool');
                     struct('name','feasibility','type','bool');
-                    struct('name','nUsersMin','type','int')};
+                    struct('name','nUsersMin','type','int');
+                    struct('name','PopulationSize_Data','type','float');
+                    struct('name','EliteCount_Data','type','float');
+                    struct('name','CrossoverFraction_Data','type','float');
+                    struct('name','Maxgenerations_Data','type','float');
+                    struct('name','MaxStallgenerations_Data','type','float');
+                    struct('name','FunctionTolerance_Data','type','float');
+                    };
         conf = o_readDATInputData(config_file,inputArgList);
         conf.colorList = {[255 51 51]./255, [128 255 0]./255,...
                      [51 255 255]./255, [0 128 255]./255, [0 0 255]./255,...

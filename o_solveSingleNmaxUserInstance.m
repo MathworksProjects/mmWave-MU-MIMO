@@ -89,12 +89,12 @@ function [gene,W,PRx,I] = o_solveSingleNmaxUserInstance(conf,problem,...
         end
         %% 
         % Start optimization
-        PopulationSize_Data = 40;
-        EliteCount_Data = 15;
-        CrossoverFraction_Data = 0.3;
-        Maxgenerations_Data = 10;
-        MaxStallgenerations_Data = 5;
-        FunctionTolerance_Data = 1e-6;
+        PopulationSize_Data = conf.PopulationSize_Data;
+        EliteCount_Data = conf.EliteCount_Data;
+        CrossoverFraction_Data = conf.CrossoverFraction_Data;
+        Maxgenerations_Data = conf.Maxgenerations_Data;
+        MaxStallgenerations_Data = conf.MaxStallgenerations_Data;
+        FunctionTolerance_Data = conf.FunctionTolerance_Data;
         if strcmp(conf.algorithm,'GA')
             [x,~,~,~,~,~] = o_CA_Position_Objective_optim_ga(conf,problem,lb,ub,...
                 PopulationSize_Data,EliteCount_Data,CrossoverFraction_Data,...
