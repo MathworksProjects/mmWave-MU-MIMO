@@ -29,9 +29,9 @@ c                = 299792458;  % Light speed constant
 % ----------------------------------------------------- %
 
 % ---------------- HEURISTICS PARAMETERS ---------------- %
- arrayRestriction = 'None';  % Possibilities: "None", "Localized", "Interleaved", "DiagInterleaved"
- invdAntennas     = 2;
- heuristicsDummy  = false;  % True for debugging with dummy function. False to call the Heuristic method.
+arrayRestriction = 'None';  % Possibilities: "None", "Localized", "Interleaved", "DiagInterleaved"
+invdAntennas     = 2;
+heuristicsDummy  = false;  % True for debugging with dummy function. False to call the Heuristic method.
 % ----------------------------------------------------- %
 
 % ---------------- CHANNEL PARAMETERS ---------------- %

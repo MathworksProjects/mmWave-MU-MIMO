@@ -1,9 +1,13 @@
 function o_plotAssignment_mod(problem, handle_Conf_Array)
 %PLOTASSIGNMENT Plot a given Assignment 
+    % Preprocess data
+    IDmax = problem.IDUserAssigned;  % Desired user
+    IDmin = 1:1:problem.nUsers;
+    IDmin(IDmin==problem.IDUserAssigned) = [];  % Users interfereed
     % Array geometry and pattern for optimized values.
-    f1 = figure;
+    figure;
     handle_Conf_Array.viewArray;
-    f2 = figure;
+    figure;
     handle_Conf_Array.pattern(problem.freq,'Type','powerdb');
     %%
     hold on
@@ -15,7 +19,7 @@ function o_plotAssignment_mod(problem, handle_Conf_Array)
         3+50*ones(size(problem.phiUsers)));%3*10^(max(max(p))/10)*
     for i = 1:problem.nUsers
         line([0,x_u(i)],[0,y_u(i)],[0,z_u(i)]);
-        if i == problem.IDUserAssigned
+        if i == IDmax
             scatter3(x_u(i),y_u(i),z_u(i),'r');
         else
             scatter3(x_u(i),y_u(i),z_u(i),'g');
@@ -23,46 +27,68 @@ function o_plotAssignment_mod(problem, handle_Conf_Array)
         text(x_u(i)+dx, y_u(i)+dy, z_u(i)+dz, ['User ',num2str(i)]);
     end
     %%
-    azimuth = -180:2:180;
-    elevation = -90:2:90;
+    azimuth = -180:1:180;
+    elevation = -90:1:90;
     
-    f3 = figure;
+    fprintf('Plotting selected pattern for user %d\n',IDmax);
+    fprintf('* %d [Theta: %.1f - Phi: %.1f]\n',IDmax,problem.thetaUsers(IDmax),problem.phiUsers(IDmax));
+    for idx = 1:length(IDmin)
+        fprintf('  %d [Theta: %.1f - Phi: %.1f]\n',IDmin(idx),problem.thetaUsers(IDmin(idx)),problem.phiUsers(IDmin(idx)));
+    end
+    
+    figure;
+    % Plot Theta cuts - specify Phi
     % Plot designated device
     subplot(2,problem.nUsers,1);
-    pattAz = patternAzimuth(handle_Conf_Array,problem.freq,problem.thetaUsers(problem.IDUserAssigned),'Azimuth',azimuth,'Type','powerdb'); 
-    polarpattern(circshift(pattAz,90));
-%     tt = strcat('User',{' '},num2str(problem.IDUserAssigned),{' '},'Phi:',{' '},num2str(problem.phiUsers(problem.IDUserAssigned)));
-%     sp11.title.set_text(tt);
+    tt = strcat('User',{' '},num2str(IDmax),{' '},'Phi:',{' '},num2str(problem.phiUsers(IDmax)));
+    pattAz = patternAzimuth(handle_Conf_Array,problem.freq,problem.thetaUsers(IDmax),'Azimuth',azimuth,'Type','powerdb'); 
+    polarpattern(azimuth,pattAz,'MagnitudeLim',[-10 max(pattAz)],'AntennaMetrics',0,'TitleTop',tt{:},'TitleTopFontSizeMultiplier',2);
+    hold on;
+    mark = personalMarker(azimuth,pattAz,problem.phiUsers(IDmax));
+    polarpattern(azimuth,mark);
     % Plot interfeered devices
-    intVect = 1:1:problem.nUsers;
-    intVect(intVect==problem.IDUserAssigned) = [];
-    for idx = 1:length(intVect)
-        subplot(2,problem.nUsers,idx+1)
-        theta = problem.thetaUsers(intVect(idx));
+    for idx = 1:length(IDmin)
+        tt = strcat('User',{' '},num2str(IDmin(idx)),{' '},'Phi:',{' '},num2str(problem.phiUsers(IDmin(idx))));
+        subplot(2,problem.nUsers,idx+1);
+        theta = problem.thetaUsers(IDmin(idx));
         pattAz = patternAzimuth(handle_Conf_Array,problem.freq,theta,'Azimuth',azimuth,'Type','powerdb');
-        polarpattern(circshift(pattAz,90));
-%         tt = strcat('User',{' '},num2str(intVect(idx)),{' '},'Phi:',{' '},num2str(problem.phiUsers(intVect(idx))));
-%         title(tt,'FontSize',14);
+        polarpattern(azimuth,pattAz,'MagnitudeLim',[-10 max(pattAz)],'AntennaMetrics',0,'TitleTop',tt{:},'TitleTopFontSizeMultiplier',2);
+        hold on;
+        mark = personalMarker(azimuth,pattAz,problem.phiUsers(IDmin(idx)));
+        polarpattern(azimuth,mark);
     end
-
-    % Plot designated device    
+    
+    % Plot Phi cuts - specify Theta
+    % Plot designated device
     subplot(2,problem.nUsers,problem.nUsers+1)
-    pattEl = patternElevation(handle_Conf_Array,problem.freq,problem.phiUsers(problem.IDUserAssigned),'Elevation',elevation,'Type','powerdb');
-    polarpattern(circshift(pattEl,90));
-%     tt = strcat('User',{' '},num2str(problem.IDUserAssigned),{' '},'Theta:',{' '},num2str(problem.thetaUsers(problem.IDUserAssigned)));
-%     title(tt,'FontSize',14);
+    tt = strcat('User',{' '},num2str(IDmax),{' '},'Theta:',{' '},num2str(problem.thetaUsers(IDmax)));
+    pattEl = patternElevation(handle_Conf_Array,problem.freq,problem.phiUsers(IDmax),'Elevation',elevation,'Type','powerdb');
+    polarpattern(elevation,pattEl,'MagnitudeLim',[-10 max(pattEl)],'AntennaMetrics',0,'TitleTop',tt{:},'TitleTopFontSizeMultiplier',2);
+    hold on;
+    mark = personalMarker(elevation,pattEl,problem.thetaUsers(IDmax));
+    polarpattern(elevation,mark);
     % Plot interfeered devices
-    intVect = 1:1:problem.nUsers;
-    intVect(intVect==problem.IDUserAssigned) = [];
-    for idx = 1:length(intVect)
-        subplot(2,problem.nUsers,idx+problem.nUsers+1)
-        phi = problem.thetaUsers(intVect(idx));
+    for idx = 1:length(IDmin)
+        subplot(2,problem.nUsers,problem.nUsers+idx+1);
+        tt = strcat('User',{' '},num2str(IDmin(idx)),{' '},'Theta:',{' '},num2str(problem.thetaUsers(IDmin(idx))));
+        phi = problem.thetaUsers(IDmin(idx));
         pattEl = patternElevation(handle_Conf_Array,problem.freq,phi,'Elevation',elevation,'Type','powerdb');
-        polarpattern(circshift(pattEl,90));
-%         tt = strcat('User',{' '},num2str(intVect(idx)),{' '},'Theta:',{' '},num2str(problem.thetaUsers(intVect(idx))));
-%         title(tt,'FontSize',14);
+        polarpattern(elevation,pattEl,'MagnitudeLim',[-10 max(pattEl)],'AntennaMetrics',0,'TitleTop',tt{:},'TitleTopFontSizeMultiplier',2);
+        hold on;
+        mark = personalMarker(elevation,pattEl,problem.thetaUsers(IDmin(idx)));
+        polarpattern(elevation,mark);
     end
-%     suptt = strcat('Radiation pattern for user',{' '},num2str(problem.IDUserAssigned));
-%     suptitle(suptt,'FontSize',14);
+    
+    suptt = strcat('Radiation pattern for user',{' '},num2str(IDmax));
+    tit = suptitle(suptt{:});
+    set(tit,'FontSize',14)
+end
+
+function mark = personalMarker(angleRange,directivity,userAngle)
+    % Creates a marker to visualize the user's angle (LoS) or angles
+    % (multipath/multipath-5G)
+    mark = (-1).*Inf(size(angleRange));
+    [~,tIdx] = min(abs(angleRange-userAngle));
+    mark(tIdx) = max(directivity);
 end
 

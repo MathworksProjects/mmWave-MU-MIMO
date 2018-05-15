@@ -7,10 +7,17 @@ if any(experimentList(:)==1);    experiment1();   end
 if any(experimentList(:)==2);    experiment2();   end
 if any(experimentList(:)==3);    experiment3();   end
 if any(experimentList(:)==4);    experiment4();   end
-if any(experimentList(:)==5);    experiment5();   end
+if any(experimentList(:)==5)
+    %     nAntennasList = 2.^4;
+    nAntennasList = 2.^[3 4 5 6];
+    nIter = 1;
+    plotFLAG = true;
+    [CapTot,SINRTot,PrxTot,IntTot] = experiment5(nIter,nAntennasList,plotFLAG);
+end
+if any(experimentList(:)==51);    experiment51();   end
 
 function experiment1(varargin)
-    %% EXPERIMENT 1 - Capacity offered
+    % EXPERIMENT 1 - Capacity offered
     % In this experiment we evaluate the capacity that the heuristics are able
     % to offer to the devices. Heuristics assigns antennas as a function of the
     % priority. The traffic is overloaded. The users location and channel
@@ -37,16 +44,19 @@ function experiment1(varargin)
     % main_plotting(problem,TXbitsTot,THTot,baseFlows,lastSelFlow);
 end
 
-%% EXPERIMENT 2 - Chances of achieving the demanded throughput
+% EXPERIMENT 2 - Chances of achieving the demanded throughput
 % To-Do. It uses the whole simulator and takes the real traffic as input.
-%% EXPERIMENT 3 - Performance comparisson against null-forcing technique
+
+% EXPERIMENT 3 - Performance comparisson against null-forcing technique
 % To-Do. The comparisson needs to be agains a more updated technique such
 % as the JSDM. Waiting for reply from Kaushik to write to them and get the
 % code.
-%% EXPERIMENT 4 - Convergency analysis
+
+% EXPERIMENT 4 - Convergency analysis
 % To-Do. Santi takes care of it.
-function experiment5(varargin)
-    %% EXPERIMENT 5 - Capacity achieved per #antennas and priority
+
+function [CapTot,SINRTot,PrxTot,IntTot] = experiment5(nIter,nAntennasList,plotFLAG)
+    % EXPERIMENT 5 - Capacity achieved per #antennas and priority
     % In this experiment, we evaluate the impact of the priority given by
     % the scheduler to users on the number of antennas allocated per users
     % and, in turn, in the capacity achieved in the system.
@@ -57,64 +67,137 @@ function experiment5(varargin)
     % Load basic parameters
     problem = o_read_input_problem('data/metaproblem_test.dat');
     conf = o_read_config('data/config_test.dat');
-    % Override parameters
-    problem.nUsers = 3;
-    problem.MinObjFIsSNR = true;
-%     problem.MinObjF = (problem.nUsers:-1:1);
-    delta = 0.1;
-    SNRdBTops = 30;  % in dB
-    problem.MinObjF = delta.*(problem.nUsers:-1:1)*(10^(SNRdBTops/10));
-    candSet = (1:1:problem.nUsers);
-%     N_AntennasList = 2.^[3 4 5 6 7 8 9 10];
-    N_AntennasList = 2.^8;
-    % Configure the simulation environment
-    [problem,~,~] = f_configuration(conf,problem);
+    % Override (problem) parameters
+    problem.nUsers = 2;
+    problem.MinObjFIsSNR = true;  % (arbitrary)
+    problem.MinObjF = 100.*ones(1,problem.nUsers);  % Same #ant per user. Random SNR (30dB)
+    % Override (conf) parameters
+    conf.algorithm = 'GA';
+    conf.Maxgenerations_Data = 30;  % Increase the number of generations for GA
+    conf.MaxStallgenerations_Data = 30;  % Force it to cover all the generations
+    conf.multiPath = false;  % LoS channel (for now)
+	% Configure basic parameters
+    candSet = (1:1:problem.nUsers);  % Set of users to be considered
+	% Create output variables
+    CapTot = zeros(problem.nUsers,length(nAntennasList),nIter);
+    CapAv = zeros(problem.nUsers,length(nAntennasList));
+    SINRTot = zeros(problem.nUsers,length(nAntennasList),nIter);
+    SINRAv = zeros(problem.nUsers,length(nAntennasList));
+    PrxTot = zeros(problem.nUsers,length(nAntennasList),nIter);
+    IntTot = zeros(problem.nUsers,problem.nUsers,length(nAntennasList),nIter);
     % Main execution
-    for idx = 1:length(N_AntennasList)
-        % Select number of antennas
-        problem.N_Antennas = N_AntennasList(idx);
-        % Adjust parameters
-        problem.NxPatch = floor(sqrt(problem.N_Antennas));
-        problem.NyPatch = floor(problem.N_Antennas./problem.NxPatch);
-        problem.N_Antennas = problem.NxPatch.*problem.NyPatch;
-        % Call heuristics
-        fprintf('Solving problem with %d antennas and %d users...\n',problem.N_Antennas,problem.nUsers);
-        [sol_found,W,~,~] = f_heuristics(problem,conf,candSet);
-        save('temp/playful_results');
-        %%
-        load('temp/playful_results');
-        fprintf('Solution found: %d\n',sol_found);
-        % Create handle per user
-        problem = o_create_subarray_partition(problem);
-        problem.NzPatch = problem.NxPatch;
-        problem.dz = problem.dx;
-        problem.handle_Ant = phased.CosineAntennaElement('FrequencyRange',...
-                                [problem.freq-(problem.Bw/2) problem.freq+(problem.Bw/2)],...
-                                'CosinePower',[1.5 2.5]); % [1.5 2.5] values set porque sí
-        handle_ConformalArray = phased.URA([problem.NyPatch,problem.NzPatch],...
-                                'Lattice','Rectangular','Element',problem.handle_Ant,...
-                                'ElementSpacing',[problem.dy,problem.dz]);
-        problem.possible_locations = handle_ConformalArray.getElementPosition;
-        
-        % Plot beam pattern obtained with assignation and BF configuration
-        for id = 1:1:problem.nUsers
-            problem.ant_elem = sum(W(id,:)~=0);
-            relevant_positions = (W(id,:)~=0);
-            Taper_user = W(id,relevant_positions);
-            handle_Conf_Array = phased.ConformalArray('Element',problem.handle_Ant,...
-                                  'ElementPosition',...
-                                  [zeros(1,problem.ant_elem);...
-                                  problem.possible_locations(2,relevant_positions);...
-                                  problem.possible_locations(3,relevant_positions)],...
-                                  'Taper',Taper_user);
-            problem.IDUserAssigned = id;
-            o_plotAssignment_mod(problem, handle_Conf_Array);
+    for idxAnt = 1:length(nAntennasList)
+        for idxIter = 1:nIter
+            % Configure the simulation environment. Need to place users in new
+            % locations and create new channels to have statistically
+            % meaningful results
+            [problem,~,~] = f_configuration(conf,problem);
+            % Select number of antennas
+            problem.N_Antennas = nAntennasList(idxAnt);
+            % Adjust parameters
+            problem.NxPatch = floor(sqrt(problem.N_Antennas));
+            problem.NyPatch = floor(problem.N_Antennas./problem.NxPatch);
+            problem.N_Antennas = problem.NxPatch.*problem.NyPatch;
+            % Call heuristics
+            fprintf('Solving problem with %d antennas and %d users...\n',problem.N_Antennas,problem.nUsers);
+            [~,W,~,estObj] = f_heuristics(problem,conf,candSet);
+            % Heuristics - Post Processing
+            if conf.MinObjFIsSNR;     CapTot(:,idxAnt,idxIter)  = log2(estObj+1);  % in bps/Hz
+                                      SINRTot(:,idxAnt,idxIter) = 10*log10(estObj);  % in dB
+            else;                     CapTot(:,idxAnt,idxIter)  = estObj;  % in bps/Hz
+                                      SINRTot(:,idxAnt,idxIter) = 10*log10(2.^(estTH/problem.Bw) - 1);  % in dB
+            end
+            % Reconstruct array
+            % Create handle per user
+            problem1 = o_create_subarray_partition(problem);
+            problem1.NzPatch = problem1.NxPatch;
+            problem1.dz = problem1.dx;
+            problem1.handle_Ant = phased.CosineAntennaElement('FrequencyRange',...
+                                    [problem1.freq-(problem1.Bw/2) problem1.freq+(problem1.Bw/2)],...
+                                    'CosinePower',[1.5 2.5]); % [1.5 2.5] values set porque sí
+            handle_ConformalArray = phased.URA([problem1.NyPatch,problem1.NzPatch],...
+                                    'Lattice','Rectangular','Element',problem1.handle_Ant,...
+                                    'ElementSpacing',[problem1.dy,problem1.dz]);
+            problem1.possible_locations = handle_ConformalArray.getElementPosition;
+            save('temp/playful_results','problem','W');
+            for id = 1:1:problem1.nUsers
+                problem1.ant_elem = sum(W(id,:)~=0);
+                relevant_positions = (W(id,:)~=0);
+                Taper_user = W(id,relevant_positions);
+                handle_Conf_Array = phased.ConformalArray('Element',problem1.handle_Ant,...
+                                      'ElementPosition',...
+                                      [zeros(1,problem1.ant_elem);...
+                                      problem1.possible_locations(2,relevant_positions);...
+                                      problem1.possible_locations(3,relevant_positions)],...
+                                      'Taper',Taper_user);
+                % Extract Rx Power (in dB)
+                PrxTot(id,idxAnt,idxIter) = patternAzimuth(handle_Conf_Array,problem.freq,problem.thetaUsers(id),'Azimuth',problem.phiUsers(id),'Type','powerdb');
+                % Extract interference generated to others (in dB)
+                for id1 = 1:1:problem1.nUsers
+                    if id1~=id
+                        IntTot(id,id1,idxAnt,idxIter) = patternAzimuth(handle_Conf_Array,problem.freq,problem.thetaUsers(id1),'Azimuth',problem.phiUsers(id1),'Type','powerdb');
+                    end
+                end
+                problem.nUsers
+                problem1.IDUserAssigned = id;
+                if plotFLAG
+                    % Plot beam pattern obtained with assignation and BF configuration
+                    o_plotAssignment_mod(problem1, handle_Conf_Array);
+                    % Plot assignation
+                    px = problem1.possible_locations(3,:);  % Antenna allocation on x-axis
+                    py = problem1.possible_locations(2,:);  % Antenna allocation on y-axis
+                    pz = problem1.possible_locations(1,:);  % Antenna allocation on z-axispatch = o_getPatch(problem.NxPatch,problem.NyPatch,px,py);
+                    patch = o_getPatch(problem1.NxPatch,problem1.NyPatch,px,py);
+                    arrays = o_getArrays(problem1.nUsers,max(problem1.NmaxArray),W,px,py,pz);
+                    o_plot_feasible_comb(problem1,conf,patch,arrays);
+                end
+            end
         end
-        % Plot assignation
-        px = problem.possible_locations(3,:);  % Antenna allocation on x-axis
-        py = problem.possible_locations(2,:);  % Antenna allocation on y-axis
-        pz = problem.possible_locations(1,:);  % Antenna allocation on z-axispatch = o_getPatch(problem.NxPatch,problem.NyPatch,px,py);
-        arrays = o_getArrays(problem.nUsers,max(problem.NmaxArray),W,px,py,pz);
-        o_plot_feasible_comb(problem,conf,patch,arrays);
+        CapAv(:,idxAnt) = mean(CapTot(:,idxAnt,:),2);  % Store average value
+        SINRAv(:,idxAnt) = mean(SINRTot(:,idxAnt,:),2);  % Store average value
     end
+end
+
+function experiment51(varargin)
+    % EXPERIMENT 5 - Capacity achieved per #antennas and priority
+    % In this experiment, we evaluate the impact of the priority given by
+    % the scheduler to users on the number of antennas allocated per users
+    % and, in turn, in the capacity achieved in the system.
+    %
+    %------------- BEGIN CODE EXPERIMENT 1 --------------
+    %
+    fprintf('Running experiment 51...\n');
+    load('temp/playful_results','problem','W');
+    % Create handle per user
+    problem = o_create_subarray_partition(problem);  %#ok
+    problem.NzPatch = problem.NxPatch;
+    problem.dz = problem.dx;
+    problem.handle_Ant = phased.CosineAntennaElement('FrequencyRange',...
+                            [problem.freq-(problem.Bw/2) problem.freq+(problem.Bw/2)],...
+                            'CosinePower',[1.5 2.5]); % [1.5 2.5] values set porque sí
+    handle_ConformalArray = phased.URA([problem.NyPatch,problem.NzPatch],...
+                            'Lattice','Rectangular','Element',problem.handle_Ant,...
+                            'ElementSpacing',[problem.dy,problem.dz]);
+    problem.possible_locations = handle_ConformalArray.getElementPosition;
+
+    % Plot beam pattern obtained with assignation and BF configuration
+    for id = 1:1:problem.nUsers
+        problem.ant_elem = sum(W(id,:)~=0);
+        relevant_positions = (W(id,:)~=0);
+        Taper_user = W(id,relevant_positions);
+        handle_Conf_Array = phased.ConformalArray('Element',problem.handle_Ant,...
+                              'ElementPosition',...
+                              [zeros(1,problem.ant_elem);...
+                              problem.possible_locations(2,relevant_positions);...
+                              problem.possible_locations(3,relevant_positions)],...
+                              'Taper',Taper_user);
+        problem.IDUserAssigned = id;
+        o_plotAssignment_mod(problem, handle_Conf_Array);
+    end
+    % Plot assignation
+%     px = problem.possible_locations(3,:);  % Antenna allocation on x-axis
+%     py = problem.possible_locations(2,:);  % Antenna allocation on y-axis
+%     pz = problem.possible_locations(1,:);  % Antenna allocation on z-axispatch = o_getPatch(problem.NxPatch,problem.NyPatch,px,py);
+%     arrays = o_getArrays(problem.nUsers,max(problem.NmaxArray),W,px,py,pz);
+%     o_plot_feasible_comb(problem,conf,patch,arrays);
 end
