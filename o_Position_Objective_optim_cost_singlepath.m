@@ -56,11 +56,14 @@ function [Val] = o_Position_Objective_optim_cost_singlepath(Position_Taper, conf
         % Computing the received power in every user
         PRx = zeros(1,problem.nUsers);
         for u=1:problem.nUsers
-            PRx(u) = pattern(handle_Conf_Array,problem.freq,...
-                    problem.phiUsers(u),...
-                    problem.thetaUsers(u),...
-                    'Type','Power')*...
-                    (problem.lambda/(4*pi*problem.dUsers(u)))^2;
+            % Pathloss into consideration (old)
+%             PRx(u) = pattern(handle_Conf_Array,problem.freq,...
+%                     problem.phiUsers(u),...
+%                     problem.thetaUsers(u),...
+%                     'Type','Power')*...
+%                     (problem.lambda/(4*pi*problem.dUsers(u)))^2;
+            % Consider only antenna directivity (seems more fair)
+            PRx(u) = patternAzimuth(handle_Conf_Array, problem.freq, problem.thetaUsers(u), 'Azimuth', problem.phiUsers(u), 'Type', 'power');
         end
 
         PR = PRx(problem.IDUserAssigned);
@@ -70,7 +73,8 @@ function [Val] = o_Position_Objective_optim_cost_singlepath(Position_Taper, conf
 
     % Computing the function value from the SL_Mag 
     if problem.nUsers > 1
-        Val = conf.Fweights(1)*Int/PR + conf.Fweights(2)*HPBW/(360^2);
+%         Val = conf.Fweights(1)*Int/PR + conf.Fweights(2)*HPBW/(360^2);
+        Val = conf.Fweights(1)*Int/PR;
     else
         Val = conf.Fweights(1)*1/PR + conf.Fweights(2)*HPBW/(360^2);
     end
