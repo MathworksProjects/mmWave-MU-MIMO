@@ -1,23 +1,14 @@
 % ---------------- BASIC PARAMETERS ------------------------------------- %
 anglesInRadians = false;  % To deterministically specify locations (radians or degrees)
 detLocation     = true;  % Determine if location is deterministic
-thetaUsers      = [ -30 +15 +15 -30 ...
-                    +15 -30 -30 +15 ...
-                    -15 +30 +30 -15 ...
-                    +30 -15 -15 +30 ];   % Assign Theta (elevation) values (only if detLocation=true)
-phiUsers        = [ -30 +15 -15 +30 ...
-                    -30 +15 -15 +30 ...
-                    -30 +15 -15 +30 ...
-                    -30 +15 -15 +30 ];   % Assign Phi (athymut) values (only if detLocation=true)
-dUsers          = [   5   5   5   5 ...
-                      5   5   5   5 ...
-                      5   5   5   5 ...
-                      5   5   5   5 ];   % Assign distances (in m) (only if detLocation=true)
+thetaUsers      = [ +15 -15 -15 +15 +30 -30 -30 +30 +15 +15 -30 -30 -15 +30 +30 -15];  % Assign Theta (elevation) values (only if detLocation=true)
+phiUsers        = [ +15 -15 +15 -15 +30 -30 +30 -30 +30 -30 -15 +15 +30 +15 -15 -30];  % Assign Phi (athymut) values (only if detLocation=true)
+dUsers          = [   5   5   5   5   5   5   5   5   5   5   5   5   5   5   5   5];  % Assign distances (in m) (only if detLocation=true)
 % ----------------------------------------------------------------------- %
 
 % ---------------- OPTIMIZATION PARAMETERS ------------------------------ %
 algorithm      = GA;  % Genetic -> 'GA'; PatternSearch -> 'PS'; Particle Swarm Optimization -> 'PSO'
-Fweights       = [0.5 0.5 0];  % Weights used for objective function for each user alloc. subproblem [Prx Interference Beamwidth]
+Fweights       = [0.7 0.3 0];  % Weights used for objective function for each user alloc. subproblem [Prx Interference Beamwidth]
 solver         = 'BestOrRemove';  % Solver 'LuckAndChoice' or 'BestOrRemove'
 ObjFunc        = 'compute_avCap_maxminthr_LAC';  % Objective function for 'LuckAndChoice'
 RefineSolution = false;  % Sets whether we want to refine the solution given for a certain group of users when there is room for improvement
@@ -44,7 +35,7 @@ multiPath      = false;  % multi-path channel or LOS channel. The former require
 % ----------------------------------------------------------------------- %
 
 % ---------------- DEBUGGING PARAMETERS --------------------------------- %
-verbosity      = 1;  % Verbosity level (0 no output, 1 some informative output, 2 DEBUG mode)
+verbosity      = 2;  % Verbosity level (0 no output, 1 some informative output, 2 DEBUG mode)
 % ----------------------------------------------------------------------- %
 
 % ---------------- PLOTTING PARAMETERS ---------------------------------- %

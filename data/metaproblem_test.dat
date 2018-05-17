@@ -4,9 +4,9 @@
  *********************************************/
 % ---------------- SIMULATION PARAMETERS ---------------- %
 realizations     = 100;
-N_Antennas       = 16; % Obtenemos la raíz cuadrada y a tomar...
-NxSubarrays      = 3;
-NySubarrays      = 3;
+N_Antennas       = 16;
+NxSubarrays      = 2;
+NySubarrays      = 2;
 NmaxArray        = 0.2:0.2:1;
 mindUsers        = 5;
 maxdUsers        = 5;

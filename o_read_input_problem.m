@@ -52,7 +52,5 @@ function [problem] = o_read_input_problem(problem_file)
     % Spacing between antennas y-axis
     problem.dy = problem.lambda/(problem.invdAntennas*problem.gamma);
     % Number of subarrays
-    problem.NxSubarrays = floor(problem.NxPatch/problem.nUsers);
-    problem.NySubarrays = floor(problem.NyPatch/problem.nUsers);
     problem.N_Subarrays = problem.NxSubarrays*problem.NySubarrays;
 end
