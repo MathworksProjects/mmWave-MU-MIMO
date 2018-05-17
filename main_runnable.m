@@ -8,11 +8,11 @@ if any(experimentList(:)==2);    experiment2();   end
 if any(experimentList(:)==3);    experiment3();   end
 if any(experimentList(:)==4);    experiment4();   end
 if any(experimentList(:)==5)
-    %     nAntennasList = 2.^4;
-    nAntennasList = 2.^[3 4];
+%     nAntennasList = [3 4 5].^2;
+    nAntennasList = [6 7 8].^2;
     nIter = 3;
     plotFLAG = true;
-    [CapTot,SINRTot,PrxTot,IntTot] = experiment5(nIter,nAntennasList,plotFLAG);
+    [CapTot,SINRTot,PrxTot,PrxAv,IntTot,IntAv] = experiment5(nIter,nAntennasList,plotFLAG);
 end
 if any(experimentList(:)==51);    experiment51();   end
 
@@ -55,27 +55,30 @@ end
 % EXPERIMENT 4 - Convergency analysis
 % To-Do. Santi takes care of it.
 
-function [CapTot,SINRTot,PrxTot,IntTot] = experiment5(nIter,nAntennasList,plotFLAG)
+function [CapTot,SINRTot,PrxTot,PrxAv,IntTot,IntAv] = experiment5(nIter,nAntennasList,plotFLAG)
     % EXPERIMENT 5 - Capacity achieved per #antennas and priority
     % In this experiment, we evaluate the impact of the priority given by
     % the scheduler to users on the number of antennas allocated per users
     % and, in turn, in the capacity achieved in the system.
     %
-    %------------- BEGIN CODE EXPERIMENT 1 --------------
+    %------------- BEGIN CODE EXPERIMENT 5 --------------
     %
     fprintf('Running experiment 5...\n');
     % Load basic parameters
     problem = o_read_input_problem('data/metaproblem_test.dat');
     conf = o_read_config('data/config_test.dat');
     % Override (problem) parameters
-    problem.nUsers = 2;
+    problem.nUsers = 2;  % Number of users in the simulation
     problem.MinObjFIsSNR = true;  % (arbitrary)
     problem.MinObjF = 100.*ones(1,problem.nUsers);  % Same #ant per user. Random SNR (30dB)
     problem.arrayRestriction = 'None';  % Possibilities: "None", "Localized", "Interleaved", "DiagInterleaved"
     % Override (conf) parameters
-    conf.algorithm = 'GA';
-    conf.PopulationSize_Data = 40;
+    conf.verbosity = 0;
+    conf.algorithm = 'GA';  % Heuristic algorithm
+    conf.NumPhaseShifterBits = 60;  % Number of 
+    conf.PopulationSize_Data = 20;  % Heuristics population
     conf.Maxgenerations_Data = 20;  % Increase the number of generations for GA
+    conf.FunctionTolerance_Data = 1e-10;  % Heuristics stops when not improving solution by this much
     conf.EliteCount_Data = ceil(conf.PopulationSize_Data/2);
     conf.MaxStallgenerations_Data = conf.Maxgenerations_Data;  % Force it to cover all the generations
     conf.multiPath = false;  % LoS channel (for now)
@@ -145,18 +148,53 @@ function [CapTot,SINRTot,PrxTot,IntTot] = experiment5(nIter,nAntennasList,plotFL
                 if plotFLAG
                     % Plot beam pattern obtained with assignation and BF configuration
                     o_plotAssignment_mod(problem1, handle_Conf_Array);
-                    % Plot assignation
-                    px = problem1.possible_locations(3,:);  % Antenna allocation on x-axis
-                    py = problem1.possible_locations(2,:);  % Antenna allocation on y-axis
-                    pz = problem1.possible_locations(1,:);  % Antenna allocation on z-axispatch = o_getPatch(problem.NxPatch,problem.NyPatch,px,py);
-                    patch = o_getPatch(problem1.NxPatch,problem1.NyPatch,px,py);
-                    arrays = o_getArrays(problem1.nUsers,max(problem1.NmaxArray),W,px,py,pz);
-                    o_plot_feasible_comb(problem1,conf,patch,arrays);
                 end
+            end
+            if plotFLAG
+                % Plot assignation
+                px = problem1.possible_locations(3,:);  % Antenna allocation on x-axis
+                py = problem1.possible_locations(2,:);  % Antenna allocation on y-axis
+                pz = problem1.possible_locations(1,:);  % Antenna allocation on z-axispatch = o_getPatch(problem.NxPatch,problem.NyPatch,px,py);
+                patch = o_getPatch(problem1.NxPatch,problem1.NyPatch,px,py);
+                arrays = o_getArrays(problem1.nUsers,max(problem1.NmaxArray),W,px,py,pz);
+                o_plot_feasible_comb(problem1,conf,patch,arrays);
             end
             save('temp/exp5-results_so_far','PrxTot','IntTot');
         end
     end
+    % Convert back to Watts (from dB)
+    Prx_lin = 10.^(PrxTot./10);
+    Int_lin = 10.^(IntTot./10);
+    % Compute average Prx and Interference
+    PrxAv = zeros(problem.nUsers,length(nAntennasList));
+    IntAv = zeros(problem.nUsers,length(nAntennasList));
+    % Get figure number
+    h = findobj('type','figure');
+    figNum = length(h) + 1;
+    for id = 1:problem.nUsers
+        PrxAv_lin = mean(Prx_lin(id,:,:),3);
+        usrRange = (1:problem.nUsers);
+        usrRange(ismember(usrRange,id)) = [];
+        IntAv_lin = mean(Int_lin(id,usrRange,:,:),4);
+        PrxAv(id,:) = 10*log10(PrxAv_lin);
+        IntAv(id,:) = 10*log10(IntAv_lin);
+        % Plotting
+        figure(figNum); hold on;
+        plot(nAntennasList,PrxAv(id,:),'LineWidth',2);
+        figure(figNum+1); hold on;
+        plot(nAntennasList,IntAv(id,:),'LineWidth',2);
+        grid minor;
+    end
+    figure(figNum);
+    grid minor;
+    xlabel('Number of available antennas','FontSize',12);
+    ylabel('Power in dB','FontSize',12);
+    title('Received power to intended user','FontSize',12);
+	figure(figNum+1);
+    grid minor;
+    xlabel('Number of available antennas','FontSize',12);
+    ylabel('Power in dB','FontSize',12);
+    title('Cumulated generated interference','FontSize',12);
 end
 
 function experiment51(varargin)
