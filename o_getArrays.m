@@ -1,7 +1,11 @@
-function array = o_getArrays(N,Nmax,W,px,py,pz)
+function array = o_getArrays(N,W,px,py,pz)
 % Matrix W is a 2D matrix with dimensions [N,Nmax]
 % If a given antenna is selected (W(.,.) ~= 0), we
 % save its x,y,z location in the array vector
+    Nmax = -Inf;
+    for n = 1:N
+        Nmax = max(Nmax,length(find(W(n,:))));
+    end
     array = ones(3,Nmax,N)*(-Inf);
     for n = 1:N
         ind_array = 1;

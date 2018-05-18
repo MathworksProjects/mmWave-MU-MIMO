@@ -17,6 +17,10 @@ function [problem] = o_read_input_problem(problem_file)
                 struct('name','gamma','type','float');
                 struct('name','nUsers','type','interval');
                 struct('name','maxnChannelPaths','type','interval');
+                struct('name','thetaUsers','type','floatArray','size','nUsers');
+                struct('name','phiUsers','type','floatArray','size','nUsers');
+                struct('name','anglesInRadians','type','bool');
+                struct('name','dUsers','type','floatArray','size','nUsers');
                 struct('name','mindUsers','type','float');
                 struct('name','maxdUsers','type','float');
                 struct('name','MaxObjF','type','float');

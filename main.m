@@ -83,7 +83,7 @@ elseif (nargin==0)
     problem = f_configuration(problem);  % Struct with configuration parameters
     %% Geographic distribution of users
     [problem.thetaUsers, problem.phiUsers, problem.dUsers] = ...
-        o_generate_positions(conf, problem.nUsers, problem.maxdUsers,problem.mindUsers);
+        o_generate_positions(conf, problem);
     %% Generate channels per user
     if conf.Use5GChannel
         % 5G 3GPP ETSI TR 38.901 compliant channel model

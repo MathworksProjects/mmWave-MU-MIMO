@@ -134,7 +134,9 @@ function [sol_found,W,handle_ConformalArray,Cap] = f_heuristics(problem,conf,use
             TempMaxCapacity = log2(problem.MaxObjF+1);
             [aveCap, Cap] = o_compute_averageCap_maxminthr(PRx,I,problem.Noise,...
                 TempMaxCapacity,TempMinCapacity);
-            aveCap = 2^aveCap - 1;
+            if aveCap ~= -Inf
+                aveCap = 2^aveCap - 1;
+            end
             Cap = 2.^Cap - 1;
         else
             [aveCap, Cap] = o_compute_averageCap_maxminthr(PRx,I,problem.Noise,...
@@ -223,7 +225,7 @@ function [sol_found,W,handle_ConformalArray,Cap] = f_heuristics(problem,conf,use
         % Group array assignments: 3 rows (x, y, z coordinates), problem.Nmax 
         % columns (antennas selected from the patch), and N layers (number of users
         % i.e. number of different assignations from the same patch and Nmax)
-        arrays = o_getArrays(problem.nUsers,max(problem.NmaxArray),W,px,py,pz);
+        arrays = o_getArrays(problem.nUsers,W,px,py,pz);
         o_plot_feasible_comb(problem,conf,patch,arrays);
     end
     

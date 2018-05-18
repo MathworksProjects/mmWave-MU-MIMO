@@ -16,8 +16,6 @@ function [conf] = o_read_config(config_file)
         conf.IncludeBeamPattern = false;
         % If set to true, the Alg. 1 solution is random
         conf.randomSolution = false;
-        % Sets whether we will introduce the angles in radians or degrees 
-        conf.anglesInRadians = false;
         % Weights used in the optimization function for each user alloc. subproblem
         conf.Fweights = [0.4 0.3 0];
         % Solver 'LuckAndChoice' or 'BestOrRemove'
@@ -69,11 +67,7 @@ function [conf] = o_read_config(config_file)
         % We read first all those that are not related to the number of users
         inputArgList = {
                     % Basic parameters
-                    struct('name','anglesInRadians','type','bool');
                     struct('name','detLocation','type','bool');
-                    struct('name','thetaUsers','type','floatArray','size',16);
-                    struct('name','phiUsers','type','floatArray','size',16);
-                    struct('name','dUsers','type','floatArray','size',16);
                     % Optimization parameters
                     struct('name','algorithm','type','char');
                     struct('name','Fweights','type','floatArray','size',3);
@@ -89,6 +83,9 @@ function [conf] = o_read_config(config_file)
                     struct('name','feasibility','type','bool');
                     % Extra Optimization parameters
                     struct('name','NumPhaseShifterBits','type','int');
+                    struct('name','NbitsAmplitude','type','int');
+                    struct('name','percMutatedGens','type','float');
+                    struct('name','mutationImpact','type','float');
                     struct('name','PopulationSize_Data','type','float');
                     struct('name','EliteCount_Data','type','float');
                     struct('name','CrossoverFraction_Data','type','float');

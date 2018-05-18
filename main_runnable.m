@@ -156,7 +156,7 @@ function [CapTot,SINRTot,PrxTot,PrxAv,IntTot,IntAv] = experiment5(nIter,nAntenna
                 py = problem1.possible_locations(2,:);  % Antenna allocation on y-axis
                 pz = problem1.possible_locations(1,:);  % Antenna allocation on z-axispatch = o_getPatch(problem.NxPatch,problem.NyPatch,px,py);
                 patch = o_getPatch(problem1.NxPatch,problem1.NyPatch,px,py);
-                arrays = o_getArrays(problem1.nUsers,max(problem1.NmaxArray),W,px,py,pz);
+                arrays = o_getArrays(problem1.nUsers,W,px,py,pz);
                 o_plot_feasible_comb(problem1,conf,patch,arrays);
             end
             save('temp/exp5-results_so_far','PrxTot','IntTot');
@@ -237,6 +237,6 @@ function experiment51(varargin)
 %     px = problem.possible_locations(3,:);  % Antenna allocation on x-axis
 %     py = problem.possible_locations(2,:);  % Antenna allocation on y-axis
 %     pz = problem.possible_locations(1,:);  % Antenna allocation on z-axispatch = o_getPatch(problem.NxPatch,problem.NyPatch,px,py);
-%     arrays = o_getArrays(problem.nUsers,max(problem.NmaxArray),W,px,py,pz);
+%     arrays = o_getArrays(problem.nUsers,W,px,py,pz);
 %     o_plot_feasible_comb(problem,conf,patch,arrays);
 end

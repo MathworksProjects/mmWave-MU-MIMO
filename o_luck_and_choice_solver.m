@@ -79,7 +79,7 @@ function [sol_found,W,averageCap,totTime,usersAssigned] = o_luck_and_choice_solv
     % i.e. number of different assignations from the same patch and Nmax)
     arraysCell = cell(length(problem.NmaxArray),1);
     for i = 1:length(problem.NmaxArray)
-        arraysCell{i} = o_getArrays(problem.nUsers,problem.NmaxArray(i),...
+        arraysCell{i} = o_getArrays(problem.nUsers,...
             squeeze(W(:,i,:)),px,py,pz);
     end
 

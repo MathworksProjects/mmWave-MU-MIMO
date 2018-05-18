@@ -1,9 +1,5 @@
 % ---------------- BASIC PARAMETERS ------------------------------------- %
-anglesInRadians = false;  % To deterministically specify locations (radians or degrees)
 detLocation     = true;  % Determine if location is deterministic
-thetaUsers      = [ +15 -15 -15 +15 +30 -30 -30 +30 +15 +15 -30 -30 -15 +30 +30 -15];  % Assign Theta (elevation) values (only if detLocation=true)
-phiUsers        = [ +15 -15 +15 -15 +30 -30 +30 -30 +30 -30 -15 +15 +30 +15 -15 -30];  % Assign Phi (athymut) values (only if detLocation=true)
-dUsers          = [   5   5   5   5   5   5   5   5   5   5   5   5   5   5   5   5];  % Assign distances (in m) (only if detLocation=true)
 % ----------------------------------------------------------------------- %
 
 % ---------------- OPTIMIZATION PARAMETERS ------------------------------ %
@@ -20,7 +16,10 @@ genStructure   = onlyAssigned;  % Sets the data structure for the Algorithm 1 so
 NoCut          = false;
 feasibility    = true;
 % ---------------- EXTRA PARAMETERS ------------------------------------- %
-NumPhaseShifterBits      = 20;    % Controls the set of possibilities to iterate over. (set to 0 for unrestricted)
+NumPhaseShifterBits      = 4;    % Controls the number of bits available to control the weights' phases (set to 0 for unrestricted)
+NbitsAmplitude = 4;               % Controls the number of bits available to control the weights' amplitudes (set to 0 for unrestricted)
+percMutatedGens = 10;             % Percentage of gens modified every mutation
+mutationImpact = 0.2;             % Standard deviation of the normal distribution used in the mutation
 PopulationSize_Data      = 30;    % Heuristics
 EliteCount_Data          = 15;    % Heuristics
 CrossoverFraction_Data   = 0.3;   % Heuristics
@@ -35,7 +34,7 @@ multiPath      = false;  % multi-path channel or LOS channel. The former require
 % ----------------------------------------------------------------------- %
 
 % ---------------- DEBUGGING PARAMETERS --------------------------------- %
-verbosity      = 2;  % Verbosity level (0 no output, 1 some informative output, 2 DEBUG mode)
+verbosity      = 1;  % Verbosity level (0 no output, 1 some informative output, 2 DEBUG mode)
 % ----------------------------------------------------------------------- %
 
 % ---------------- PLOTTING PARAMETERS ---------------------------------- %

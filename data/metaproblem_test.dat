@@ -8,6 +8,10 @@ N_Antennas       = 16;
 NxSubarrays      = 2;
 NySubarrays      = 2;
 NmaxArray        = 0.2:0.2:1;
+thetaUsers      = [ +15 -15 -15 +15 +30 -30 -30 +30 +15 +15 -30 -30 -15 +30 +30 -15];  % Assign Theta (elevation) values (only if detLocation=true)
+phiUsers        = [ +15 -15 +15 -15 +30 -30 +30 -30 +30 -30 -15 +15 +30 +15 -15 -30];  % Assign Phi (athymut) values (only if detLocation=true)
+anglesInRadians = false;  % To deterministically specify locations (radians or degrees)
+dUsers          = [   5   5   5   5   5   5   5   5   5   5   5   5   5   5   5   5];  % Assign distances (in m) (only if detLocation=true)
 mindUsers        = 5;
 maxdUsers        = 5;
 MaxObjF          = Inf;

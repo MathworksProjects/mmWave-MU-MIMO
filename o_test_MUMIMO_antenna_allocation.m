@@ -20,8 +20,9 @@ function [solutions] = o_test_MUMIMO_antenna_allocation(conf_file,problem_file)
     
     for r=1:meta_problem.realizations
         for u=1:length(meta_problem.nUsers)
-            [thetaPos, phiPos, dPos] = o_generate_positions(conf,meta_problem.nUsers(u),...
-                meta_problem.maxdUsers,meta_problem.mindUsers);
+            tmp_problem = meta_problem;
+            tmp_problem.nUsers = meta_problem.nUsers(u);
+            [thetaPos, phiPos, dPos] = o_generate_positions(conf,tmp_problem);
             [MaxObjF,MinObjF] = o_generate_maxmin_throughput(meta_problem.nUsers(u),...
                 meta_problem.maxMinObjF,meta_problem.minMinObjF,...
                 meta_problem.MaxObjF);
