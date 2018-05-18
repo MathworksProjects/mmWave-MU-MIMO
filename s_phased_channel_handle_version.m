@@ -1,4 +1,4 @@
-classdef s_phased_channel < matlab.System
+classdef s_phased_channel_handle_version < matlab.System
     % phased_channel Add summary here
     %
     % NOTE: When renaming the class name phased_channel, the file name
@@ -12,15 +12,9 @@ classdef s_phased_channel < matlab.System
     end
     
     properties(Nontunable)
-        numInputElements_row = 8;
-        numInputElements_col = 8;
-        numOutputElements_col = 1;
-        numOutputElements_row = 1;
         SNR = 5;
-        center_frequency = 60.48e9;
         isLoS = true;
         applyPathLoss = false;
-        profile = 'CDL-C';
     end
     
     properties(DiscreteState)
@@ -47,21 +41,10 @@ classdef s_phased_channel < matlab.System
                 'NoiseMethod',                  'Signal to noise ratio (SNR)', ...
                 'SNR',                          obj.SNR);
             
-            cdlChan = nr5gCDLChannel;
-            cdlChan.SampleRate = 1760e6 / 1; %% SC-1760e6 sa/s, OFDM 2640e6 sa/s
-            cdlChan.TransmitAntennaArray.Size = [obj.numInputElements_row, obj.numInputElements_col, 1, 1, 1];
-            cdlChan.ReceiveAntennaArray.Size = [obj.numOutputElements_col, obj.numOutputElements_row, 1, 1, 1];
-            cdlChan.DelayProfile = obj.profile;
-            cdlChan.DelaySpread = 100e-9;
-            cdlChan.CarrierFrequency = obj.center_frequency;
-            cdlChan.MaximumDopplerShift = (0 / 3.6) / physconst('lightspeed') * obj.center_frequency; % 0km/h pedestrian
-            
-            obj.CDLChannel = cdlChan;
-            
         end
         
-        function [rxWaveforms] = stepImpl(obj, txWaveforms, distance_3d)
-            [rxWaveforms]       = obj.CDLChannel(txWaveforms);
+        function [rxWaveforms] = stepImpl(obj, txWaveforms, distance_3d, cdlChanHandle)
+            rxWaveforms = cdlChanHandle(txWaveforms);
             if obj.applyPathLoss
                 [~, rxWaveforms]= apply_pathloss(obj, distance_3d, rxWaveforms);
             end

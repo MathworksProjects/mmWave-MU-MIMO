@@ -15,8 +15,8 @@ classdef s_phased_tx < matlab.System
         %% Antenna configurations
         numTxElements_row = 8;
         numTxElements_col = 8;
-        txPower = 8;    % Watts
-        txGain = 0;     % dBW
+        txPower = 1;    % Watts
+        txGain = 1;     % dBW
         
         %% Waveform specifications
         center_frequency = 60.48e9;
@@ -35,6 +35,7 @@ classdef s_phased_tx < matlab.System
         steeringvec;
         transmitter;
         radiator;
+        array_response;
     end
     
     methods
@@ -50,36 +51,43 @@ classdef s_phased_tx < matlab.System
             light_speed = physconst('light');
             wavelength = light_speed / obj.center_frequency;
             
-            % Antenna definition
+            % Antenna definition, URA
             %             obj.antenna_array = phased.ULA( ...
             %                 obj.numTxElements, ...
             %                 'ElementSpacing',           0.5 * wavelength, ...
             %                 'Element',                  phased.IsotropicAntennaElement('BackBaffled', true));
             
+            % Antenna definition, URA
             obj.antenna_array = phased.URA( ...
                 'Size',                     [obj.numTxElements_row, obj.numTxElements_col], ...
                 'ElementSpacing',           0.5 * wavelength, ...
                 'Element',                  phased.IsotropicAntennaElement('BackBaffled', true));
             
+            % Steering vector according to antenna array
             obj.steeringvec = phased.SteeringVector( ...
                 'SensorArray',              obj.antenna_array, ...
                 'PropagationSpeed',         light_speed);
             
-            %Gain per antenna element
+            % Transmitter
             obj.transmitter = phased.Transmitter( ...
-                'PeakPower',                obj.txPower / obj.numTxElements, ...
+                'PeakPower',                obj.txPower / (obj.numTxElements_row + obj.numTxElements_col), ...
                 'Gain',                     obj.txGain);
             
-            %Transmit array
+            % Radiator
             obj.radiator = phased.Radiator( ...
                 'Sensor',                   obj.antenna_array, ...
                 'WeightsInputPort',         true, ...
                 'PropagationSpeed',         light_speed, ...
                 'OperatingFrequency',       obj.center_frequency,...
                 'CombineRadiatedSignals',   false);
+            
+            % Antenna response with weights input
+            obj.array_response = phased.ArrayResponse( ...
+                'SensorArray',              obj.antenna_array, ...
+                'WeightsInputPort',         true);
         end
         
-        function txWaveforms = stepImpl(obj, txBits, toRxAngle, W)
+        function [txWaveforms, respAtAngle] = stepImpl(obj, txBits, toRxAngle, W)
             
             %% Temp-debug part -- 2 sub array beamformings
             if isempty(W) %% W unspecified
@@ -111,23 +119,25 @@ classdef s_phased_tx < matlab.System
                 % boresight, we do not need to steer them physically
                 W = wT_hybrid;
             end
-            %% Radiate signals out of weights
-            txWaveforms = obj.radiator(txBits, ...
-                repmat([0; 0], 1, obj.numTxElements_row * obj.numTxElements_col), conj(W));
             
             %% Amplify those signals through transmitter
-            txWaveforms = obj.transmitter(txWaveforms)
-
+            txWaveforms = obj.transmitter(txBits);
+            
+            %% Radiate signals out of weights
+            txWaveforms = obj.radiator(txWaveforms, ...
+                repmat([0; 0], 1, obj.numTxElements_row * obj.numTxElements_col), conj(W));
+            
+            %% Generate responses
+            respAtAngle = obj.array_response(obj.center_frequency, toRxAngle, W);
+            
+            %% Visualizations
             if obj.visualization
-                array_resp = phased.ArrayResponse( ...
-                    'SensorArray', obj.antenna_array, ...
-                    'WeightsInputPort', true);
                 scanAz = -180 : 180;
                 max_rho = 5e3;
-                arrayResponse = array_resp(obj.center_frequency, scanAz, wT_hybrid);
+                arrayResponse = obj.array_response(obj.center_frequency, scanAz, wT_hybrid);
                 figure(1)
                 polar(deg2rad(scanAz(:)),abs(arrayResponse(:))*max_rho/4, '-m');
-                title('Transmitter Antenna Pattern');
+                title('Transmit Antenna Pattern');
             end
         end
         

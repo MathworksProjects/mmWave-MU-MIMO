@@ -38,7 +38,7 @@ classdef s_phy_rx < matlab.System
             obj.numPkt = 0;
         end
 
-        function [rxPSDU, rxFlag] = stepImpl(obj, rxWaveform, channelGain, cfgDMG)
+        function [rxPSDU, rxFlag] = stepImpl(obj, rxWaveform, cfgDMG)
             ind = wlanFieldIndices(cfgDMG);
             fs = wlanSampleRate(cfgDMG);
             Ngi = 64; % Fixed GI length defined in the standard (20.6.3.2.5)

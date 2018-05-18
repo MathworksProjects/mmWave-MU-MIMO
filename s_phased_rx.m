@@ -13,7 +13,7 @@ classdef s_phased_rx < matlab.System
         %% Center frequency
         center_frequency = 60.48e9;
         %% Rx gain
-        rxGain = 100;           % in dB
+        rxGain = 1;           % in dB
         % Noise temperature
         %         nT = 290;               % deg K
         %% number of receive antenna
