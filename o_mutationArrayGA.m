@@ -14,12 +14,18 @@ function mutationChildren  = o_mutationArrayGA(parents, options, nvars, ...
             child = parent;
             child(p(1)) = parent(p(2));
             child(p(2)) = parent(p(1));
-            % Randomly modify min(one tenth,1) of the weights
-            mutations = max(ceil(problem.Nmax/2/10),1);
+            % Randomly modify percMutatedGens % of the weights
+            mutations = max(ceil(problem.Nmax/2/100*conf.percMutatedGens),1);
             m = ceil(nvars/2 * rand(1,mutations));
             for j = 1:mutations
-                child(m(j)) = min(problem.maxAmpW,max(problem.minAmpW,child(m(j)) + ...
-                    normrnd(0,0.7*(problem.maxAmpW-problem.minAmpW))));
+                proposedMutation = child(m(j)) + normrnd(0,conf.mutationImpact*(problem.maxAmpW-problem.minAmpW));
+                if conf.NbitsAmplitude ~= 0
+                    fixedPointMutation = floor(proposedMutation/problem.fixedPointScale)*problem.fixedPointScale;
+                else
+                    fixedPointMutation = proposedMutation;
+                end
+                child(m(j)) = min(problem.maxAmpW,max(problem.minAmpW, ...
+                    fixedPointMutation));
                 if(child(m(j))==0) || child(m(j))>1
                     disp('mutation:uyuyuy');
                 end
@@ -35,7 +41,7 @@ function mutationChildren  = o_mutationArrayGA(parents, options, nvars, ...
             p = min(nvars,round(nvars/2 * rand(1,2)) + nvars/2 + 1);
             child(p(1)) = parent(p(2));
             child(p(2)) = parent(p(1));
-            % Randomly modify min(one tenth,1) of the weights
+            % Randomly modify percMutatedGens % of the weights
             for j = 1:mutations
                 child(m(j) + nvars/2) = min(problem.maxPhaseW, max(problem.minPhaseW,child(m(j) + ...
                     nvars/2)+normrnd(0,(problem.maxPhaseW-problem.minPhaseW)/16)));
@@ -55,13 +61,19 @@ function mutationChildren  = o_mutationArrayGA(parents, options, nvars, ...
             child(p(1)) = parent(p(2));
             child(p(2)) = parent(p(1));
             % Randomly modify min(one tenth,1) of the weights
-            mutations = max(ceil(problem.Nmax/2/10),1);
+            mutations = max(ceil(problem.Nmax/2/100*conf.percMutatedGens),1);
             m = ceil(((nvars-1)/3) * rand(1,mutations)) + ((nvars-1)/3);
             for j = 1:mutations
-                child(m(j)) = min(problem.maxAmpW,max(problem.minAmpW,child(m(j)) + ...
-                    normrnd(0,0.7*(problem.maxAmpW-problem.minAmpW))));
+                proposedMutation = child(m(j)) + normrnd(0,conf.mutationImpact*(problem.maxAmpW-problem.minAmpW));
+                if conf.NbitsAmplitude ~= 0
+                    fixedPointMutation = floor(proposedMutation/problem.fixedPointScale)*problem.fixedPointScale;
+                else
+                    fixedPointMutation = proposedMutation;
+                end
+                child(m(j)) = min(problem.maxAmpW,max(problem.minAmpW, ...
+                    fixedPointMutation));
                 if(child(m(j))==0) || child(m(j))>1
-                    disp('mutation:uyuyuy');
+                    disp('mutation:uyuyuy1');
                 end
             end
             % Randomly modify min(one tenth,1) of the weights
@@ -69,15 +81,21 @@ function mutationChildren  = o_mutationArrayGA(parents, options, nvars, ...
                 child(m(j) + ((nvars-1)/3)) = min(problem.maxPhaseW, max(problem.minPhaseW,child(m(j) + ...
                     ((nvars-1)/3))+normrnd(0,(problem.maxPhaseW-problem.minPhaseW)/16)));
                 if(child(m(j) + ((nvars-1)/3))<-pi)
-                    disp('mutation:uyuyuy');
+                    disp('mutation:uyuyuy2');
                 end
             end
             % Randomly modify Fbb
-            child(end) = min(1,max(0,child(end) + normrnd(0,0.7)));
+            proposedMutation = child(end) + normrnd(0,conf.mutationImpact);
+            if conf.NbitsAmplitude ~= 0
+                fixedPointMutation = floor(proposedMutation/problem.fixedPointScale)*problem.fixedPointScale;
+            else
+                fixedPointMutation = proposedMutation;
+            end
+            child(end) = min(1,max(0, fixedPointMutation));
             mutationChildren(i,:) = child; % Normally mutationChildren(i,:)
             uniqueAnt = unique(child(1:((nvars-1)/3)));
             if conf.verbosity > 1 && length(uniqueAnt) ~= ((nvars-1)/3)
-                display('mutation:uyuyuy');
+                disp('mutation:uyuyuy3');
             end
         end
     end    

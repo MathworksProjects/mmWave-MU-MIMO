@@ -9,7 +9,7 @@ options = optimoptions('ga');
 options = optimoptions(options,'PopulationSize', PopulationSize_Data);
 options = optimoptions(options,'EliteCount', EliteCount_Data);
 options = optimoptions(options,'CrossoverFraction', CrossoverFraction_Data);
-options = optimoptions(options,'NonlinearConstraintAlgorithm', 'auglag'); % 'penalty'
+%options = optimoptions(options,'NonlinearConstraintAlgorithm', 'auglag'); % 'penalty'
 options = optimoptions(options,'MaxGenerations', MaxGenerations_Data);
 options = optimoptions(options,'FunctionTolerance', FunctionTolerance_Data);
 options = optimoptions(options,'MaxStallGenerations', MaxStallGenerations_Data);
@@ -64,7 +64,7 @@ else
     else
         [x,fval,exitflag,output,population,score] = ...
         ga(@(x)o_Position_Objective_optim_cost_singlepath(x,conf,problem),...
-        nvar,[],[],[],[],lb,ub,@(x)o_all_NonLinear_Constraints(x,conf,problem),...
+        nvar,[],[],[],[],[],[],[],... % lb,ub,@(x)o_all_NonLinear_Constraints(x,conf,problem),...
         [],options); %integervars,options);
     end
 end
