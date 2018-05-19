@@ -1,15 +1,5 @@
 classdef s_phased_tx < matlab.System
-    % phased_tx Add summary here
-    %
-    % NOTE: When renaming the class name untitled5, the file name
-    % and constructor name must be updated to use the class name.
-    %
-    % This template includes most, but not all, possible properties,
-    % attributes, and methods that you can implement for a System object.
-    
-    properties
-        
-    end
+    % s_phased_tx implements a phased array transmitter
     
     properties(Nontunable)
         %% Antenna configurations
@@ -24,12 +14,7 @@ classdef s_phased_tx < matlab.System
         %% Vis
         visualization = false;
     end
-    
-    properties(DiscreteState)
-        
-    end
-    
-    % Pre-computed constants
+
     properties(Access = private)
         antenna_array;
         steeringvec;
@@ -88,7 +73,6 @@ classdef s_phased_tx < matlab.System
         end
         
         function [txWaveforms, respAtAngle] = stepImpl(obj, txBits, toRxAngle, W)
-            
             %% Temp-debug part -- 2 sub array beamformings
             if isempty(W) %% W unspecified
                 % Hybrid beamforming -- 2 sub arrays
@@ -142,7 +126,9 @@ classdef s_phased_tx < matlab.System
         end
         
         function resetImpl(obj)
-            
+            release(obj.transmitter);
+            release(obj.radiator);
+            release(obj.array_response);
         end
     end
 end

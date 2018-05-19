@@ -1,11 +1,5 @@
 classdef s_phy_tx < matlab.System
-    % phy_tx Add summary here
-    %
-    % NOTE: When renaming the class name untitled, the file name
-    % and constructor name must be updated to use the class name.
-    %
-    % This template includes most, but not all, possible properties,
-    % attributes, and methods that you can implement for a System object.
+    % s_phy_tx Implements a 802.11ad phy transmitter
 
     properties(Nontunable)
         %% Waveform specification
@@ -13,10 +7,6 @@ classdef s_phy_tx < matlab.System
         TrainingLength = 4;
         PacketType = 'TRN-R';
         PSDULength = 1000; % in Bytes
-    end
-
-    properties(DiscreteState)
-
     end
 
     properties(Access = private)

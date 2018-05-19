@@ -1,15 +1,5 @@
 classdef s_phy_rx < matlab.System
-    % phy_rx Add summary here
-    %
-    % NOTE: When renaming the class name untitled9, the file name
-    % and constructor name must be updated to use the class name.
-    %
-    % This template includes most, but not all, possible properties,
-    % attributes, and methods that you can implement for a System object.
-
-    properties
-
-    end
+    % s_phy_rx implements a relatively comperehensive 802.11ad phy receiver
 
     properties(Nontunable)
         PacketDetectThreshold = 0.5; % Good for low SNRs
@@ -25,7 +15,6 @@ classdef s_phy_rx < matlab.System
     end
 
     methods
-        % Constructor
         function obj = s_phy_rx(varargin)
             setProperties(obj,nargin,varargin{:})
         end
@@ -95,7 +84,7 @@ classdef s_phy_rx < matlab.System
         end
 
         function resetImpl(obj)
-            % Initialize / reset discrete-state properties
+            
         end
     end
 end

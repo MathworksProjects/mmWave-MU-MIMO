@@ -1,16 +1,28 @@
 function finalSet = f_PER(candSet, problem, W, TXbits, MCS, channel_handles)
-%This function conduct communication layer experiments 
-%   This function takes in several parameters,
-%   1. candSet -- potential candidate set; numerical vector, index start with 1;
+%This function conduct communication layer experiments
+% Syntax:  see function definition
+%
+% Inputs:
+%	1. candSet -- potential candidate set; numerical vector, index start with 1;
 %   2. problem -- struct
-%   3. W -- the weights matrix, shall be nUsers x (nRow*nCol elements) dim
-%   4. TXbits -- length of payload; integer number
-%   5. MCS -- modulation and coding scheme, ranging from 1 to 12
+%   3. W       -- the weights matrix, shall be nUsers x (nRow*nCol elements) dim
+%   4. TXbits  -- length of payload; integer number
+%   5. MCS     -- modulation and coding scheme, ranging from 1 to 12
 %   6. channel_handles -- CDLChannel handles stored in a cell, indexed by
-%   specific user
-%   Generates one logical array, contains true or false, indicating for
+%                         users
+%
+% Outputs:
+%    finalSet  -- Generates one logical array, contains true or false, indicating for
 %   that user, the packet go through or not
+%
+% Other m-files required: s_* functions
+% Subfunctions: none
+% MAT-files required: none
+%
 
+% Author: Zhengnan Li
+
+%------------- BEGIN CODE --------------
 %% All parameters needed from upper layer
 % PHY
 lengthPSDU = TXbits;

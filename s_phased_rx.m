@@ -1,29 +1,21 @@
 classdef s_phased_rx < matlab.System
-    % untitled4 Add summary here
-    %
-    % This template includes the minimum set of functions required
-    % to define a System object with discrete state.
-    
-    % Public, tunable properties
-    properties
-        
-    end
+    % s_phased_rx Implements a relative comprehensive phased array receiver
     
     properties(Nontunable)
         %% Center frequency
         center_frequency = 60.48e9;
+        
         %% Rx gain
-        rxGain = 1;           % in dB
-        % Noise temperature
-        %         nT = 290;               % deg K
+        rxGain = 1;
+        
         %% number of receive antenna
         numRxElements = 1;
         
         %% Vis
         visualization = false
+        
     end
-    
-    % Pre-computed constants
+
     properties(Access = private)
         antenna_array
         collector
@@ -38,7 +30,7 @@ classdef s_phased_rx < matlab.System
     
     methods(Access = protected)
         function setupImpl(obj)
-            % Perform one-time calculations, such as computing constants
+            
             light_speed = physconst('LightSpeed');
             lambda = light_speed / obj.center_frequency;
             antenna_spacing = lambda / 2;
@@ -81,7 +73,8 @@ classdef s_phased_rx < matlab.System
         end
         
         function resetImpl(obj)
-            % Initialize / reset discrete-state properties
+            release(obj.collector);
+            release(obj.receiver);
         end
     end
 end

@@ -1,15 +1,7 @@
 classdef s_phased_channel_handle_version < matlab.System
-    % phased_channel Add summary here
-    %
-    % NOTE: When renaming the class name phased_channel, the file name
-    % and constructor name must be updated to use the class name.
-    %
-    % This template includes most, but not all, possible properties,
-    % attributes, and methods that you can implement for a System object.
-    
-    properties
-        
-    end
+    % s_phased_channel_handle_version Simulate 3GPP TR 38.901 channel + 
+    % pathloss + noise, the difference is this system object takes in
+    % handles for nr5gCDLChannel
     
     properties(Nontunable)
         SNR = 5;
@@ -17,13 +9,8 @@ classdef s_phased_channel_handle_version < matlab.System
         applyPathLoss = false;
     end
     
-    properties(DiscreteState)
-        
-    end
-    
     properties(Access = private)
         AWGNChannel;
-        CDLChannel;
     end
     
     methods
@@ -52,10 +39,9 @@ classdef s_phased_channel_handle_version < matlab.System
         end
         
         function resetImpl(obj)
-            
+            release(obj.AWGNChannel);
         end
-        
-        
+
     end
     
     methods(Access = private)
