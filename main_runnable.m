@@ -8,9 +8,9 @@ if any(experimentList(:)==2);    experiment2();   end
 if any(experimentList(:)==3);    experiment3();   end
 if any(experimentList(:)==4);    experiment4();   end
 if any(experimentList(:)==5)
-%     nAntennasList = [3 4 5].^2;
-    nAntennasList = [6 7 8].^2;
-    nIter = 3;
+%     nAntennasList = [4 5 6].^2;
+    nAntennasList = [4 5 6 7 8 9 10 11].^2;
+    nIter = 1;
     plotFLAG = true;
     [CapTot,SINRTot,PrxTot,PrxAv,IntTot,IntAv] = experiment5(nIter,nAntennasList,plotFLAG);
 end
@@ -73,14 +73,14 @@ function [CapTot,SINRTot,PrxTot,PrxAv,IntTot,IntAv] = experiment5(nIter,nAntenna
     problem.MinObjF = 100.*ones(1,problem.nUsers);  % Same #ant per user. Random SNR (30dB)
     problem.arrayRestriction = 'None';  % Possibilities: "None", "Localized", "Interleaved", "DiagInterleaved"
     % Override (conf) parameters
-    conf.verbosity = 0;
+    conf.verbosity = 1;
     conf.algorithm = 'GA';  % Heuristic algorithm
     conf.NumPhaseShifterBits = 60;  % Number of 
-    conf.PopulationSize_Data = 20;  % Heuristics population
-    conf.Maxgenerations_Data = 20;  % Increase the number of generations for GA
     conf.FunctionTolerance_Data = 1e-10;  % Heuristics stops when not improving solution by this much
-    conf.EliteCount_Data = ceil(conf.PopulationSize_Data/2);
-    conf.MaxStallgenerations_Data = conf.Maxgenerations_Data;  % Force it to cover all the generations
+%     conf.PopulationSize_Data = 50;  % Heuristics population
+%     conf.Maxgenerations_Data = 50;  % Increase the number of generations for GA    
+%     conf.EliteCount_Data = ceil(conf.PopulationSize_Data/2);
+%     conf.MaxStallgenerations_Data = conf.Maxgenerations_Data;  % Force it to cover all the generations
     conf.multiPath = false;  % LoS channel (for now)
 	% Configure basic parameters
     candSet = (1:1:problem.nUsers);  % Set of users to be considered
@@ -91,6 +91,11 @@ function [CapTot,SINRTot,PrxTot,PrxAv,IntTot,IntAv] = experiment5(nIter,nAntenna
     IntTot = zeros(problem.nUsers,problem.nUsers,length(nAntennasList),nIter);
     % Main execution
     for idxAnt = 1:length(nAntennasList)
+        PopSizeList = [25 40 55 70 85 100 115 130];
+        conf.PopulationSize_Data = PopSizeList(idxAnt);
+        conf.Maxgenerations_Data = PopSizeList(idxAnt);
+        conf.EliteCount_Data = ceil(conf.PopulationSize_Data/2);
+        conf.MaxStallgenerations_Data = conf.Maxgenerations_Data;  % Force it to cover all the generations
         for idxIter = 1:nIter
             fprintf('Iteration %d\n',idxIter);
             % Configure the simulation environment. Need to place users in new
@@ -171,30 +176,37 @@ function [CapTot,SINRTot,PrxTot,PrxAv,IntTot,IntAv] = experiment5(nIter,nAntenna
     % Get figure number
     h = findobj('type','figure');
     figNum = length(h) + 1;
-    for id = 1:problem.nUsers
-        PrxAv_lin = mean(Prx_lin(id,:,:),3);
-        usrRange = (1:problem.nUsers);
-        usrRange(ismember(usrRange,id)) = [];
-        IntAv_lin = mean(Int_lin(id,usrRange,:,:),4);
-        PrxAv(id,:) = 10*log10(PrxAv_lin);
-        IntAv(id,:) = 10*log10(IntAv_lin);
-        % Plotting
-        figure(figNum); hold on;
-        plot(nAntennasList,PrxAv(id,:),'LineWidth',2);
-        figure(figNum+1); hold on;
-        plot(nAntennasList,IntAv(id,:),'LineWidth',2);
+    if plotFLAG
+        % Plot
+        leg = cell(problem.nUsers,1);
+        for id = 1:problem.nUsers
+            PrxAv_lin = mean(Prx_lin(id,:,:),3);
+            usrRange = (1:problem.nUsers);
+            usrRange(ismember(usrRange,id)) = [];
+            IntAv_lin = mean(Int_lin(id,usrRange,:,:),4);
+            PrxAv(id,:) = 10*log10(PrxAv_lin);
+            IntAv(id,:) = 10*log10(sum(IntAv_lin,2));
+            % Plotting
+            figure(figNum); hold on;
+            plot(nAntennasList,PrxAv(id,:),'LineWidth',2,'Marker','s');
+            figure(figNum+1); hold on;
+            plot(nAntennasList,IntAv(id,:),'LineWidth',2,'Marker','s');
+            grid minor;
+            leg{id} = cell2mat(strcat('user',{' '},num2str(id)));
+        end
+        figure(figNum);
         grid minor;
+        xlabel('Number of available antennas','FontSize',12);
+        ylabel('Power in dB','FontSize',12);
+        title('Received power to intended user','FontSize',12);
+        legend(leg,'FontSize',12);
+        figure(figNum+1);
+        grid minor;
+        xlabel('Number of available antennas','FontSize',12);
+        ylabel('Power in dB','FontSize',12);
+        title('Cumulated generated interference','FontSize',12);
+        legend(leg,'FontSize',12);
     end
-    figure(figNum);
-    grid minor;
-    xlabel('Number of available antennas','FontSize',12);
-    ylabel('Power in dB','FontSize',12);
-    title('Received power to intended user','FontSize',12);
-	figure(figNum+1);
-    grid minor;
-    xlabel('Number of available antennas','FontSize',12);
-    ylabel('Power in dB','FontSize',12);
-    title('Cumulated generated interference','FontSize',12);
 end
 
 function experiment51(varargin)
