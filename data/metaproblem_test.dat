@@ -18,6 +18,7 @@ MaxObjF          = Inf;
 maxMinObjF       = 2;
 minMinObjF       = 0.01;
 nUsers           = 2;  % Number of users in the coverage area receiving traffic
+maxnUsers        = 20;  % Maximum number of users allowed in sim (memory preallocation)
 Tslot            = 10;  % Time slot in milliseconds
 Tsym             = 3e2;  % Total simulation time in milliseconds
 targetPER        = 1e-2;  % The target PER specified linearly (i.e. 1e-2 is PER of 1%)
@@ -28,6 +29,7 @@ DEBUG            = false;  % Enable Debugger and logs for scheduling part
 freq             = 60e9;  % Frequency of operation in Hz
 gamma            = 1;
 Noise            = -104.5; % Noise figure in dBs
+Ptx              = 10;  % Transmit power in dBm
 Bw               = 2e9;  % Available Bandwidth in Hz
 c                = 299792458;  % Light speed constant
 % ----------------------------------------------------- %

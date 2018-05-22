@@ -8,13 +8,19 @@ if any(experimentList(:)==2);    experiment2();   end
 if any(experimentList(:)==3);    experiment3();   end
 if any(experimentList(:)==4);    experiment4();   end
 if any(experimentList(:)==5)
-%     nAntennasList = [4 5 6].^2;
-    nAntennasList = [4 5 6 7 8 9 10 11].^2;
-    nIter = 1;
+    nUsers = 2;
+%     nAntennasList = [4 5 6 7 8 9 10].^2;
+    nAntennasList = [4 5 6].^2;
+    nIter = 2;
     plotFLAG = true;
-    [CapTot,SINRTot,PrxTot,PrxAv,IntTot,IntAv] = experiment5(nIter,nAntennasList,plotFLAG);
+    [Cap,SINR_BB,SINR_PB,DirOK,DirNOK_gntd,DirNOK_pcvd] = ...
+                          experiment5(nIter,nUsers,nAntennasList,plotFLAG);
+    experiment5_plot(nUsers,nAntennasList,Cap,SINR_BB,SINR_PB,DirOK,DirNOK_gntd,DirNOK_pcvd);
 end
-if any(experimentList(:)==51);    experiment51();   end
+if any(experimentList(:)==51)
+    load('temp/exp5-results','nUsers','nAntennasList','Cap','SINR_BB','SINR_PB','DirOK','DirNOK_gntd','DirNOK_pcvd');
+    experiment5_plot(nUsers,nAntennasList,Cap,SINR_BB,SINR_PB,DirOK,DirNOK_gntd,DirNOK_pcvd);
+end
 
 function experiment1(varargin)
     % EXPERIMENT 1 - Capacity offered
@@ -55,11 +61,44 @@ end
 % EXPERIMENT 4 - Convergency analysis
 % To-Do. Santi takes care of it.
 
-function [CapTot,SINRTot,PrxTot,PrxAv,IntTot,IntAv] = experiment5(nIter,nAntennasList,plotFLAG)
-    % EXPERIMENT 5 - Capacity achieved per #antennas and priority
-    % In this experiment, we evaluate the impact of the priority given by
-    % the scheduler to users on the number of antennas allocated per users
-    % and, in turn, in the capacity achieved in the system.
+function [Cap,SINR_BB,SINR_PB,DirOK,DirNOK_gntd,DirNOK_pcvd] = experiment5(nIter,nUsers,nAntennasList,plotFLAG)
+    % EXPERIMENT 5 -- 
+    % 
+    % Aim: Evaluate the average received power (Prx) at the intended users
+    % and Interference (Int) generated at other users. The secuential
+    % allocation policy leads to an unfair allocation policy, which leads
+    % to different Prx and Int values. This experiment analyzes how the
+    % size of the antenna array and the place in the priority list impact
+    % on the performance of the system
+    % 
+	% Assumptions (Fixed):
+    %   1. Number of antennas: Same across users and prop. to Array size.
+    %   2. Number of users: nUsers.
+    %   3. User location: From config file.
+    %   4. Sub-array geometry: 'None'.
+    %   5. Antenna Array geometry: Fixed to URA.
+    %   6. Algorithm: GA
+    % Variable:
+    %   1. Antenna Array size variable: nAntennasList
+    %   2. Population size: Prop. to nAntennas in Array
+    % 
+    % Syntax:  [CapTot,SINRTot,DirOKTot,DirOKAv,DirNOKTot,DirNOKAv] =
+    % experiment5(nIter,nUsers,nAntennasList,plotFLAG)
+    % 
+    % Inputs:
+    %    nIter - Number of iterations to extract average values
+    %    nUsers - Number of users considered
+    %    nAntennaList - Number of antenas
+    %    plotFLAG - True for plotting directivity and antenna allocation
+    %
+    % Outputs: (all have dimensions [nUsers x nAntennasList])
+    %    Cap - Capacity in b/Hz/s 
+    %    SINR_BB - BaseBand SINR in dB
+    %    SINR_PB - PassBand SINR in dB
+    %    DirOK - Directivity to the intended transmitter in dB
+    %    DirNOK_gntd - Directivity generated to other nodes in dB
+    %    DirNOK_pcvd - Directivity perceived due to interfeering nodes in
+    %                  dB (nUsers x nAntennasList)
     %
     %------------- BEGIN CODE EXPERIMENT 5 --------------
     %
@@ -68,7 +107,7 @@ function [CapTot,SINRTot,PrxTot,PrxAv,IntTot,IntAv] = experiment5(nIter,nAntenna
     problem = o_read_input_problem('data/metaproblem_test.dat');
     conf = o_read_config('data/config_test.dat');
     % Override (problem) parameters
-    problem.nUsers = 2;  % Number of users in the simulation
+    problem.nUsers = nUsers;  % Number of users in the simulation
     problem.MinObjFIsSNR = true;  % (arbitrary)
     problem.MinObjF = 100.*ones(1,problem.nUsers);  % Same #ant per user. Random SNR (30dB)
     problem.arrayRestriction = 'None';  % Possibilities: "None", "Localized", "Interleaved", "DiagInterleaved"
@@ -77,27 +116,31 @@ function [CapTot,SINRTot,PrxTot,PrxAv,IntTot,IntAv] = experiment5(nIter,nAntenna
     conf.algorithm = 'GA';  % Heuristic algorithm
     conf.NumPhaseShifterBits = 60;  % Number of 
     conf.FunctionTolerance_Data = 1e-10;  % Heuristics stops when not improving solution by this much
-%     conf.PopulationSize_Data = 50;  % Heuristics population
-%     conf.Maxgenerations_Data = 50;  % Increase the number of generations for GA    
-%     conf.EliteCount_Data = ceil(conf.PopulationSize_Data/2);
-%     conf.MaxStallgenerations_Data = conf.Maxgenerations_Data;  % Force it to cover all the generations
     conf.multiPath = false;  % LoS channel (for now)
 	% Configure basic parameters
     candSet = (1:1:problem.nUsers);  % Set of users to be considered
 	% Create output variables
     CapTot = zeros(problem.nUsers,length(nAntennasList),nIter);
     SINRTot = zeros(problem.nUsers,length(nAntennasList),nIter);
-    PrxTot = zeros(problem.nUsers,length(nAntennasList),nIter);
-    IntTot = zeros(problem.nUsers,problem.nUsers,length(nAntennasList),nIter);
+    DirOKTot = -Inf(problem.nUsers,length(nAntennasList),nIter);
+    DirNOKTot = -Inf(problem.nUsers,problem.nUsers,length(nAntennasList),nIter);
+    % Linearize combinations and asign Population size (To be replaced with
+    % convergency analysis values)
+%     totComb = log10(problem.nUsers.*factorial(ceil(nAntennasList/problem.nUsers)));
+%     maxPop = 70;  % Maximum population size
+%     minPop = 40;  % Minimum population size
+%     slope = (maxPop - minPop) / (totComb(end)-totComb(1));
+%     ordIdx = minPop - slope*totComb(1);
+%     PopSizeList = ceil(slope*totComb + ordIdx);
+    PopSizeList = 40*ones(length(nAntennasList),1);
     % Main execution
     for idxAnt = 1:length(nAntennasList)
-        PopSizeList = [25 40 55 70 85 100 115 130];
         conf.PopulationSize_Data = PopSizeList(idxAnt);
-        conf.Maxgenerations_Data = PopSizeList(idxAnt);
+        conf.Maxgenerations_Data = PopSizeList(idxAnt)*10;
         conf.EliteCount_Data = ceil(conf.PopulationSize_Data/2);
-        conf.MaxStallgenerations_Data = conf.Maxgenerations_Data;  % Force it to cover all the generations
+        conf.MaxStallgenerations_Data = conf.Maxgenerations_Data/10;  % Force it to cover all the generations
         for idxIter = 1:nIter
-            fprintf('Iteration %d\n',idxIter);
+            fprintf('Iteration %d with PopSize %d\n',idxIter,PopSizeList(idxAnt));
             % Configure the simulation environment. Need to place users in new
             % locations and create new channels to have statistically
             % meaningful results
@@ -140,13 +183,13 @@ function [CapTot,SINRTot,PrxTot,PrxAv,IntTot,IntAv] = experiment5(nIter,nAntenna
                                       problem1.possible_locations(3,relevant_positions)],...
                                       'Taper',Taper_user);
                 % Extract Rx Power (in dB)
-                PrxTot(id,idxAnt,idxIter) = patternAzimuth(handle_Conf_Array,problem.freq,problem.thetaUsers(id),'Azimuth',problem.phiUsers(id),'Type','powerdb');
-                fprintf('* Directivity IDmax: %.2f (dB)\n',PrxTot(id,idxAnt,idxIter));
+                DirOKTot(id,idxAnt,idxIter) = patternAzimuth(handle_Conf_Array,problem.freq,problem.thetaUsers(id),'Azimuth',problem.phiUsers(id),'Type','powerdb');
+                fprintf('* Directivity IDmax: %.2f (dB)\n',DirOKTot(id,idxAnt,idxIter));
                 % Extract interference generated to others (in dB)
                 for id1 = 1:1:problem1.nUsers
                     if id1~=id
-                        IntTot(id,id1,idxAnt,idxIter) = patternAzimuth(handle_Conf_Array,problem.freq,problem.thetaUsers(id1),'Azimuth',problem.phiUsers(id1),'Type','powerdb');
-                        fprintf('  Directivity IDmin(%d): %.2f (dB)\n',id1,IntTot(id,id1,idxAnt,idxIter));
+                        DirNOKTot(id,id1,idxAnt,idxIter) = patternAzimuth(handle_Conf_Array,problem.freq,problem.thetaUsers(id1),'Azimuth',problem.phiUsers(id1),'Type','powerdb');
+                        fprintf('  Directivity IDmin(%d): %.2f (dB)\n',id1,DirNOKTot(id,id1,idxAnt,idxIter));
                     end
                 end
                 problem1.IDUserAssigned = id;
@@ -164,91 +207,98 @@ function [CapTot,SINRTot,PrxTot,PrxAv,IntTot,IntAv] = experiment5(nIter,nAntenna
                 arrays = o_getArrays(problem1.nUsers,W,px,py,pz);
                 o_plot_feasible_comb(problem1,conf,patch,arrays);
             end
-            save('temp/exp5-results_so_far','PrxTot','IntTot');
+            save('temp/exp5-results_so_far','DirOKTot','DirNOKTot','nUsers','nAntennasList');
         end
     end
     % Convert back to Watts (from dB)
-    Prx_lin = 10.^(PrxTot./10);
-    Int_lin = 10.^(IntTot./10);
-    % Compute average Prx and Interference
-    PrxAv = zeros(problem.nUsers,length(nAntennasList));
-    IntAv = zeros(problem.nUsers,length(nAntennasList));
+    DirOKTot_lin = 10.^(DirOKTot./10);
+    DirNOKTot_lin = 10.^(DirNOKTot./10);
+    % Compute average Directivities
+    DirOK_lin = zeros(nUsers,length(nAntennasList));  % Directivity generated by intended user
+    DirNOK_gntd_lin = zeros(nUsers,length(nAntennasList));  % Generated interference by intended user
+    DirNOK_pcvd_lin = zeros(nUsers,length(nAntennasList));  % Perceived interference by intended user
+    for antIdx = 1:length(nAntennasList)
+        DirOK_lin(:,antIdx) = mean(DirOKTot_lin(:,antIdx,:),3);
+        DirNOK_gntd_lin(:,antIdx) = sum(mean(DirNOKTot_lin(:,:,antIdx,:),4),1); % Generated interference 
+        DirNOK_pcvd_lin(:,antIdx) = sum(mean(DirNOKTot_lin(:,:,antIdx,:),4),2); % Perceived interference
+    end
+    DirOK = 10*log10(DirOK_lin);  % Directivity generated to intended user
+    DirNOK_gntd = 10*log10(DirNOK_gntd_lin);  % Directivity being generated by intended user
+    DirNOK_pcvd = 10*log10(DirNOK_pcvd_lin);  % Directivity inflicted to intended user
+    % Compute SINR and Capacities
+    chLoss = 10*log10( ((4*pi*problem.dUsers(1:nUsers)) ./ problem.lambda).^2 ).';  % Losses
+    chLoss = repmat(chLoss,1,length(nAntennasList));
+    Ptx = repmat(problem.Ptx,1,length(nAntennasList));  % Initial transmit power
+    SINR_PB = Ptx + DirOK - DirNOK_pcvd - chLoss - problem.Noise;  % Compute SINR Pass-Band (PB)
+    SINR_BB = mean(SINRTot,3);  % Compute SINR Base-Band (BB)
+    Cap = mean(CapTot,3);  % Compute Average Capacities in the system
+    save('temp/exp5-results','Cap','SINR_BB','SINR_PB','DirOK','DirNOK_gntd','DirNOK_pcvd','DirOKTot','DirNOKTot','nUsers','nAntennasList');
+end
+
+function experiment5_plot(nUsers,nAntennasList,Cap,SINR_BB,SINR_PB,DirOK,DirNOK_gntd,DirNOK_pcvd)
+    % EXPERIMENT 5 - Plotting results
     % Get figure number
     h = findobj('type','figure');
     figNum = length(h) + 1;
-    if plotFLAG
-        % Plot
-        leg = cell(problem.nUsers,1);
-        for id = 1:problem.nUsers
-            PrxAv_lin = mean(Prx_lin(id,:,:),3);
-            usrRange = (1:problem.nUsers);
-            usrRange(ismember(usrRange,id)) = [];
-            IntAv_lin = mean(Int_lin(id,usrRange,:,:),4);
-            PrxAv(id,:) = 10*log10(PrxAv_lin);
-            IntAv(id,:) = 10*log10(sum(IntAv_lin,2));
-            % Plotting
-            figure(figNum); hold on;
-            plot(nAntennasList,PrxAv(id,:),'LineWidth',2,'Marker','s');
-            figure(figNum+1); hold on;
-            plot(nAntennasList,IntAv(id,:),'LineWidth',2,'Marker','s');
-            grid minor;
-            leg{id} = cell2mat(strcat('user',{' '},num2str(id)));
-        end
-        figure(figNum);
-        grid minor;
-        xlabel('Number of available antennas','FontSize',12);
-        ylabel('Power in dB','FontSize',12);
-        title('Received power to intended user','FontSize',12);
-        legend(leg,'FontSize',12);
-        figure(figNum+1);
-        grid minor;
-        xlabel('Number of available antennas','FontSize',12);
-        ylabel('Power in dB','FontSize',12);
-        title('Cumulated generated interference','FontSize',12);
-        legend(leg,'FontSize',12);
+    % Plot Directivities
+    figure(figNum);  figNum = figNum + 1;
+    leg = cell(nUsers,1);
+    for id = 1:nUsers
+        subplot(1,3,1); hold on;
+        plot(nAntennasList,DirOK(id,:),'LineWidth',2,'Marker','s');
+        subplot(1,3,2); hold on;
+        plot(nAntennasList,DirNOK_gntd(id,:),'LineWidth',2,'Marker','s');
+        subplot(1,3,3); hold on;
+        plot(nAntennasList,DirNOK_pcvd(id,:),'LineWidth',2,'Marker','s');
+        leg{id} = cell2mat(strcat('user',{' '},num2str(id)));
     end
-end
-
-function experiment51(varargin)
-    % EXPERIMENT 5 - Capacity achieved per #antennas and priority
-    % In this experiment, we evaluate the impact of the priority given by
-    % the scheduler to users on the number of antennas allocated per users
-    % and, in turn, in the capacity achieved in the system.
-    %
-    %------------- BEGIN CODE EXPERIMENT 1 --------------
-    %
-    fprintf('Running experiment 51...\n');
-    load('temp/playful_results','problem','W');
-    % Create handle per user
-    problem = o_create_subarray_partition(problem);  %#ok
-    problem.NzPatch = problem.NxPatch;
-    problem.dz = problem.dx;
-    problem.handle_Ant = phased.CosineAntennaElement('FrequencyRange',...
-                            [problem.freq-(problem.Bw/2) problem.freq+(problem.Bw/2)],...
-                            'CosinePower',[1.5 2.5]); % [1.5 2.5] values set porque sí
-    handle_ConformalArray = phased.URA([problem.NyPatch,problem.NzPatch],...
-                            'Lattice','Rectangular','Element',problem.handle_Ant,...
-                            'ElementSpacing',[problem.dy,problem.dz]);
-    problem.possible_locations = handle_ConformalArray.getElementPosition;
-
-    % Plot beam pattern obtained with assignation and BF configuration
-    for id = 1:1:problem.nUsers
-        problem.ant_elem = sum(W(id,:)~=0);
-        relevant_positions = (W(id,:)~=0);
-        Taper_user = W(id,relevant_positions);
-        handle_Conf_Array = phased.ConformalArray('Element',problem.handle_Ant,...
-                              'ElementPosition',...
-                              [zeros(1,problem.ant_elem);...
-                              problem.possible_locations(2,relevant_positions);...
-                              problem.possible_locations(3,relevant_positions)],...
-                              'Taper',Taper_user);
-        problem.IDUserAssigned = id;
-        o_plotAssignment_mod(problem, handle_Conf_Array);
+    subplot(1,3,1);
+    grid minor;
+    xlabel('Number of available antennas','FontSize',12);
+    ylabel('Power in dB','FontSize',12);
+    title('Directivity to intended user','FontSize',12);
+    legend(leg,'FontSize',12);
+    subplot(1,3,2);
+    grid minor;
+    xlabel('Number of available antennas','FontSize',12);
+    ylabel('Power in dB','FontSize',12);
+    title('Interference generated to other users','FontSize',12);
+    legend(leg,'FontSize',12);
+    subplot(1,3,3);
+    grid minor;
+    xlabel('Number of available antennas','FontSize',12);
+    ylabel('Power in dB','FontSize',12);
+    title('Interference generated to intended user','FontSize',12);
+    legend(leg,'FontSize',12);
+    % Plot perceived SINRs
+    figure(figNum);  figNum = figNum + 1;
+    for id = 1:nUsers
+        subplot(1,2,1); hold on;
+        plot(nAntennasList,SINR_BB(id,:),'LineWidth',2,'Marker','s');
+        subplot(1,2,2); hold on;
+        plot(nAntennasList,SINR_PB(id,:),'LineWidth',2,'Marker','s');
     end
-    % Plot assignation
-%     px = problem.possible_locations(3,:);  % Antenna allocation on x-axis
-%     py = problem.possible_locations(2,:);  % Antenna allocation on y-axis
-%     pz = problem.possible_locations(1,:);  % Antenna allocation on z-axispatch = o_getPatch(problem.NxPatch,problem.NyPatch,px,py);
-%     arrays = o_getArrays(problem.nUsers,W,px,py,pz);
-%     o_plot_feasible_comb(problem,conf,patch,arrays);
+    subplot(1,2,1);
+    grid minor;
+    xlabel('Number of available antennas','FontSize',12);
+    ylabel('Power in dB','FontSize',12);
+    title('Base-Band (BB) SINR','FontSize',12);
+    legend(leg,'FontSize',12);
+    subplot(1,2,2);
+    grid minor;
+    xlabel('Number of available antennas','FontSize',12);
+    ylabel('Power in dB','FontSize',12);
+    title('Pass-Band (PB) SINR','FontSize',12);
+    legend(leg,'FontSize',12);
+    % Plot perceived Capacities
+    figure(figNum);  figNum = figNum + 1;                              %#ok
+    for id = 1:nUsers
+        hold on;
+        plot(nAntennasList,Cap(id,:),'LineWidth',2,'Marker','s');
+    end
+    grid minor;
+    xlabel('Number of available antennas','FontSize',12);
+    ylabel('Capacity in bits/Hz/s','FontSize',12);
+    title('Capacity achieved in the system','FontSize',12);
+    legend(leg,'FontSize',12);
 end
