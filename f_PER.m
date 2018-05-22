@@ -1,4 +1,4 @@
-function finalSet = f_PER(candSet, problem, W, TXbits, MCS, channel_handles)
+function finalSet = f_PER(candSet, problem, W, TXbits, MCS, channel_handles, array_handles)
 %This function conduct communication layer experiments
 % Syntax:  see function definition
 %
@@ -25,11 +25,13 @@ function finalSet = f_PER(candSet, problem, W, TXbits, MCS, channel_handles)
 %------------- BEGIN CODE --------------
 %% All parameters needed from upper layer
 % PHY
-lengthPSDU = TXbits;
+lengthPSDU = ceil(TXbits / 8); % in bytes
+noiseFigure = problem.Noise;
 
 % PHASED
 nTx_row = problem.NxPatch;
 nTx_col = problem.NyPatch;
+centerfreq = problem.freq;
 
 % Simulation scenarios
 nUsers = length(candSet);
@@ -37,7 +39,6 @@ angleToRx = phitheta2azel([problem.phiUsers; problem.thetaUsers]);
 distance = problem.dUsers(candSet); %% !!!ASSUME CANDSET START WITH 1 WHEN COUNTING!!!
 
 %% Parameters privite to this function
-SNR = 10;
 nRx = 1;
 
 %% Configure system objects
@@ -50,12 +51,15 @@ tx_pha = s_phased_tx( ...
     'txGain',            20, ...
     'visualization', false);
 channel = s_phased_channel_handle_version( ...
-    'SNR',               SNR, ...
+    'NoiseFigure',               noiseFigure, ...
     'applyPathLoss',     true);
 rx_pha = s_phased_rx( ...
     'numRxElements', nRx, ...
     'rxGain',        20);
 rx_phy = s_phy_rx();
+resp   = phased.ArrayResponse( ...
+    'SensorArray',              array_handles, ...
+    'WeightsInputPort',         true);
 
 %% Simulations
 psdu = cell(nUsers, 1);
@@ -66,23 +70,34 @@ finalSet = false(nUsers, 1);
 for user_iter = 1 : nUsers
     psdu{user_iter} = randi([0 1], lengthPSDU * 8, 1);
     [txSymbols, cfgDMG] = tx_phy(psdu{user_iter});
-    [txWaveforms{user_iter}, response{user_iter}] = tx_pha(txSymbols, angleToRx(:, user_iter), W(:, user_iter));
+    txWaveforms{user_iter} = tx_pha(txSymbols, angleToRx(:, user_iter), W(:, user_iter));
+end
+
+% Get the response -- response is a nUsers x nUsers, e.g., response(1, 3)
+% means, response at angle @ user 1, with W specified by user 3, i.e., the
+% response at interference angle @ user 1
+response = zeros(nUsers, nUsers);
+for outer_iter = 1 : nUsers
+    for inner_iter = 1 : nUsers
+            response(outer_iter, inner_iter) = resp(centerfreq, angleToRx(:, outer_iter), W(:, inner_iter));
+    end
 end
 
 for outer_iter = 1 : nUsers
     combined_tx_waveforms = txWaveforms{outer_iter};
     for inner_iter = 1 : nUsers
         if inner_iter ~= outer_iter
-            combined_tx_waveforms = combined_tx_waveforms + txWaveforms{inner_iter} * response{outer_iter};
+            combined_tx_waveforms = combined_tx_waveforms + txWaveforms{inner_iter} * response(inner_iter, outer_iter);
         end
     end
-
+    
     txWaveforms_afterChannel = channel(combined_tx_waveforms, distance(outer_iter), channel_handles{outer_iter});
     rxSymbols = rx_pha(txWaveforms_afterChannel, angleToRx(outer_iter));
     [psdu_rx, rxflag] = rx_phy(rxSymbols, cfgDMG);
-
+    
     if ~isempty(psdu_rx)
         finalSet(outer_iter) = ~(any(biterr(psdu{outer_iter}, psdu_rx)) && rxflag);
     end
 end
+%------------- END CODE --------------
 end

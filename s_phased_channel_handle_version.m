@@ -7,10 +7,11 @@ classdef s_phased_channel_handle_version < matlab.System
         SNR = 5;
         isLoS = true;
         applyPathLoss = false;
+        NoiseFigure = -104.5;
     end
     
     properties(Access = private)
-        AWGNChannel;
+
     end
     
     methods
@@ -24,10 +25,6 @@ classdef s_phased_channel_handle_version < matlab.System
         %% Common functions
         function setupImpl(obj)
             
-            obj.AWGNChannel = comm.AWGNChannel( ...
-                'NoiseMethod',                  'Signal to noise ratio (SNR)', ...
-                'SNR',                          obj.SNR);
-            
         end
         
         function [rxWaveforms] = stepImpl(obj, txWaveforms, distance_3d, cdlChanHandle)
@@ -35,6 +32,7 @@ classdef s_phased_channel_handle_version < matlab.System
             if obj.applyPathLoss
                 [~, rxWaveforms]= apply_pathloss(obj, distance_3d, rxWaveforms);
             end
+            rxWaveforms         = rxWaveforms + sqrt(db2pow(obj.NoiseFigure)) * randn(size(rxWaveforms));
             rxWaveforms         = obj.AWGNChannel(rxWaveforms);
         end
         

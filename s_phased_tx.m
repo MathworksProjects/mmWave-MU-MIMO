@@ -20,7 +20,7 @@ classdef s_phased_tx < matlab.System
         steeringvec;
         transmitter;
         radiator;
-        array_response;
+%         array_response;
     end
     
     methods
@@ -66,13 +66,13 @@ classdef s_phased_tx < matlab.System
                 'OperatingFrequency',       obj.center_frequency,...
                 'CombineRadiatedSignals',   false);
             
-            % Antenna response with weights input
-            obj.array_response = phased.ArrayResponse( ...
-                'SensorArray',              obj.antenna_array, ...
-                'WeightsInputPort',         true);
+%             % Antenna response with weights input
+%             obj.array_response = phased.ArrayResponse( ...
+%                 'SensorArray',              obj.antenna_array, ...
+%                 'WeightsInputPort',         true);
         end
         
-        function [txWaveforms, respAtAngle] = stepImpl(obj, txBits, toRxAngle, W)
+        function [txWaveforms] = stepImpl(obj, txBits, toRxAngle, W)
             %% Temp-debug part -- 2 sub array beamformings
             if isempty(W) %% W unspecified
                 % Hybrid beamforming -- 2 sub arrays
@@ -111,8 +111,8 @@ classdef s_phased_tx < matlab.System
             txWaveforms = obj.radiator(txWaveforms, ...
                 repmat([0; 0], 1, obj.numTxElements_row * obj.numTxElements_col), conj(W));
             
-            %% Generate responses
-            respAtAngle = obj.array_response(obj.center_frequency, toRxAngle, W);
+%             %% Generate responses
+%             respAtAngle = obj.array_response(obj.center_frequency, toRxAngle, W);
             
             %% Visualizations
             if obj.visualization
