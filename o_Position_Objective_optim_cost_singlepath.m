@@ -8,8 +8,8 @@ function [Val] = o_Position_Objective_optim_cost_singlepath(Position_Taper, conf
     % Define constants
     if ~strcmp(conf.genStructure, 'allAntennas')
         nck = strcmp(conf.genStructure, 'nchoosek');
-        if sum(Position_Taper(1:problem.Nmax-(problem.Nmax*nck)+1) ~= ...
-                floor(Position_Taper(1:problem.Nmax-(problem.Nmax*nck)+1))) > 0
+        if sum(Position_Taper(1:problem.Nmax-nck*(problem.Nmax-1)) ~= ...
+                floor(Position_Taper(1:problem.Nmax-nck*(problem.Nmax-1)))) > 0
             Val = Inf;
             % In the case where Position Taper is formed by any double, we shall discard it
             return

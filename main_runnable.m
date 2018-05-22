@@ -2,11 +2,18 @@
 clear; clc; close all;
 addpath('utilities','-end');  % Add utilities folder at the end of search path
 % Define several experiments here and override variable values accordingly
-experimentList = 5;
+experimentList = 4;
 if any(experimentList(:)==1);    experiment1();   end
 if any(experimentList(:)==2);    experiment2();   end
 if any(experimentList(:)==3);    experiment3();   end
-if any(experimentList(:)==4);    experiment4();   end
+if any(experimentList(:)==4)
+    nUsers = 2;
+%     nAntennasList = [4 5 6 7 8 9 10].^2;
+    nAntennasList = [2 3].^2;
+    nIter = 2;
+    plotFLAG = true;
+    experiment4(nIter,nUsers,nAntennasList,plotFLAG);
+end
 if any(experimentList(:)==5)
     nUsers = 2;
 %     nAntennasList = [4 5 6 7 8 9 10].^2;
@@ -60,6 +67,134 @@ end
 
 % EXPERIMENT 4 - Convergency analysis
 % To-Do. Santi takes care of it.
+function experiment4(nIter,nUsers,nAntennasList,plotFLAG)
+    % EXPERIMENT 4 -- 
+    % 
+    % Aim: Obtain the approximate number of generations (operational cycles)
+    % that we need to obtain a certain quality of solution by comparing the
+    % Genetic Algorithm convergence with the global optimum found by means
+    % of an Exhaustive Search
+    % 
+	% Assumptions (Fixed):
+    %   1. User location: Fixed, from config file.
+    %   2. Sub-array geometry: 'None'.
+    %   3. Antenna Array geometry: Fixed to URA.
+    %   4. Algorithm: GA & ES
+    % Variable:
+    %   1. Antenna Array size variable: nAntennasList
+    %   2. Population size: Fixed with all the rest of GA parameters, in
+    %   order to have a unique dependence on #generations
+    % 
+    % Syntax:  [] =
+    % experiment4(nIters,nUsers,nAntennasList,plotFLAG)
+    % 
+    % Inputs:
+    %    nIter - Number of iterations to extract average values
+    %    nUsers - Number of users considered
+    %    nAntennaList - Number of antenas (set of)
+    %    plotFLAG - True for plotting directivity and antenna allocation
+    %
+    % Outputs: None
+    %
+    %------------- BEGIN CODE EXPERIMENT 4 --------------
+    %
+    fprintf('Running experiment 4...\n');
+    % Load basic parameters
+    problem = o_read_input_problem('data/metaproblem_test.dat');
+    conf = o_read_config('data/config_test.dat');
+    % Override (problem) parameters
+    % Override (problem) parameters
+    problem.nUsers = nUsers;  % Number of users in the simulation
+    problem.MinObjFIsSNR = true;  % (arbitrary)
+    problem.MinObjF = 100.*ones(1,problem.nUsers);  % Same #ant per user. Random SNR (30dB)
+    problem.arrayRestriction = 'None';  % Possibilities: "None", "Localized", "Interleaved", "DiagInterleaved"
+    % Override (conf) parameters
+    conf.verbosity = 0;
+    conf.NumPhaseShifterBits = 2;  % Number of 
+    conf.NbitsAmplitude = 2;
+    conf.FunctionTolerance_Data = 1e-10;  % Heuristics stops when not improving solution by this much
+    conf.multiPath = false;  % LoS channel (for now)
+    
+    % Override GA parameters
+    conf.PopulationSize_Data = 40;
+    conf.Maxgenerations_Data = 100;
+    conf.EliteCount_Data = 10;
+    conf.MaxStallgenerations_Data = 40;  % Force it to cover all the generations
+    h1 = figure;
+    hold on
+    % For each case we execute ES and the GA
+    for idxAnt = 1:length(nAntennasList)
+        for idxIter = 1:4
+            fprintf('Iteration %d with nAntenas %d\n',idxIter,nAntennasList(idxAnt));
+            % Configure the simulation environment. Need to place users in new
+            % locations (if not fixed) and create new channels 
+            % to have statistically meaningful results (if not LoS)
+            [problem,~,~] = f_configuration(conf,problem);
+            % Select number of antennas
+            problem.N_Antennas = nAntennasList(idxAnt);
+            % Adjust parameters
+            problem.NxPatch = floor(sqrt(problem.N_Antennas));
+            problem.NyPatch = floor(problem.N_Antennas./problem.NxPatch);
+            problem.N_Antennas = problem.NxPatch.*problem.NyPatch;
+            % Call heuristics
+            fprintf('\t** %d Antennas and %d Users...\n',problem.N_Antennas,problem.nUsers);
+            % We will paralelize the solution computations: we need (if not already
+            % created) a parallelization processes pool
+            gcp;
+
+            %% Create subarray partition
+            problem = o_create_subarray_partition(problem);
+
+            problem.NzPatch = problem.NxPatch;
+            problem.dz = problem.dx;
+
+            %% Create the antenna handler and the data structure with all possible pos.
+            problem.handle_Ant = phased.CosineAntennaElement('FrequencyRange',...
+                [problem.freq-(problem.Bw/2) problem.freq+(problem.Bw/2)],...
+                'CosinePower',[1.5 2.5]); % [1.5 2.5] values set porque sí
+            handle_ConformalArray = phased.URA([problem.NyPatch,problem.NzPatch],...
+                'Lattice','Rectangular','Element',problem.handle_Ant,...
+            'ElementSpacing',[problem.dy,problem.dz]);
+
+            problem.possible_locations = handle_ConformalArray.getElementPosition;
+
+            % Boolean flag indicating if we have already found a feasible solution
+            problem = o_compute_antennas_per_user(problem,1:nUsers);
+            % We will accumulate in the assignments_status var the
+            % antennas / subarrays assigned as soon as we assign them
+            [~,orderedIndices] = sort(problem.MinObjF,'descend');
+            u = orderedIndices(1);
+            problem.IDUserAssigned = u;
+            
+            % First we execute the Exhaustive Search
+            conf.algorithm = 'ES';  % Heuristic algorithm
+            fprintf('Solving... (Exhaustive Search)\n')
+            [~,~,~,~,globalMin] = ...
+                o_solveSingleNmaxUserInstance(conf,problem,...
+                problem.NmaxArray(problem.IDUserAssigned));
+            fprintf('Solved!\n')
+            figure(h1)
+            disp(globalMin)
+            line(1:conf.Maxgenerations_Data,ones(1,conf.Maxgenerations_Data)*globalMin);
+            drawnow
+            
+            % And secondly using Genetic Algorithm
+            conf.algorithm = 'GA';  % Heuristic algorithm
+            fprintf('Solving... (Genetic Algorithm)\n')
+            [~,~,~,~,bestScores] = ...
+                o_solveSingleNmaxUserInstance(conf,problem,...
+                problem.NmaxArray(problem.IDUserAssigned));
+            fprintf('Solved!\n')
+            figure(h1)
+            disp(bestScores)
+            line(1:length(bestScores),bestScores);
+            drawnow
+            %save('temp/exp5-results_so_far','DirOKTot','DirNOKTot','nUsers','nAntennasList');
+        end
+    end
+        
+        conf.algorithm = 'GA';  % Heuristic algorithm
+end
 
 function [Cap,SINR_BB,SINR_PB,DirOK,DirNOK_gntd,DirNOK_pcvd] = experiment5(nIter,nUsers,nAntennasList,plotFLAG)
     % EXPERIMENT 5 -- 

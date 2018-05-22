@@ -10,7 +10,16 @@ function [opt_solution,min_value] = o_CA_Position_Objective_optim_exhaustive(con
     h = K;
     iteration = 1;         
     A = 1:K;          %FIRST COMBINATION
+    if conf.verbosity >= 1
+        fprintf('Iter.\tMin. Value\n');
+    end
+    count = 0;
     while(iteration>0)
+        if conf.verbosity >= 1
+            if mod(count,5) == 0
+                fprintf('%d\t%.2f\n',count,min_value);
+            end
+        end
         [A,m,h,iteration] = GetNextCombination(N, K, A, m, h, iteration);
         selectedAntennas = availableAntennas(A);
         
@@ -29,10 +38,12 @@ function [opt_solution,min_value] = o_CA_Position_Objective_optim_exhaustive(con
             if obj_value < min_value
                 min_value = obj_value;
                 opt_solution = tmp_solution;
-                disp(min_value);
-                disp(opt_solution);
+                if conf.verbosity >= 1
+                    fprintf('%d\t%.2f\n',count,min_value);
+                end
             end
             amplitudesIndexes = (o_sumOneToCombination(amplitudesIndexes',ones(1,problem.Nmax+1)*(2^conf.NbitsAmplitude-1)))';
+            count = count + 1;
         end
     end
 end

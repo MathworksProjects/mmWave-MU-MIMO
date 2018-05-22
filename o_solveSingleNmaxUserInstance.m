@@ -1,4 +1,4 @@
-function [gene,W,PRx,I] = o_solveSingleNmaxUserInstance(conf,problem,...
+function [gene,W,PRx,I,bestScores] = o_solveSingleNmaxUserInstance(conf,problem,...
                             NAntToBeAssigned,mode)
 %SOLVESINGLENMAXUSERINSTANCE Obtain the antenna allocation partial solution
 %   for a single <User, Nmax> pair
@@ -98,7 +98,7 @@ function [gene,W,PRx,I] = o_solveSingleNmaxUserInstance(conf,problem,...
         MaxStallgenerations_Data = conf.MaxStallgenerations_Data;
         FunctionTolerance_Data = conf.FunctionTolerance_Data;
         if strcmp(conf.algorithm,'GA')
-            [x,~,~,~,~,~] = o_CA_Position_Objective_optim_ga(conf,problem,lb,ub,...
+            [x,~,bestScores,~,~,~,~] = o_CA_Position_Objective_optim_ga(conf,problem,lb,ub,...
                 PopulationSize_Data,EliteCount_Data,CrossoverFraction_Data,...
                 Maxgenerations_Data,MaxStallgenerations_Data,FunctionTolerance_Data);
         elseif strcmp(conf.algorithm,'PS')
@@ -111,7 +111,7 @@ function [gene,W,PRx,I] = o_solveSingleNmaxUserInstance(conf,problem,...
             end
             [x,~,~,~] = o_CA_Position_Objective_optim_pso(X0,conf,problem,lb,ub,InitialPopulation);
         elseif strcmp(conf.algorithm,'ES')
-            [x,~] = o_CA_Position_Objective_optim_exhaustive(conf,problem,lb,ub);
+            [x,bestScores] = o_CA_Position_Objective_optim_exhaustive(conf,problem,lb,ub);
         else    
             x = X0;
         end
