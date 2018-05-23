@@ -124,7 +124,7 @@ function experiment4(nIter,nUsers,nAntennasList,plotFLAG)
     hold on
     % For each case we execute ES and the GA
     for idxAnt = 1:length(nAntennasList)
-        for idxIter = 1:4
+        for idxIter = 1:nIter
             fprintf('Iteration %d with nAntenas %d\n',idxIter,nAntennasList(idxAnt));
             % Configure the simulation environment. Need to place users in new
             % locations (if not fixed) and create new channels 
