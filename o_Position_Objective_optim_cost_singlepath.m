@@ -117,16 +117,55 @@ function correction = transferFunction(PowerdB)                        %#ok
     correction = vq1(idx);
 end
 
-function score = transferScore(PowerdB,mode)                           
-    x = [-500 -5 0 5 10 15 20 25 500];
+function score = transferScore(PowerdB,mode)
+    % TRANSFERSCORE - Computes a score that reflects how good the
+    % directivity value is in the MU-MIMO scenario. Directivities start
+    % getting an score when their absolute value is greater than 0.
+    % Directivities are capped up at the maximum tolerable antenna gain by
+    % the FCC community (33dB if Ptx=10dBm)
+    %
+    % For more information, see slide 7-4 in:
+    % https://www.cse.wustl.edu/~jain/cse574-14/ftp/j_07sgh.pdf
+    %
+    % Syntax:  score = transferScore(PowerdB,mode)
+    %
+    % Inputs:
+    %    PowerdB - Description
+    %    mode - 1 for Directivity to intended user. 0 to compute
+    %    directivity towards interfeered users.
+    %
+    % Outputs:
+    %    score - Value between 0 and 1 that reflects how good the current
+    %    antenna selection is.
+    %
+    % Example: 
+    %    score = transferScore(10,1)  % Compute score for intended user
+    %    score = transferScore(-10,0)  % Compute score to other users
+    %
+    %------------- BEGIN CODE --------------
+    
+    % Define the scoring function here. Left hand-side values reflect the
+    % power levels in dB of the directivity. The right hand-side values
+    % reflect the score obtained
+    p = [ -500 0    ;
+            -5 0    ;
+             0 0    ;
+             5 0.25 ;
+            10 0.5  ;
+            15 0.75 ;
+            20 0.9  ;
+            33 1    ;
+           500 1    ].';
     if mode
         % Prx (intended user)
-        y = [0 0 0.3 0.5 0.7 0.9 1 1 1];
+        x = p(1,:);
+        y = p(2,:);
     else
         % Int (interfereed users)
-        y = 1 - [0 0 0.3 0.5 0.7 0.9 1 1 1];
+        x = 1 - p(1,:);
+        y = 1 - p(2,:);
     end
-    xx = -500:0.05:500;
+    xx = min(x):0.05:max(x);
     yy = interpn(x,y,xx,'pchip');
     [~,idx] = min(abs(PowerdB - xx));
     score = yy(idx);
