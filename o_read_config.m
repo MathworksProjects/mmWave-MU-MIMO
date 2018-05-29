@@ -68,6 +68,8 @@ function [conf] = o_read_config(config_file)
         inputArgList = {
                     % Basic parameters
                     struct('name','detLocation','type','bool');
+                    struct('name','useCasesLocation','type','bool');
+                    struct('name','useCaseLoation','type','float');
                     % Optimization parameters
                     struct('name','algorithm','type','char');
                     struct('name','Fweights','type','floatArray','size',3);
