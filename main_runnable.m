@@ -15,19 +15,55 @@ if any(experimentList(:)==4)
     experiment4(nIter,nUsers,nAntennasList,plotFLAG);
 end
 if any(experimentList(:)==5)
-    nIter = 1;  % Iterations over shich to average the results
+    nIter = 5;  % Iterations over shich to average the results
     nUsers = 2;  % Static number of users in simulation
-%     nAntennasList = [4 8 12 16 20 24 28 32].^2;  % Number of antennas in array
-    nAntennasList = [4 8 12].^2;  % Number of antennas in array
+    nAntennasList = [4 8 12 16 20 24 28 32].^2;  % Number of antennas in array
     plotFLAG = true;  % Plotting flag
-    [Cap,SINR_BB,SINR_PB,DirOK,DirNOK_gntd,DirNOK_pcvd] = ...
-                          experiment5(nIter,nUsers,nAntennasList,plotFLAG);
-    experiment5_plot(nUsers,nAntennasList,Cap,SINR_BB,SINR_PB,DirOK,DirNOK_gntd,DirNOK_pcvd);
+    arrRestctList = {'None','Localized'};
+    SINR_PB_tot = zeros(length(nAntennasList),length(arrRestctList));
+    SINR_BB_tot = zeros(length(nAntennasList),length(arrRestctList));
+    Cap_tot = zeros(length(nAntennasList),length(arrRestctList));
+    for restIdx = 1:length(arrRestctList)
+        arrayRestriction = arrRestctList{restIdx}; % "None", "Localized", "Interleaved", "DiagInterleaved"
+        % Main
+        [Cap,SINR_BB,SINR_PB,DirOK,DirNOK_gntd,DirNOK_pcvd] = ...
+                      experiment5(nIter,nUsers,nAntennasList,arrayRestriction,plotFLAG);
+        % Parse results
+        SINR_PB_lin = db2pow(SINR_PB);
+        SINR_BB_lin = db2pow(SINR_BB);
+        Cap_lin = db2pow(Cap);
+        SINR_PB_tot(:,restIdx) = pow2db(mean(SINR_PB_lin,1)).';
+        SINR_BB_tot(:,restIdx) = pow2db(mean(SINR_BB_lin,1)).';
+        Cap_tot(:,restIdx) = pow2db(mean(Cap_lin,1)).';
+        % Plot
+        experiment5_plot(nUsers,nAntennasList,arrayRestriction,Cap,SINR_BB,SINR_PB,DirOK,DirNOK_gntd,DirNOK_pcvd);
+    end
+    figure;
+    plot(nAntennasList,SINR_PB_tot,'LineWidth',2,'Marker','s');
+    title('Average SINR-PB','FontSize',12);
+    xlabel('Number of antennas','FontSize',12);
+    ylabel('SINR in dB','FontSize',12);
+    legend(arrRestctList);
+    grid minor;
+    figure;
+    plot(nAntennasList,SINR_BB_tot,'LineWidth',2,'Marker','s');
+    title('Average SINR-BB','FontSize',12);
+    xlabel('Number of antennas','FontSize',12);
+    ylabel('SINR in dB','FontSize',12);
+    legend(arrRestctList);
+    grid minor;
+    figure;
+    plot(nAntennasList,Cap_tot,'LineWidth',2,'Marker','s');
+    title('Average capacity','FontSize',12);
+    xlabel('Number of antennas','FontSize',12);
+    ylabel('Capacity in bits/Hz/s','FontSize',12);
+    legend(arrRestctList);
+    grid minor;
 end
 if any(experimentList(:)==51)
     fileName = 'temp/exp5-results';
-    load(fileName,'nUsers','nAntennasList','Cap','SINR_BB','SINR_PB','DirOK','DirNOK_gntd','DirNOK_pcvd');
-    experiment5_plot(nUsers,nAntennasList,Cap,SINR_BB,SINR_PB,DirOK,DirNOK_gntd,DirNOK_pcvd);
+    load(fileName,'nUsers','nAntennasList','arrayRestriction','Cap','SINR_BB','SINR_PB','DirOK','DirNOK_gntd','DirNOK_pcvd');
+    experiment5_plot(nUsers,nAntennasList,arrayRestriction,Cap,SINR_BB,SINR_PB,DirOK,DirNOK_gntd,DirNOK_pcvd);
 end
 
 function experiment1(varargin)
@@ -196,7 +232,7 @@ function experiment4(nIter,nUsers,nAntennasList,plotFLAG)
         conf.algorithm = 'GA';  % Heuristic algorithm
 end
 
-function [Cap,SINR_BB,SINR_PB,DirOK,DirNOK_gntd,DirNOK_pcvd] = experiment5(nIter,nUsers,nAntennasList,plotFLAG)
+function [Cap,SINR_BB,SINR_PB,DirOK,DirNOK_gntd,DirNOK_pcvd] = experiment5(nIter,nUsers,nAntennasList,arrayRestriction,plotFLAG)
     % EXPERIMENT 5 -- 
     % 
     % Aim: Evaluate the average received power (Prx) at the intended users
@@ -224,6 +260,7 @@ function [Cap,SINR_BB,SINR_PB,DirOK,DirNOK_gntd,DirNOK_pcvd] = experiment5(nIter
     %    nIter - Number of iterations to extract average values
     %    nUsers - Number of users considered
     %    nAntennaList - Number of antenas
+    %    arrayRestriction - Defines the sub-array restriction at the BS
     %    plotFLAG - True for plotting directivity and antenna allocation
     %
     % Outputs: (all have dimensions [nUsers x nAntennasList])
@@ -245,9 +282,9 @@ function [Cap,SINR_BB,SINR_PB,DirOK,DirNOK_gntd,DirNOK_pcvd] = experiment5(nIter
     problem.nUsers = nUsers;  % Number of users in the simulation
     problem.MinObjFIsSNR = true;  % (arbitrary)
     problem.MinObjF = 100.*ones(1,problem.nUsers);  % Same #ant per user. Random SNR (30dB)
-    problem.arrayRestriction = 'Localized';  % Possibilities: "None", "Localized", "Interleaved", "DiagInterleaved"
+    problem.arrayRestriction = arrayRestriction;  % Possibilities: "None", "Localized", "Interleaved", "DiagInterleaved"
     % Override (conf) parameters
-    conf.verbosity = 0;
+    conf.verbosity = 1;
     conf.algorithm = 'GA';  % Heuristic algorithm
     conf.NumPhaseShifterBits = 60;  % Number of 
     conf.FunctionTolerance_Data = 1e-10;  % Heuristics stops when not improving solution by this much
@@ -273,7 +310,7 @@ function [Cap,SINR_BB,SINR_PB,DirOK,DirNOK_gntd,DirNOK_pcvd] = experiment5(nIter
     % Main execution
     for idxAnt = 1:length(nAntennasList)
         conf.PopulationSize_Data = PopSizeList(idxAnt);
-        conf.Maxgenerations_Data = 150;
+        conf.Maxgenerations_Data = 20;
         conf.EliteCount_Data = ceil(conf.PopulationSize_Data/5);
         conf.MaxStallgenerations_Data = ceil(conf.Maxgenerations_Data/10);  % Force it to cover all the generations
         for idxIter = 1:nIter
@@ -374,10 +411,10 @@ function [Cap,SINR_BB,SINR_PB,DirOK,DirNOK_gntd,DirNOK_pcvd] = experiment5(nIter
     SINR_BB_lin = mean(db2pow(SINRTot),3);  % Compute SINR Base-Band (BB)
     SINR_BB = pow2db(SINR_BB_lin);
     Cap = mean(CapTot,3);  % Compute Average Capacities in the system
-    save(fileName,'Cap','SINR_BB','SINR_PB','DirOK','DirNOK_gntd','DirNOK_pcvd','DirOKTot','DirNOKTot','nUsers','nAntennasList');
+    save(fileName,'Cap','SINR_BB','SINR_PB','DirOK','DirNOK_gntd','DirNOK_pcvd','DirOKTot','DirNOKTot','nUsers','nAntennasList','arrayRestriction');
 end
 
-function experiment5_plot(nUsers,nAntennasList,Cap,SINR_BB,SINR_PB,DirOK,DirNOK_gntd,DirNOK_pcvd)
+function experiment5_plot(nUsers,nAntennasList,arrayRestriction,Cap,SINR_BB,SINR_PB,DirOK,DirNOK_gntd,DirNOK_pcvd)
     % EXPERIMENT 5 - Plotting results
     % Get figure number
     h = findobj('type','figure');
@@ -411,6 +448,9 @@ function experiment5_plot(nUsers,nAntennasList,Cap,SINR_BB,SINR_PB,DirOK,DirNOK_
     xlabel('Number of available antennas','FontSize',12);
     ylabel('Power in dB','FontSize',12);
     title('Interference generated to intended user','FontSize',12);
+    suptt = strcat(mat2str(nUsers),{' '},'usr -',{' '},arrayRestriction,{' '},'geometry');
+    tit = suptitle(suptt{:});
+    set(tit,'FontSize',12)
     legend(leg,'FontSize',12);
     % Plot perceived SINRs
     figure(figNum);  figNum = figNum + 1;
@@ -424,13 +464,15 @@ function experiment5_plot(nUsers,nAntennasList,Cap,SINR_BB,SINR_PB,DirOK,DirNOK_
     grid minor;
     xlabel('Number of available antennas','FontSize',12);
     ylabel('Power in dB','FontSize',12);
-    title('Base-Band (BB) SINR','FontSize',12);
+    tit = strcat('BB-SINR -',{' '},mat2str(nUsers),{' '},'usr -',{' '},arrayRestriction,{' '},'geometry');
+    title(tit,'FontSize',12);
     legend(leg,'FontSize',12);
     subplot(1,2,2);
     grid minor;
     xlabel('Number of available antennas','FontSize',12);
     ylabel('Power in dB','FontSize',12);
-    title('Pass-Band (PB) SINR','FontSize',12);
+    tit = strcat('PB-SINR -',{' '},mat2str(nUsers),{' '},'usr -',{' '},arrayRestriction,{' '},'geometry');
+    title(tit,'FontSize',12);
     legend(leg,'FontSize',12);
     % Plot perceived Capacities
     figure(figNum);  figNum = figNum + 1;
@@ -441,7 +483,8 @@ function experiment5_plot(nUsers,nAntennasList,Cap,SINR_BB,SINR_PB,DirOK,DirNOK_
     grid minor;
     xlabel('Number of available antennas','FontSize',12);
     ylabel('Capacity in bits/Hz/s','FontSize',12);
-    title('Capacity achieved in the system','FontSize',12);
+    tit = strcat('Capacities  -',{' '},mat2str(nUsers),{' '},'usr -',{' '},arrayRestriction,{' '},'geometry');
+    title(tit,'FontSize',12);
     legend(leg,'FontSize',12);
     % Plot average Capacities
     figure(figNum);  figNum = figNum + 1;
@@ -451,7 +494,8 @@ function experiment5_plot(nUsers,nAntennasList,Cap,SINR_BB,SINR_PB,DirOK,DirNOK_
     grid minor;
     xlabel('Number of available antennas','FontSize',12);
     ylabel('Average Capacity in bits/Hz/s','FontSize',12);
-    title('Capacity achieved in the system','FontSize',12);
+    tit = strcat('Capacity  -',{' '},mat2str(nUsers),{' '},'usr -',{' '},arrayRestriction,{' '},'geometry');
+    title(tit,'FontSize',12);
     % Plot average SINR (BB)
     figure(figNum);  figNum = figNum + 1;
     SINR_BB_lin = db2pow(SINR_BB);
@@ -460,7 +504,8 @@ function experiment5_plot(nUsers,nAntennasList,Cap,SINR_BB,SINR_PB,DirOK,DirNOK_
     grid minor;
     xlabel('Number of available antennas','FontSize',12);
     ylabel('SINR in dB','FontSize',12);
-    title('Average BB SINR achieved in the system','FontSize',12);
+    tit = strcat('Average BB-SINR -',{' '},mat2str(nUsers),{' '},'usr -',{' '},arrayRestriction,{' '},'geometry');
+    title(tit,'FontSize',12);
     % Plot average SINR (PB)
     figure(figNum);  figNum = figNum + 1;                              %#ok
     SINR_PB_lin = db2pow(SINR_PB);
@@ -469,7 +514,8 @@ function experiment5_plot(nUsers,nAntennasList,Cap,SINR_BB,SINR_PB,DirOK,DirNOK_
     grid minor;
     xlabel('Number of available antennas','FontSize',12);
     ylabel('SINR in dB','FontSize',12);
-    title('Average PB SINR achieved in the system','FontSize',12);
+    tit = strcat('Average PB-SINR -',{' '},mat2str(nUsers),{' '},'usr -',{' '},arrayRestriction,{' '},'geometry');
+    title(tit,'FontSize',12);
 end
 
 function [Cap,SINR_BB,SINR_PB,DirOK,DirNOK_gntd,DirNOK_pcvd] = experiment6(nIter,nUsers,nAntennasList,plotFLAG)
