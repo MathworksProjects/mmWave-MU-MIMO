@@ -65,11 +65,11 @@ classdef s_phased_channel < matlab.System
             prob_los_threshold = los_probability(distance_2d);
             rand_number = rand();
             % If the random number is less than the threshold, LoS
-            pl_los = 32.4 + 17.3 * log10(distance_3d) + 20 * log10(obj.center_frequency) + lognrnd(0, 3);
+            pl_los = 32.4 + 17.3 * log10(distance_3d) + 20 * log10(obj.center_frequency / 1e9) + lognrnd(0, 3);
             if rand_number < prob_los_threshold
                 pl_db = pl_los;
             else % NLoS
-                pl_nlos = 38.3 * log10(distance_3d) + 17.3 + 24.9 * log10(obj.center_frequency) + lognrnd(0, 8.03);
+                pl_nlos = 38.3 * log10(distance_3d) + 17.3 + 24.9 * log10(obj.center_frequency / 1e9) + lognrnd(0, 8.03);
                 pl_db = max(pl_los, pl_nlos);
             end
             pl_lin = db2pow(pl_db);
