@@ -2,15 +2,14 @@
 clear; clc; close all;
 addpath('utilities','-end');  % Add utilities folder at the end of search path
 % Define several experiments here and override variable values accordingly
-experimentList = 8;
+experimentList = 4;
 if any(experimentList(:)==1);    experiment1();   end
 if any(experimentList(:)==2);    experiment2();   end
 if any(experimentList(:)==3);    experiment3();   end
 if any(experimentList(:)==4)
     nUsers = 2;
-%     nAntennasList = [4 5 6 7 8 9 10].^2;
-    nAntennasList = [2 3].^2;
-    nIter = 2;
+    nAntennasList = [4 6 8 10];
+    nIter = 10;
     plotFLAG = true;
     experiment4(nIter,nUsers,nAntennasList,plotFLAG);
 end
@@ -353,7 +352,7 @@ function [Cap,SINR_BB,SINR_PB,DirOK,DirNOK_gntd,DirNOK_pcvd] = experiment5(nIter
     % Main execution
     for idxAnt = 1:length(nAntennasList)
         conf.PopulationSize_Data = PopSizeList(idxAnt);
-        conf.Maxgenerations_Data = 20;
+        conf.Maxgenerations_Data = 150;
         conf.EliteCount_Data = ceil(conf.PopulationSize_Data/5);
         conf.MaxStallgenerations_Data = ceil(conf.Maxgenerations_Data/10);  % Force it to cover all the generations
         for idxIter = 1:nIter

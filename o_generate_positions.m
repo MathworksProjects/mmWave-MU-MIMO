@@ -4,7 +4,7 @@ function [thetaPos, phiPos, dPos] = o_generate_positions(conf,problem)
     pd.sigma = 45;
     t = truncate(pd,-45,45);
     % Check for consistency in number of users
-    if problem.nUsers~=2
+    if problem.nUsers~=2 && conf.useCasesLocation
         error('When User Location are set to UserCase, the number of users should be 2.');
     end
     % Generate Angles for usee case (uc) distribution
