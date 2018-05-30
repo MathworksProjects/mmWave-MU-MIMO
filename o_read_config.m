@@ -94,6 +94,8 @@ function [conf] = o_read_config(config_file)
                     struct('name','Maxgenerations_Data','type','float');
                     struct('name','MaxStallgenerations_Data','type','float');
                     struct('name','FunctionTolerance_Data','type','float');
+                    struct('name','GArndImpact','type','float');
+                    struct('name','GArndmodifyAmpl','type','bool');
                     % Channel parameters
                     struct('name','Use5GChannel','type','bool');
                     struct('name','multiPath','type','bool');

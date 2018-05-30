@@ -101,6 +101,14 @@ function [gene,W,PRx,I,bestScores] = o_solveSingleNmaxUserInstance(conf,problem,
             [x,~,bestScores,~,~,~,~] = o_CA_Position_Objective_optim_ga(conf,problem,lb,ub,...
                 PopulationSize_Data,EliteCount_Data,CrossoverFraction_Data,...
                 Maxgenerations_Data,MaxStallgenerations_Data,FunctionTolerance_Data);
+        elseif strcmp(conf.algorithm,'GA-rnd')
+            [x,~,~,~,~,~,~] = o_CA_Position_Objective_optim_ga(conf,problem,lb,ub,...
+                PopulationSize_Data,EliteCount_Data,CrossoverFraction_Data,...
+                Maxgenerations_Data,MaxStallgenerations_Data,FunctionTolerance_Data);
+            x = apply_random_modification_assignment(x,conf.GArndImpact,...
+                conf.genStructure,problem.N_Subarrays,conf.GArndmodifyAmpl,...
+                problem.maxAmpW);
+            bestScores = [];
         elseif strcmp(conf.algorithm,'PS')
             [x,~,~,~] = o_CA_Position_Objective_optim_pattern(X0,conf,problem,lb,ub,1e-1,1e-1,250);
         elseif strcmp(conf.algorithm,'PSO')
@@ -119,6 +127,7 @@ function [gene,W,PRx,I,bestScores] = o_solveSingleNmaxUserInstance(conf,problem,
         [gene,problem] = o_subarrayToAntennaElements(x,conf,problem);
     else
         gene = X0_elem;
+        bestScores = [];
     end
     %%
     [handle_Conf_Array,W,PRx,I] = o_geneToAssignment(gene,problem,conf);
