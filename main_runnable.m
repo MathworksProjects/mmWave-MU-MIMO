@@ -2,7 +2,7 @@
 clear; clc; close all;
 addpath('utilities','-end');  % Add utilities folder at the end of search path
 % Define several experiments here and override variable values accordingly
-experimentList = 5;
+experimentList = 8;
 if any(experimentList(:)==1);    experiment1();   end
 if any(experimentList(:)==2);    experiment2();   end
 if any(experimentList(:)==3);    experiment3();   end
@@ -64,6 +64,22 @@ if any(experimentList(:)==51)
     fileName = 'temp/exp5-results';
     load(fileName,'nUsers','nAntennasList','arrayRestriction','Cap','SINR_BB','SINR_PB','DirOK','DirNOK_gntd','DirNOK_pcvd');
     experiment5_plot(nUsers,nAntennasList,arrayRestriction,Cap,SINR_BB,SINR_PB,DirOK,DirNOK_gntd,DirNOK_pcvd);
+end
+if any(experimentList(:)==7)
+    nUsersList = [2];
+%     nAntennasList = [4 5 6 7 8 9 10].^2;
+    nAntennasList = [2 3].^2;
+    nIter = 2;
+    plotFLAG = true;
+    experiment7(nIter,nUsersList,nAntennasList,plotFLAG);
+end
+if any(experimentList(:)==8)
+    nUsersList = [2];
+%     nAntennasList = [4 5 6 7 8 9 10].^2;
+    nAntennasList = [2 3 4 5].^2;
+    nIter = 2;
+    plotFLAG = true;
+    experiment8(nIter,nUsersList,nAntennasList,plotFLAG);
 end
 
 function experiment1(varargin)
@@ -148,16 +164,22 @@ function experiment4(nIter,nUsers,nAntennasList,plotFLAG)
     conf.verbosity = 0;
     conf.NumPhaseShifterBits = 2;  % Number of 
     conf.NbitsAmplitude = 2;
-    conf.FunctionTolerance_Data = 1e-10;  % Heuristics stops when not improving solution by this much
+    conf.FunctionTolerance_Data = 1e-6;  % Heuristics stops when not improving solution by this much
     conf.multiPath = false;  % LoS channel (for now)
     
     % Override GA parameters
-    conf.PopulationSize_Data = 40;
+    conf.PopulationSize_Data = 150;
     conf.Maxgenerations_Data = 100;
-    conf.EliteCount_Data = 10;
+    conf.EliteCount_Data = 25;
     conf.MaxStallgenerations_Data = 40;  % Force it to cover all the generations
-    h1 = figure;
-    hold on
+    %h1 = figure;
+    %hold on
+    
+    globalMin = zeros(1,length(nAntennasList));
+    globalMin_Loc = zeros(1,length(nAntennasList));
+    bestScores = zeros(length(nAntennasList),nIter,conf.Maxgenerations_Data);
+    bestScores_Loc = zeros(length(nAntennasList),nIter,conf.Maxgenerations_Data);
+    
     % For each case we execute ES and the GA
     for idxAnt = 1:length(nAntennasList)
         for idxIter = 1:nIter
@@ -203,33 +225,54 @@ function experiment4(nIter,nUsers,nAntennasList,plotFLAG)
             problem.IDUserAssigned = u;
             
             % First we execute the Exhaustive Search
-            conf.algorithm = 'ES';  % Heuristic algorithm
-            fprintf('Solving... (Exhaustive Search)\n')
-            [~,~,~,~,globalMin] = ...
-                o_solveSingleNmaxUserInstance(conf,problem,...
-                problem.NmaxArray(problem.IDUserAssigned));
-            fprintf('Solved!\n')
-            figure(h1)
-            disp(globalMin)
-            line(1:conf.Maxgenerations_Data,ones(1,conf.Maxgenerations_Data)*globalMin);
-            drawnow
+            % Only the first iteration, because the result will be the same
+            % in other iterations (if assuming static environment)
+            if idxIter == 1
+                conf.arrayRestriction = 'None';
+                conf.algorithm = 'ES';  % Heuristic algorithm
+                fprintf('Solving... (Exhaustive Search - Free subarray allocation)\n')
+                [~,~,~,~,globalMin(idxAnt)] = ...
+                    o_solveSingleNmaxUserInstance(conf,problem,...
+                    problem.NmaxArray(problem.IDUserAssigned));
+                fprintf('Solved!\n')
+%                 figure(h1)
+%                 disp(globalMin)
+%                 line(1:conf.Maxgenerations_Data,ones(1,conf.Maxgenerations_Data)*globalMin);
+%                 drawnow
+                conf.arrayRestriction = 'Localized';  % Heuristic algorithm
+                fprintf('Solving... (Exhaustive Search - Localized)\n')
+                [~,~,~,~,globalMin_Loc(idxAnt)] = ...
+                    o_solveSingleNmaxUserInstance(conf,problem,...
+                    problem.NmaxArray(problem.IDUserAssigned));
+                fprintf('Solved!\n')
+            end
             
             % And secondly using Genetic Algorithm
+            conf.arrayRestriction = 'None';
             conf.algorithm = 'GA';  % Heuristic algorithm
             fprintf('Solving... (Genetic Algorithm)\n')
-            [~,~,~,~,bestScores] = ...
+            [~,~,~,~,tempBS] = ...
                 o_solveSingleNmaxUserInstance(conf,problem,...
                 problem.NmaxArray(problem.IDUserAssigned));
+            bestScores(idxAnt,idxIter,1:length(tempBS)) = tempBS;
             fprintf('Solved!\n')
-            figure(h1)
-            disp(bestScores)
-            line(1:length(bestScores),bestScores);
-            drawnow
-            %save('temp/exp5-results_so_far','DirOKTot','DirNOKTot','nUsers','nAntennasList');
+%             figure(h1)
+%             disp(bestScores)
+%             line(1:length(bestScores),bestScores);
+%             drawnow
+            % And secondly using Genetic Algorithm
+            conf.arrayRestriction = 'Localized';
+            conf.algorithm = 'GA';  % Heuristic algorithm
+            fprintf('Solving... (Genetic Algorithm)\n')
+            [~,~,~,~,tempBS] = ...
+                o_solveSingleNmaxUserInstance(conf,problem,...
+                problem.NmaxArray(problem.IDUserAssigned));
+            bestScores_Loc(idxAnt,idxIter,1:length(tempBS)) = tempBS;
+            fprintf('Solved!\n')
+            save('temp/exp4-results_so_far','globalMin','globalMin_Loc',...
+                'bestScores','bestScores_Loc','nUsers','nAntennasList');
         end
     end
-        
-        conf.algorithm = 'GA';  % Heuristic algorithm
 end
 
 function [Cap,SINR_BB,SINR_PB,DirOK,DirNOK_gntd,DirNOK_pcvd] = experiment5(nIter,nUsers,nAntennasList,arrayRestriction,plotFLAG)
@@ -700,4 +743,189 @@ function [Cap,SINR_BB,SINR_PB,DirOK,DirNOK_gntd,DirNOK_pcvd] = experiment6(nIter
     SINR_BB = mean(SINRTot,3);  % Compute SINR Base-Band (BB)
     Cap = mean(CapTot,3);  % Compute Average Capacities in the system
     save(fileName,'Cap','SINR_BB','SINR_PB','DirOK','DirNOK_gntd','DirNOK_pcvd','DirOKTot','DirNOKTot','nUsers','nAntennasList');
+end
+
+function experiment7(nIter,nUsersList,nAntennasList,plotFLAG)
+    % EXPERIMENT 7 -- 
+    % 
+    % Aim: Compare the performance of the different subarray allocation
+    % techniques in terms of capacity offered. We need to do long GA
+    % executions in order to be sure of offering the best solution
+    % 
+	% Assumptions (Fixed):
+    %   1. User location: Fixed, from config file.
+    %   2. Antenna Array geometry: Fixed to URA.
+    %   3. Algorithm: GA
+    % Variable:
+    %   1. Antenna Array size variable: nAntennasList
+    %   2. Users in system: nUsersList
+    %   3. Subarray allocation policy
+    % 
+    % Syntax:  [] =
+    % experiment7(nIters,nUsers,nAntennasList,nUsersList)
+    % 
+    % Inputs:
+    %    nIter - Number of iterations to extract average values
+    %    nUsersList - Number of users (set of)
+    %    nAntennaList - Number of antenas (set of)
+    %
+    % Outputs: None
+    %
+    %------------- BEGIN CODE EXPERIMENT 6 --------------
+    %
+    fprintf('Running experiment 7...\n');
+    % Load basic parameters
+    problem = o_read_input_problem('data/metaproblem_test.dat');
+    conf = o_read_config('data/config_test.dat');    
+    % Override (problem) parameters
+    problem.MinObjFIsSNR = true;  % (arbitrary)
+    % Override (conf) parameters
+    conf.verbosity = 1;
+    conf.NumPhaseShifterBits = 0;  % Number of 
+    conf.NbitsAmplitude = 0;
+    conf.FunctionTolerance_Data = 1e-6;  % Heuristics stops when not improving solution by this much
+    conf.multiPath = false;  % LoS channel (for now)
+    
+    % Override GA parameters
+    conf.algorithm = 'GA';  % Heuristic algorithm
+    conf.PopulationSize_Data = 150;
+    conf.Maxgenerations_Data = 100;
+    conf.EliteCount_Data = 25;
+    conf.MaxStallgenerations_Data = 40;  % Force it to cover all the generations
+    %h1 = figure;
+    %hold on
+    
+    estObj_Free = cell(length(nAntennasList),nIter,length(nUsersList));
+    estObj_Loc = cell(length(nAntennasList),nIter,length(nUsersList));
+    estObj_Interl = cell(length(nAntennasList),nIter,length(nUsersList));
+    estObj_Diag = cell(length(nAntennasList),nIter,length(nUsersList));
+    
+    % For each case we execute ES and the GA
+    for idxUsers = 1:length(nUsersList)
+        problem.nUsers = nUsersList(idxUsers);  % Number of users in the simulation
+        % Configure basic parameters
+        candSet = (1:1:problem.nUsers);  % Set of users to be considered
+        problem.MinObjF = 100.*ones(1,problem.nUsers);  % Same #ant per user. Random SNR (30dB)
+        for idxAnt = 1:length(nAntennasList)
+            for idxIter = 1:nIter
+                fprintf('Iteration %d with nUsers %d and nAntenas %d\n',...
+                    idxIter,nUsersList(idxUsers),nAntennasList(idxAnt));
+                % Configure the simulation environment. Need to place users in new
+                % locations (if not fixed) and create new channels 
+                % to have statistically meaningful results (if not LoS)
+                [problem_temp,~,~] = f_configuration(conf,problem);
+                % Select number of antennas
+                problem_temp.N_Antennas = nAntennasList(idxAnt);
+                % Adjust parameters
+                problem_temp.NxPatch = floor(sqrt(problem_temp.N_Antennas));
+                problem_temp.NyPatch = floor(problem_temp.N_Antennas./problem_temp.NxPatch);
+                problem_temp.N_Antennas = problem_temp.NxPatch.*problem_temp.NyPatch;
+                % Call heuristics
+                fprintf('\t** %d Antennas and %d Users...\n',problem_temp.N_Antennas,problem_temp.nUsers);
+                for aRestr = {'None','Localized','Interleaved','DiagInterleaved'}
+                    conf.arrayRestriction = aRestr;
+                    [~,~,~,estObj] = f_heuristics(problem_temp,conf,candSet);
+                    switch cell2mat(aRestr)
+                        case 'None'
+                            estObj_Free(idxAnt,idxIter,idxUsers) = mat2cell(estObj,1);
+                        case 'Localized'
+                            estObj_Loc(idxAnt,idxIter,idxUsers) = mat2cell(estObj,1);
+                        case 'Interleaved'
+                            estObj_Interl(idxAnt,idxIter,idxUsers) = mat2cell(estObj,1);
+                        case 'DiagInterleaved'
+                            estObj_Diag(idxAnt,idxIter,idxUsers) = mat2cell(estObj,1);
+                    end
+                end
+                save('temp/exp7-results_so_far','estObj_Free','estObj_Loc',...
+                            'estObj_Interl','estObj_Diag','nUsersList','nAntennasList');
+            end
+        end
+    end
+end
+
+function experiment8(nIter,nUsersList,nAntennasList,plotFLAG)
+    % EXPERIMENT 8 -- 
+    % 
+    % Aim: Compare the performance of our heuristic approach with a random 
+    % modification of itself, aiming at analyzing the performance of our
+    % result.
+    % 
+	% Assumptions (Fixed):
+    %   1. User location: Fixed, from config file.
+    %   2. Antenna Array geometry: Fixed to URA.
+    %   3. Algorithm: GA
+    %   3. Subarray allocation policy: Free
+    % Variable:
+    %   1. Antenna Array size variable: nAntennasList
+    %   2. Users in system: nUsersList
+    % 
+    % Syntax:  [] =
+    % experiment8(nIters,nUsers,nAntennasList,nUsersList)
+    % 
+    % Inputs:
+    %    nIter - Number of iterations to extract average values
+    %    nUsersList - Number of users (set of)
+    %    nAntennaList - Number of antenas (set of)
+    %
+    % Outputs: None
+    %
+    %------------- BEGIN CODE EXPERIMENT 8 --------------
+    %
+    fprintf('Running experiment 8...\n');
+    % Load basic parameters
+    problem = o_read_input_problem('data/metaproblem_test.dat');
+    conf = o_read_config('data/config_test.dat');    
+    % Override (problem) parameters
+    problem.MinObjFIsSNR = true;  % (arbitrary)
+    % Override (conf) parameters
+    conf.verbosity = 1;
+    conf.NumPhaseShifterBits = 0;  % Number of 
+    conf.NbitsAmplitude = 0;
+    conf.FunctionTolerance_Data = 1e-6;  % Heuristics stops when not improving solution by this much
+    conf.multiPath = false;  % LoS channel (for now)
+    
+    % Override GA parameters
+    conf.PopulationSize_Data = 15;
+    conf.Maxgenerations_Data = 10;
+    conf.EliteCount_Data = 2;
+    conf.MaxStallgenerations_Data = 40;  % Force it to cover all the generations
+    %h1 = figure;
+    %hold on
+    
+    estObj_heur = cell(length(nAntennasList),nIter,length(nUsersList));
+    estObj_rnd = cell(length(nAntennasList),nIter,length(nUsersList));
+    
+    % For each case we execute ES and the GA
+    for idxUsers = 1:length(nUsersList)
+        problem.nUsers = nUsersList(idxUsers);  % Number of users in the simulation
+        % Configure basic parameters
+        candSet = (1:1:problem.nUsers);  % Set of users to be considered
+        problem.MinObjF = 100.*ones(1,problem.nUsers);  % Same #ant per user. Random SNR (30dB)
+        for idxAnt = 1:length(nAntennasList)
+            for idxIter = 1:nIter
+                fprintf('Iteration %d with nUsers %d and nAntenas %d\n',...
+                    idxIter,nUsersList(idxUsers),nAntennasList(idxAnt));
+                % Configure the simulation environment. Need to place users in new
+                % locations (if not fixed) and create new channels 
+                % to have statistically meaningful results (if not LoS)
+                [problem_temp,~,~] = f_configuration(conf,problem);
+                % Select number of antennas
+                problem_temp.N_Antennas = nAntennasList(idxAnt);
+                % Adjust parameters
+                problem_temp.NxPatch = floor(sqrt(problem_temp.N_Antennas));
+                problem_temp.NyPatch = floor(problem_temp.N_Antennas./problem_temp.NxPatch);
+                problem_temp.N_Antennas = problem_temp.NxPatch.*problem_temp.NyPatch;
+                % Call heuristics
+                fprintf('\t** %d Antennas and %d Users...\n',problem_temp.N_Antennas,problem_temp.nUsers);
+                conf.algorithm = 'GA';  % Heuristic algorithm
+                [~,~,~,estObj] = f_heuristics(problem_temp,conf,candSet);
+                estObj_heur(idxAnt,idxIter,idxUsers) = mat2cell(estObj,1);
+                conf.algorithm = 'GA-rnd';  % Heuristic algorithm
+                [~,~,~,estObj] = f_heuristics(problem_temp,conf,candSet);
+                estObj_rnd(idxAnt,idxIter,idxUsers) = mat2cell(estObj,1);
+                save('temp/exp8-results_so_far','estObj_heur',...
+                    'estObj_rnd','nUsersList','nAntennasList');
+            end
+        end
+    end
 end

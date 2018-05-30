@@ -17,7 +17,7 @@ function [opt_solution,min_value] = o_CA_Position_Objective_optim_exhaustive(con
     while(iteration>0)
         if conf.verbosity >= 1
             if mod(count,5) == 0
-                fprintf('%d\t%.2f\n',count,min_value);
+                fprintf('%d\t%.4f\n',count,min_value);
             end
         end
         [A,m,h,iteration] = GetNextCombination(N, K, A, m, h, iteration);
@@ -39,7 +39,7 @@ function [opt_solution,min_value] = o_CA_Position_Objective_optim_exhaustive(con
                 min_value = obj_value;
                 opt_solution = tmp_solution;
                 if conf.verbosity >= 1
-                    fprintf('%d\t%.2f\n',count,min_value);
+                    fprintf('%d\t%.4f\n',count,min_value);
                 end
             end
             amplitudesIndexes = (o_sumOneToCombination(amplitudesIndexes',ones(1,problem.Nmax+1)*(2^conf.NbitsAmplitude-1)))';

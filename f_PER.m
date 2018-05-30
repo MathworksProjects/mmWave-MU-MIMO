@@ -36,7 +36,8 @@ centerfreq = problem.freq;
 % Simulation scenarios
 nUsers = length(candSet);
 angleToRx = phitheta2azel([problem.phiUsers; problem.thetaUsers]);
-distance = problem.dUsers(candSet); %% !!!ASSUME CANDSET START WITH 1 WHEN COUNTING!!!
+distance_3d = problem.dUsers(candSet); %% !!!ASSUME CANDSET START WITH 1 WHEN COUNTING!!!
+distance_2d = problem.dUsers(candSet); %% not so precise
 
 %% Parameters privite to this function
 nRx = 1;
@@ -51,7 +52,7 @@ tx_pha = s_phased_tx( ...
     'txGain',            20, ...
     'visualization', false);
 channel = s_phased_channel_handle_version( ...
-    'NoiseFigure',               noiseFigure, ...
+    'noiseFigure',               noiseFigure, ...
     'applyPathLoss',     true);
 rx_pha = s_phased_rx( ...
     'numRxElements', nRx, ...
@@ -91,7 +92,7 @@ for outer_iter = 1 : nUsers
         end
     end
     
-    txWaveforms_afterChannel = channel(combined_tx_waveforms, distance(outer_iter), channel_handles{outer_iter});
+    txWaveforms_afterChannel = channel(combined_tx_waveforms, channel_handles{outer_iter}, distance_3d(outer_iter), distance_2d(outer_iter));
     rxSymbols = rx_pha(txWaveforms_afterChannel, angleToRx(outer_iter));
     [psdu_rx, rxflag] = rx_phy(rxSymbols, cfgDMG);
     
