@@ -8,7 +8,6 @@ classdef s_phased_channel < matlab.System
         numOutputElements_row = 1;
         SNR = 5;
         center_frequency = 60.48e9;
-        isLoS = true;
         applyPathLoss = false;
         profile = 'CDL-C';
     end
@@ -46,10 +45,10 @@ classdef s_phased_channel < matlab.System
             
         end
         
-        function [rxWaveforms] = stepImpl(obj, txWaveforms, distance_3d)
+        function [rxWaveforms] = stepImpl(obj, txWaveforms, distance_3d, distance_2d)
             [rxWaveforms]       = obj.CDLChannel(txWaveforms);
             if obj.applyPathLoss
-                [~, rxWaveforms]= apply_pathloss(obj, distance_3d, rxWaveforms);
+                [~, rxWaveforms]= apply_pathloss(obj, rxWaveforms, distance_3d, distance_2d);
             end
             rxWaveforms         = obj.AWGNChannel(rxWaveforms);
         end
@@ -61,18 +60,30 @@ classdef s_phased_channel < matlab.System
     end
     
     methods(Access = private)
-        function [pl_db, attenuated_waveforms] = apply_pathloss(obj, distance_3d, txWaveforms)
-            pl_los = 32.4 + 17.3 * log10(distance_3d) + 20 * log10(obj.center_frequency);
-            if obj.isLoS
+        function [pl_db, attenuated_waveforms] = apply_pathloss(obj, txWaveforms, distance_3d, distance_2d)
+            % Calculate LoS probability threshold (indoor profile)
+            prob_los_threshold = los_probability(distance_2d);
+            rand_number = rand();
+            % If the random number is less than the threshold, LoS
+            pl_los = 32.4 + 17.3 * log10(distance_3d) + 20 * log10(obj.center_frequency) + lognrnd(0, 3);
+            if rand_number < prob_los_threshold
                 pl_db = pl_los;
-            else %NLoS
-                pl_nlos = 38.3 * log10(distance_3d) + 17.3 + 24.9 * log10(obj.center_frequency);
+            else % NLoS
+                pl_nlos = 38.3 * log10(distance_3d) + 17.3 + 24.9 * log10(obj.center_frequency) + lognrnd(0, 8.03);
                 pl_db = max(pl_los, pl_nlos);
             end
-            
             pl_lin = db2pow(pl_db);
             attenuated_waveforms = txWaveforms ./ pl_lin;
-            
+        end
+        
+        function p_los = los_probability(distance_2d) % Refer to section 7.6.3.3 in TR 38.901
+            if distance_2d <= 1.2
+                p_los = 1;
+            elseif distance_2d > 1.2 && (distance_2d < 6.5)
+                p_los = exp(-(distance_2d - 1.2)/4.7);
+            else
+                p_los = exp(-(distance_2d - 6.5)/32.6) * 0.32;
+            end
         end
     end
 end
