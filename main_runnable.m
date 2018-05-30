@@ -2,7 +2,7 @@
 clear; clc; close all;
 addpath('utilities','-end');  % Add utilities folder at the end of search path
 % Define several experiments here and override variable values accordingly
-experimentList = 4;
+experimentList = 5;
 if any(experimentList(:)==1);    experiment1();   end
 if any(experimentList(:)==2);    experiment2();   end
 if any(experimentList(:)==3);    experiment3();   end
@@ -14,19 +14,31 @@ if any(experimentList(:)==4)
     experiment4(nIter,nUsers,nAntennasList,plotFLAG);
 end
 if any(experimentList(:)==5)
-    nIter = 5;  % Iterations over shich to average the results
-    nUsers = 2;  % Static number of users in simulation
-    nAntennasList = [4 8 12 16 20 24 28 32].^2;  % Number of antennas in array
-    plotFLAG = true;  % Plotting flag
-    arrRestctList = {'None','Localized'};
-    SINR_PB_tot = zeros(length(nAntennasList),length(arrRestctList));
-    SINR_BB_tot = zeros(length(nAntennasList),length(arrRestctList));
-    Cap_tot = zeros(length(nAntennasList),length(arrRestctList));
+    arrRestctList    = {'None','Localized'};
+    % Output parameters
+    fileNameList = cell(length(arrRestctList),1);
     for restIdx = 1:length(arrRestctList)
-        arrayRestriction = arrRestctList{restIdx}; % "None", "Localized", "Interleaved", "DiagInterleaved"
+        % Input parameters
+        input.nIter            = 5;  % Total number of iterations
+        input.nUsers           = 2;  % Number of users deployed
+        input.nAntennasList    = [4 8 12 16 20 24 28 32].^2;  % Number of antennas in array
+        input.arrayRestriction = arrRestctList{restIdx};
+        input.algorithm        = 'GA';  % Heuristic algorithm
+        input.detLocation      = true;  % Deterministic locations if true
+        input.useCasesLocation = true;  % Use-Case locations if true
+        input.useCaseLocation  = 1;  % Use-case ID
+        plotFLAG = false;  % Plotting flag
         % Main
-        [Cap,SINR_BB,SINR_PB,DirOK,DirNOK_gntd,DirNOK_pcvd] = ...
-                      experiment5(nIter,nUsers,nAntennasList,arrayRestriction,plotFLAG);
+        fileNameList{restIdx} = experiment5(input,plotFLAG);
+        % Plot
+        experiment5_plot(fileNameList{restIdx});
+    end
+    % Parse results along array geometry
+    SINR_PB_tot = zeros(length(input.nAntennasList),length(arrRestctList));
+    SINR_BB_tot = zeros(length(input.nAntennasList),length(arrRestctList));
+    Cap_tot = zeros(length(input.nAntennasList),length(arrRestctList));
+    for restIdx = 1:length(arrRestctList)
+        load(fileNameList{restIdx});
         % Parse results
         SINR_PB_lin = db2pow(SINR_PB);
         SINR_BB_lin = db2pow(SINR_BB);
@@ -34,9 +46,23 @@ if any(experimentList(:)==5)
         SINR_PB_tot(:,restIdx) = pow2db(mean(SINR_PB_lin,1)).';
         SINR_BB_tot(:,restIdx) = pow2db(mean(SINR_BB_lin,1)).';
         Cap_tot(:,restIdx) = pow2db(mean(Cap_lin,1)).';
-        % Plot
-        experiment5_plot(nUsers,nAntennasList,arrayRestriction,Cap,SINR_BB,SINR_PB,DirOK,DirNOK_gntd,DirNOK_pcvd);
     end
+    % Save results
+    fileName = strcat('temp/exp5_GA_TOT_',mat2str(input.nUsers),'_',mat2str(input.detLocation),'_',mat2str(input.useCasesLocation),'_',mat2str(input.useCaseLocation));
+    nUsers = input.nUsers;  nAntennasList = input.nAntennasList;
+    save(fileName,'Cap_tot','SINR_BB_tot','SINR_PB_tot','nUsers','nAntennasList','arrRestctList');
+end
+if any(experimentList(:)==51)
+    arrRestctList = {'None','Localized'};
+    fileNameList = {'temp/exp5_GA_None_2_true_true_1','temp/exp5_GA_Localized_2_true_true_1'};
+%     fileNameList = {'temp/exp5-results_GA_None_2_true_true_4','temp/exp5-results_GA_Localized_2_true_true_4'};
+%     fileNameList = {'temp/exp5-results_GA_None_2_true_true_5','temp/exp5-results_GA_Localized_2_true_true_5'};
+%     fileNameList = {'temp/exp5-results_GA_None_2_true_true_6','temp/exp5-results_GA_Localized_2_true_true_6'};
+    for restIdx = 1:length(arrRestctList)
+        experiment5_plot(fileNameList{restIdx});
+    end
+    fileName = strcat('temp/exp5_GA_TOT_2_true_true_1');
+    load(fileName,'Cap_tot','SINR_BB_tot','SINR_PB_tot','nUsers','nAntennasList','arrRestctList');
     figure;
     plot(nAntennasList,SINR_PB_tot,'LineWidth',2,'Marker','s');
     title('Average SINR-PB','FontSize',12);
@@ -58,11 +84,6 @@ if any(experimentList(:)==5)
     ylabel('Capacity in bits/Hz/s','FontSize',12);
     legend(arrRestctList);
     grid minor;
-end
-if any(experimentList(:)==51)
-    fileName = 'temp/exp5-results';
-    load(fileName,'nUsers','nAntennasList','arrayRestriction','Cap','SINR_BB','SINR_PB','DirOK','DirNOK_gntd','DirNOK_pcvd');
-    experiment5_plot(nUsers,nAntennasList,arrayRestriction,Cap,SINR_BB,SINR_PB,DirOK,DirNOK_gntd,DirNOK_pcvd);
 end
 if any(experimentList(:)==7)
     nUsersList = [2];
@@ -274,7 +295,7 @@ function experiment4(nIter,nUsers,nAntennasList,plotFLAG)
     end
 end
 
-function [Cap,SINR_BB,SINR_PB,DirOK,DirNOK_gntd,DirNOK_pcvd] = experiment5(nIter,nUsers,nAntennasList,arrayRestriction,plotFLAG)
+function fileName = experiment5(input,plotFLAG)
     % EXPERIMENT 5 -- 
     % 
     % Aim: Evaluate the average received power (Prx) at the intended users
@@ -282,41 +303,69 @@ function [Cap,SINR_BB,SINR_PB,DirOK,DirNOK_gntd,DirNOK_pcvd] = experiment5(nIter
     % allocation policy leads to an unfair allocation policy, which leads
     % to different Prx and Int values. This experiment analyzes how the
     % size of the antenna array and the place in the priority list impact
-    % on the performance of the system
+    % on the performance of the system.
+    % 
+    % The experiment stores the relevant variables in a .mat file with the
+    % following format:     temp/exp5_A_B_C_D_E_F.mat, 
+    % where 'A' is the heuristic algorithm used, 'B' is the array geometry,
+    % 'C' is the num. of users, 'D' is the deterministic localization, 'E'
+    % is the use case localization ('E' overrides 'D') and 'F' is the use
+    % case localization used.
+    % 
+    % The .mat file contains the info (dim arrays [nUsers x nAntennasList]):
+    %    Cap - Capacity in b/Hz/s 
+    %    SINR_BB - BaseBand SINR (dB)
+    %    SINR_PB - PassBand SINR (dB)
+    %    DirOK - Directivity to the intended transmitter (dB)
+    %    DirNOK_gntd - Directivity generated to other nodes (dB)
+    %    DirNOK_pcvd - Directivity perceived due to interfeering nodes (dB)
+    %    nUsers - The number of users inputed (integer)
+    %    nAntennasList - The antenna size inputted (array)
+    %    arrayRestriction - The array restriction inputted (cell)
+    %    detLocation - Use fixed pre-stored locations (boolean)
+    %    useCasesLocation - Use the use-case locations (boolean)
+    %    useCaseLocation - Specify the use-case location (integer)
     % 
 	% Assumptions (Fixed):
     %   1. Number of antennas: Same across users and prop. to Array size.
     %   2. Number of users: nUsers.
     %   3. User location: From config file.
-    %   4. Sub-array geometry: 'None'.
+    %   4. Sub-array geometry: Fixed to 'None', 'Localized', etc.
     %   5. Antenna Array geometry: Fixed to URA.
-    %   6. Algorithm: GA
+    %   6. Algorithm: Fixed to 'GA', 'PSO' or 'PS'.
     % Variable:
     %   1. Antenna Array size variable: nAntennasList
-    %   2. Population size: Prop. to nAntennas in Array
     % 
     % Syntax:  [CapTot,SINRTot,DirOKTot,DirOKAv,DirNOKTot,DirNOKAv] =
     % experiment5(nIter,nUsers,nAntennasList,plotFLAG)
     % 
-    % Inputs:
+    % Inputs (stored in struct 'input'):
     %    nIter - Number of iterations to extract average values
     %    nUsers - Number of users considered
     %    nAntennaList - Number of antenas
     %    arrayRestriction - Defines the sub-array restriction at the BS
+    %    algorithm - Defines tre heuristic algorithm to run
+    %    detLocation - Determines whether to use static locations
+    %    useCasesLocation - Determines wheter to use the loc. use-cases
+    %    useCaseLocation  - Determines the use-case ID
     %    plotFLAG - True for plotting directivity and antenna allocation
     %
-    % Outputs: (all have dimensions [nUsers x nAntennasList])
-    %    Cap - Capacity in b/Hz/s 
-    %    SINR_BB - BaseBand SINR in dB
-    %    SINR_PB - PassBand SINR in dB
-    %    DirOK - Directivity to the intended transmitter in dB
-    %    DirNOK_gntd - Directivity generated to other nodes in dB
-    %    DirNOK_pcvd - Directivity perceived due to interfeering nodes in
-    %                  dB (nUsers x nAntennasList)
+    % Outputs: 
+    %    fileName - The name of the .mat file with the results
     %
     %------------- BEGIN CODE EXPERIMENT 5 --------------
     %
     fprintf('Running experiment 5...\n');
+    % Store input struct in local
+    nUsers           = input.nUsers;
+    nIter            = input.nIter;
+    nAntennasList    = input.nAntennasList;
+    arrayRestriction = input.arrayRestriction;
+    algorithm        = input.algorithm;
+    detLocation      = input.detLocation;
+    useCasesLocation = input.useCasesLocation;
+    useCaseLocation  = input.useCaseLocation;
+    fprintf('Input parameters:\n\tnUsers:\t%d\n\tIter:\t%d\n\tAntennasList:\t%s\n\tarrayRestriction:\t%s\n\talgorithm:\t%s\n\tdetLocation:\t%s\n\tuseCasesLocation:\t%s\n\tuseCaseLocation:\t%d\n',nUsers,nIter,mat2str(nAntennasList),arrayRestriction,algorithm,mat2str(detLocation),mat2str(useCasesLocation),useCaseLocation);
     % Load basic parameters
     problem = o_read_input_problem('data/metaproblem_test.dat');
     conf = o_read_config('data/config_test.dat');
@@ -326,11 +375,18 @@ function [Cap,SINR_BB,SINR_PB,DirOK,DirNOK_gntd,DirNOK_pcvd] = experiment5(nIter
     problem.MinObjF = 100.*ones(1,problem.nUsers);  % Same #ant per user. Random SNR (30dB)
     problem.arrayRestriction = arrayRestriction;  % Possibilities: "None", "Localized", "Interleaved", "DiagInterleaved"
     % Override (conf) parameters
-    conf.verbosity = 1;
-    conf.algorithm = 'GA';  % Heuristic algorithm
-    conf.NumPhaseShifterBits = 60;  % Number of 
+    conf.verbosity = 0;
+    conf.algorithm = algorithm;  % Heuristic algorithm
+    conf.PopulationSize_Data = 30;
+    conf.Maxgenerations_Data = 150;
+    conf.EliteCount_Data = ceil(conf.PopulationSize_Data/5);
+    conf.MaxStallgenerations_Data = ceil(conf.Maxgenerations_Data/10);  % Force it to cover all the generations
     conf.FunctionTolerance_Data = 1e-10;  % Heuristics stops when not improving solution by this much
+    conf.NumPhaseShifterBits = 60;  % Number of 
     conf.multiPath = false;  % LoS channel (for now)
+    conf.detLocation = detLocation;  % Use fixed pre-stored locations
+    conf.useCasesLocation = useCasesLocation;  % Use the use-case locations
+    conf.useCaseLocation = useCaseLocation;  % Specify the use-case location
 	% Configure basic parameters
     candSet = (1:1:problem.nUsers);  % Set of users to be considered
 	% Create output variables
@@ -338,25 +394,12 @@ function [Cap,SINR_BB,SINR_PB,DirOK,DirNOK_gntd,DirNOK_pcvd] = experiment5(nIter
     SINRTot = zeros(problem.nUsers,length(nAntennasList),nIter);
     DirOKTot = -Inf(problem.nUsers,length(nAntennasList),nIter);
     DirNOKTot = -Inf(problem.nUsers,problem.nUsers,length(nAntennasList),nIter);
-    fileName_temp = strcat('temp/exp5-results_',problem.arrayRestriction,'_',mat2str(nUsers),'_',conf.algorithm,'_so_far');
-    fileName = strcat('temp/exp5-results_',problem.arrayRestriction,'_',mat2str(nUsers),'_',conf.algorithm);
-    % Linearize combinations and asign Population size (To be replaced with
-    % convergency analysis values)
-%     totComb = log10(problem.nUsers.*factorial(ceil(nAntennasList/problem.nUsers)));
-%     maxPop = 70;  % Maximum population size
-%     minPop = 40;  % Minimum population size
-%     slope = (maxPop - minPop) / (totComb(end)-totComb(1));
-%     ordIdx = minPop - slope*totComb(1);
-%     PopSizeList = ceil(slope*totComb + ordIdx);
-    PopSizeList = 30*ones(length(nAntennasList),1);
+    fileName_temp = strcat('temp/exp5_',problem.arrayRestriction,'_',mat2str(nUsers),'_',conf.algorithm,'_so_far');
+    fileName = strcat('temp/exp5_',conf.algorithm,'_',problem.arrayRestriction,'_',mat2str(nUsers),'_',mat2str(conf.detLocation),'_',mat2str(conf.useCasesLocation),'_',mat2str(conf.useCaseLocation));
     % Main execution
     for idxAnt = 1:length(nAntennasList)
-        conf.PopulationSize_Data = PopSizeList(idxAnt);
-        conf.Maxgenerations_Data = 150;
-        conf.EliteCount_Data = ceil(conf.PopulationSize_Data/5);
-        conf.MaxStallgenerations_Data = ceil(conf.Maxgenerations_Data/10);  % Force it to cover all the generations
         for idxIter = 1:nIter
-            fprintf('Iteration %d with PopSize %d\n',idxIter,PopSizeList(idxAnt));
+            fprintf('Iteration %d\n',idxIter);
             % Configure the simulation environment. Need to place users in new
             % locations and create new channels to have statistically
             % meaningful results
@@ -438,9 +481,9 @@ function [Cap,SINR_BB,SINR_PB,DirOK,DirNOK_gntd,DirNOK_pcvd] = experiment5(nIter
         DirNOK_gntd_lin(:,antIdx) = sum(mean(DirNOKTot_lin(:,:,antIdx,:),4),2); % Generated interference 
         DirNOK_pcvd_lin(:,antIdx) = sum(mean(DirNOKTot_lin(:,:,antIdx,:),4),1); % Perceived interference
     end
-    DirOK = pow2db(DirOK_lin);  % Directivity generated to intended user
-    DirNOK_gntd = pow2db(DirNOK_gntd_lin);  % Directivity being generated by intended user
-    DirNOK_pcvd = pow2db(DirNOK_pcvd_lin);  % Directivity inflicted to intended user
+    DirOK = pow2db(DirOK_lin);  %#ok % Directivity generated to intended user
+    DirNOK_gntd = pow2db(DirNOK_gntd_lin);  %#ok % Directivity being generated by intended user
+    DirNOK_pcvd = pow2db(DirNOK_pcvd_lin);  %#ok % Directivity inflicted to intended user
     % Compute SINR and Capacities
     Ptx_lin = db2pow(problem.Ptx);  % Initial transmit power
     Ptx_lin = repmat(Ptx_lin,1,length(nAntennasList));
@@ -449,15 +492,21 @@ function [Cap,SINR_BB,SINR_PB,DirOK,DirNOK_gntd,DirNOK_pcvd] = experiment5(nIter
     Noise_lin = db2pow(problem.Noise);  % Noise power
     Noise_lin = repmat(Noise_lin,1,length(nAntennasList));
     SINR_PB_lin = (Ptx_lin.*DirOK_lin.*chLoss_lin) ./ (Ptx_lin.*DirNOK_pcvd_lin.*chLoss_lin + Noise_lin);  % SINR
-    SINR_PB = pow2db(SINR_PB_lin);
+    SINR_PB = pow2db(SINR_PB_lin);  %#ok
     SINR_BB_lin = mean(db2pow(SINRTot),3);  % Compute SINR Base-Band (BB)
-    SINR_BB = pow2db(SINR_BB_lin);
-    Cap = mean(CapTot,3);  % Compute Average Capacities in the system
-    save(fileName,'Cap','SINR_BB','SINR_PB','DirOK','DirNOK_gntd','DirNOK_pcvd','DirOKTot','DirNOKTot','nUsers','nAntennasList','arrayRestriction');
+    SINR_BB = pow2db(SINR_BB_lin);  %#ok
+    Cap = mean(CapTot,3);  %#ok % Compute Average Capacities in the system
+    % Store results in .mat file
+    save(fileName,'Cap','SINR_BB','SINR_PB',...
+             'DirOK','DirNOK_gntd','DirNOK_pcvd','DirOKTot','DirNOKTot',...
+             'nUsers','nAntennasList','arrayRestriction',...
+             'detLocation','useCaseLocation','useCaseLocation');
 end
 
-function experiment5_plot(nUsers,nAntennasList,arrayRestriction,Cap,SINR_BB,SINR_PB,DirOK,DirNOK_gntd,DirNOK_pcvd)
+function experiment5_plot(fileName)
     % EXPERIMENT 5 - Plotting results
+    % Load results
+    load(fileName);
     % Get figure number
     h = findobj('type','figure');
     figNum = length(h) + 1;

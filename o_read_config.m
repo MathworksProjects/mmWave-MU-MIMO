@@ -69,7 +69,7 @@ function [conf] = o_read_config(config_file)
                     % Basic parameters
                     struct('name','detLocation','type','bool');
                     struct('name','useCasesLocation','type','bool');
-                    struct('name','useCaseLoation','type','float');
+                    struct('name','useCaseLocation','type','float');
                     % Optimization parameters
                     struct('name','algorithm','type','char');
                     struct('name','Fweights','type','floatArray','size',3);

@@ -30,7 +30,7 @@ function [thetaPos, phiPos, dPos] = o_generate_positions(conf,problem)
         end
     elseif conf.useCasesLocation
         % Generate Elevation angles from Use case
-        thetaPos = uc_el(conf.useCaseLoation,:);
+        thetaPos = uc_el(conf.useCaseLocation,:);
     else
         % Retrieve Elevation angles from config file
         if problem.anglesInRadians
@@ -51,7 +51,7 @@ function [thetaPos, phiPos, dPos] = o_generate_positions(conf,problem)
         end
 	elseif conf.useCasesLocation
         % Generate Azymuth angles from Use case
-        phiPos = uc_az(conf.useCaseLoation,:);
+        phiPos = uc_az(conf.useCaseLocation,:);
     else
         % Retrieve Elevation angles from config file
         if problem.anglesInRadians
