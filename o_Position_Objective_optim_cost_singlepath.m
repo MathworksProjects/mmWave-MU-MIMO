@@ -170,7 +170,7 @@ function score = transferScore(PowerdB,mode)
            500 1     0].';
 	x = p(1,:);  % Power in dB
     if mode
-        % Prx (intended user)    
+        % Prx (intended user)
         y = p(2,:);  % Score
     else
         % Int (interfereed users)
@@ -180,4 +180,45 @@ function score = transferScore(PowerdB,mode)
     yy = interpn(x,y,xx,'linear');
     [~,idx] = min(abs(PowerdB - xx));
     score = yy(idx);
+
+    % Alternative (linear)
+%     if mode    
+%         mindB = 0;
+%         maxdB = 33;
+%         minScore = 0;
+%         maxScore = 1;
+%         m = (maxScore-minScore)/(maxdB-mindB);  % Slope 
+%         x = (mindB:0.01:maxdB);
+%         y = x.*m + minScore;
+%         % Include limits
+%         x = [-500 x 500];
+%         y = [0 y 1];
+%     else
+%         % 1st stage
+%         mindB1st = 0;
+%         maxdB1st = -50;
+%         minScore1st = 0;
+%         maxScore1st = 0.85;
+%         m = (maxScore1st-minScore1st)/(maxdB1st-mindB1st);  % Slope 
+%         x1 = (maxdB1st:0.01:mindB1st);
+%         n1 = 0;
+%         y1 = x1.*m + n1;
+%         % 2nd stage
+%         mindB2nd = maxdB1st;
+%         maxdB2nd = -100;
+%         minScore2nd = maxScore1st;
+%         maxScore2nd = 1;
+%         m = (maxScore2nd-minScore2nd)/(maxdB2nd-mindB2nd);  % Slope 
+%         x2 = (maxdB2nd:0.01:mindB2nd);
+%         n2 = maxScore2nd - m*maxdB2nd;
+%         y2 = x2.*m + n2;
+%         % Append stages
+%         x = [x2 x1];
+%         y = [y2 y1];
+%         % Include limits
+%         x = [-500 x 500];
+%         y = [1 y 0];
+%     end
+%     [~,idx] = min(abs(PowerdB - x));
+%     score = y(idx);
 end
