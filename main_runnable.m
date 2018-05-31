@@ -2,7 +2,7 @@
 clear; clc; close all;
 addpath('utilities','-end');  % Add utilities folder at the end of search path
 % Define several experiments here and override variable values accordingly
-experimentList = 5;
+experimentList = 51;
 if any(experimentList(:)==1);    experiment1();   end
 if any(experimentList(:)==2);    experiment2();   end
 if any(experimentList(:)==3);    experiment3();   end
@@ -26,7 +26,7 @@ if any(experimentList(:)==5)
         input.algorithm        = 'GA';  % Heuristic algorithm
         input.detLocation      = true;  % Deterministic locations if true
         input.useCasesLocation = true;  % Use-Case locations if true
-        input.useCaseLocation  = 1;  % Use-case ID
+        input.useCaseLocation  = 3;  % Use-case ID
         plotFLAG = false;  % Plotting flag
         % Main
         fileNameList{restIdx} = experiment5(input,plotFLAG);
@@ -54,14 +54,21 @@ if any(experimentList(:)==5)
 end
 if any(experimentList(:)==51)
     arrRestctList = {'None','Localized'};
-    fileNameList = {'temp/exp5_GA_None_2_true_true_1','temp/exp5_GA_Localized_2_true_true_1'};
-%     fileNameList = {'temp/exp5-results_GA_None_2_true_true_4','temp/exp5-results_GA_Localized_2_true_true_4'};
-%     fileNameList = {'temp/exp5-results_GA_None_2_true_true_5','temp/exp5-results_GA_Localized_2_true_true_5'};
-%     fileNameList = {'temp/exp5-results_GA_None_2_true_true_6','temp/exp5-results_GA_Localized_2_true_true_6'};
+%     fileNameList = {'temp/exp5_GA_None_2_true_true_1','temp/exp5_GA_Localized_2_true_true_1'};
+%     fileName = strcat('temp/exp5_GA_TOT_2_true_true_1');
+    fileNameList = {'temp/exp5_GA_None_2_true_true_2','temp/exp5_GA_Localized_2_true_true_4'};
+    fileName = strcat('temp/exp5_GA_TOT_2_true_true_2');
+%     fileNameList = {'temp/exp5_GA_None_2_true_true_3','temp/exp5_GA_Localized_2_true_true_4'};
+%     fileName = strcat('temp/exp5_GA_TOT_2_true_true_3');
+%     fileNameList = {'temp/exp5_GA_None_2_true_true_4','temp/exp5_GA_Localized_2_true_true_4'};
+%     fileName = strcat('temp/exp5_GA_TOT_2_true_true_4');
+%     fileNameList = {'temp/exp5_GA_None_2_true_true_5','temp/exp5_GA_Localized_2_true_true_5'};
+%     fileName = strcat('temp/exp5_GA_TOT_2_true_true_5');
+%     fileNameList = {'temp/exp5_GA_None_2_true_true_6','temp/exp5_GA_Localized_2_true_true_6'};
+%     fileName = strcat('temp/exp5_GA_TOT_2_true_true_6');
     for restIdx = 1:length(arrRestctList)
         experiment5_plot(fileNameList{restIdx});
     end
-    fileName = strcat('temp/exp5_GA_TOT_2_true_true_1');
     load(fileName,'Cap_tot','SINR_BB_tot','SINR_PB_tot','nUsers','nAntennasList','arrRestctList');
     figure;
     plot(nAntennasList,SINR_PB_tot,'LineWidth',2,'Marker','s');
