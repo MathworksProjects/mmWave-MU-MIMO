@@ -54,42 +54,44 @@ if any(experimentList(:)==5)
 end
 if any(experimentList(:)==51)
     arrRestctList = {'None','Localized'};
-%     fileNameList = {'temp/exp5_GA_None_2_true_true_1','temp/exp5_GA_Localized_2_true_true_1'};
-%     fileName = strcat('temp/exp5_GA_TOT_2_true_true_1');
-    fileNameList = {'temp/exp5_GA_None_2_true_true_2','temp/exp5_GA_Localized_2_true_true_4'};
-    fileName = strcat('temp/exp5_GA_TOT_2_true_true_2');
-%     fileNameList = {'temp/exp5_GA_None_2_true_true_3','temp/exp5_GA_Localized_2_true_true_4'};
-%     fileName = strcat('temp/exp5_GA_TOT_2_true_true_3');
-%     fileNameList = {'temp/exp5_GA_None_2_true_true_4','temp/exp5_GA_Localized_2_true_true_4'};
-%     fileName = strcat('temp/exp5_GA_TOT_2_true_true_4');
-%     fileNameList = {'temp/exp5_GA_None_2_true_true_5','temp/exp5_GA_Localized_2_true_true_5'};
-%     fileName = strcat('temp/exp5_GA_TOT_2_true_true_5');
-%     fileNameList = {'temp/exp5_GA_None_2_true_true_6','temp/exp5_GA_Localized_2_true_true_6'};
-%     fileName = strcat('temp/exp5_GA_TOT_2_true_true_6');
-    for restIdx = 1:length(arrRestctList)
-        experiment5_plot(fileNameList{restIdx});
+    fileNameList = cell(length(arrRestctList),1);
+    legendList = cell(length(arrRestctList),1);
+    locList = [1 2 3 4 5 6];
+    % colorList from: https://en.wikipedia.org/wiki/Web_colors
+    colNoneList = [[139 0 0]./255 ; [178 34 34]./255 ; [220 20 60]./255 ; [205 92 92]./255 ; [250 128 114]./255 ; [255 160 122]./255];
+    colLocList  = [[0 0 128]./255 ; [0 0 205]./255 ; [0 0 255]./255 ; [65 105 225]./255 ; [100 149 237]./255 ; [0 191 255]./255];
+    colListTot = [colNoneList(1:length(locList),:);colLocList(1:length(locList),:)];
+    lineStyleList = {'-','-.','--',':'};
+    figure(1); hold on;
+    set(gca, 'ColorOrder', colListTot, 'NextPlot', 'replacechildren');  % Change to new colors.
+    for locIdx = 1:length(locList)
+        fileNameList{1} = strcat('temp/exp5_GA_',arrRestctList{1},'_2_true_true_',mat2str(locList(locIdx)));
+        fileNameList{2} = strcat('temp/exp5_GA_',arrRestctList{2},'_2_true_true_',mat2str(locList(locIdx)));
+        fileName = strcat('temp/exp5_GA_TOT_2_true_true_',mat2str(locList(locIdx)));
+        % Plot individual results
+%         for restIdx = 1:length(arrRestctList)
+%             experiment5_plot(fileNameList{restIdx});
+%         end
+        % Store global results
+        load(fileName,'Cap_tot','SINR_BB_tot','SINR_PB_tot','nUsers','nAntennasList','arrRestctList');
+        Cap_TOT(:,locIdx) = Cap_tot(:,1);
+        Cap_TOT(:,locIdx + length(locList)) = Cap_tot(:,2);
+        legendList(locIdx)                   = strcat(' No restr. - Loc. ',{' '},mat2str(locList(locIdx)));
+        legendList(locIdx + length(locList)) = strcat('Sq. restr. - Loc. ',{' '},mat2str(locList(locIdx)));
     end
-    load(fileName,'Cap_tot','SINR_BB_tot','SINR_PB_tot','nUsers','nAntennasList','arrRestctList');
-    figure;
-    plot(nAntennasList,SINR_PB_tot,'LineWidth',2,'Marker','s');
-    title('Average SINR-PB','FontSize',12);
-    xlabel('Number of antennas','FontSize',12);
-    ylabel('SINR in dB','FontSize',12);
-    legend(arrRestctList);
-    grid minor;
-    figure;
-    plot(nAntennasList,SINR_BB_tot,'LineWidth',2,'Marker','s');
-    title('Average SINR-BB','FontSize',12);
-    xlabel('Number of antennas','FontSize',12);
-    ylabel('SINR in dB','FontSize',12);
-    legend(arrRestctList);
-    grid minor;
-    figure;
-    plot(nAntennasList,Cap_tot,'LineWidth',2,'Marker','s');
+    plot(nAntennasList,Cap_TOT,'LineWidth',1.3,'Marker','x','MarkerSize',3.5);
     title('Average capacity','FontSize',12);
     xlabel('Number of antennas','FontSize',12);
     ylabel('Capacity in bits/Hz/s','FontSize',12);
-    legend(arrRestctList);
+    hList = findobj('Type', 'line');  % Returns lines in inverse order
+    ah1 = gca;
+    leg = legend(ah1,hList(1:length(locList)),legendList(length(locList)+1:2*length(locList)));
+    set(leg,'FontSize',10);
+    ah2 = axes('position',get(gca,'position'),'visible','off');
+    leg = legend(ah2,hList(length(locList)+1:2*length(locList)),legendList(1:length(locList)));
+    set(leg,'FontSize',10);
+    figure(1);
+    xlim([min(nAntennasList)-50 max(nAntennasList)+50]);
     grid minor;
 end
 if any(experimentList(:)==7)
