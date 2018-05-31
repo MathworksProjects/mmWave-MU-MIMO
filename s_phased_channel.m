@@ -37,7 +37,7 @@ classdef s_phased_channel < matlab.System
             cdlChan.TransmitAntennaArray.Size = [obj.numInputElements_row, obj.numInputElements_col, 1, 1, 1];
             cdlChan.ReceiveAntennaArray.Size = [obj.numOutputElements_col, obj.numOutputElements_row, 1, 1, 1];
             cdlChan.DelayProfile = obj.profile;
-            cdlChan.DelaySpread = 100e-9;
+            cdlChan.DelaySpread = 16e-9;
             cdlChan.CarrierFrequency = obj.center_frequency;
             cdlChan.MaximumDopplerShift = (0 / 3.6) / physconst('lightspeed') * obj.center_frequency; % 0km/h pedestrian
             
