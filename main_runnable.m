@@ -1,11 +1,54 @@
-% Setup the environment
+%% Setup the environment
 clear; clc; close all;
 addpath('utilities','-end');  % Add utilities folder at the end of search path
-% Define several experiments here and override variable values accordingly
-experimentList = 5;
+%% Define several experiments here and override variable values accordingly
+experimentList = 21;
+%% Experiment selection
+
+%% EXPERIMENT 1
 if any(experimentList(:)==1);    experiment1();   end
-if any(experimentList(:)==2);    experiment2();   end
+
+%% EXPERIMENT 2
+if any(experimentList(:)==2)
+    arrRestctList    = {'None','Localized'};
+    % Input parameters
+    input.nIter               = 2;  % Total number of iterations
+    input.nUsers              = 2;  % Number of users deployed
+    input.nAntennasList       = [4 8 12 16].^2;  % Number of antennas in array
+    input.Maxgenerations_Data = 100;
+    input.algorithm           = 'GA';  % Heuristic algorithm
+    input.detLocation         = true;  % Deterministic locations if true
+    input.useCasesLocation    = true;  % Use-Case locations if true
+    input.useCaseLocation     = 1;  % Use-case ID
+    fileNameList = cell(length(arrRestctList),1);
+    score_tot = zeros(length(arrRestctList),length(input.nAntennasList),input.Maxgenerations_Data);
+    for restIdx = 1:length(arrRestctList)
+        % Input parameters extra
+        input.arrayRestriction = arrRestctList{restIdx};
+        % Main
+        fileNameList{restIdx} = experiment2(input);
+        % Parse results
+        load(fileNameList{restIdx},'bestScores');
+        score_tot(restIdx,:,:) = bestScores;
+    end
+    % Save results
+    fileName = strcat('temp/exp2_',input.algorithm,'_TOT_',mat2str(input.nUsers),'_',mat2str(input.detLocation),'_',mat2str(input.useCasesLocation),'_',mat2str(input.useCaseLocation));
+    nAntennasList = input.nAntennasList; Maxgenerations_Data=input.Maxgenerations_Data;
+    save(fileName,'score_tot','nAntennasList','arrRestctList','Maxgenerations_Data');
+    % Plot results
+    experiment2_plot(fileName);
+end
+
+%% EXPERIMENT 2 - PLOTTING
+if any(experimentList(:)==21)
+    fileName = strcat('temp/exp2_GA_TOT_2_true_true_1');
+    experiment2_plot(fileName);
+end
+
+%% EXPERIMENT 3
 if any(experimentList(:)==3);    experiment3();   end
+
+%% EXPERIMENT 4
 if any(experimentList(:)==4)
     nUsers = 2;
     nAntennasList = [4 6 8 10];
@@ -13,10 +56,15 @@ if any(experimentList(:)==4)
     plotFLAG = true;
     experiment4(nIter,nUsers,nAntennasList,plotFLAG);
 end
+
+%% EXPERIMENT 5
 if any(experimentList(:)==5)
     arrRestctList    = {'None','Localized'};
     % Output parameters
     fileNameList = cell(length(arrRestctList),1);
+    SINR_PB_tot = zeros(length(input.nAntennasList),length(arrRestctList));
+    SINR_BB_tot = zeros(length(input.nAntennasList),length(arrRestctList));
+    Cap_tot = zeros(length(input.nAntennasList),length(arrRestctList));
     for restIdx = 1:length(arrRestctList)
         % Input parameters
         input.nIter            = 5;  % Total number of iterations
@@ -32,14 +80,8 @@ if any(experimentList(:)==5)
         fileNameList{restIdx} = experiment5(input,plotFLAG);
         % Plot
         experiment5_plot(fileNameList{restIdx});
-    end
-    % Parse results along array geometry
-    SINR_PB_tot = zeros(length(input.nAntennasList),length(arrRestctList));
-    SINR_BB_tot = zeros(length(input.nAntennasList),length(arrRestctList));
-    Cap_tot = zeros(length(input.nAntennasList),length(arrRestctList));
-    for restIdx = 1:length(arrRestctList)
-        load(fileNameList{restIdx});
         % Parse results
+        load(fileNameList{restIdx});
         SINR_PB_lin = db2pow(SINR_PB);
         SINR_BB_lin = db2pow(SINR_BB);
         Cap_lin = db2pow(Cap);
@@ -52,6 +94,8 @@ if any(experimentList(:)==5)
     nUsers = input.nUsers;  nAntennasList = input.nAntennasList;
     save(fileName,'Cap_tot','SINR_BB_tot','SINR_PB_tot','nUsers','nAntennasList','arrRestctList');
 end
+
+%% EXPERIMENT 5 - PLOTTING
 if any(experimentList(:)==51)
     arrRestctList = {'None','Localized'};
     fileNameList = {'temp/exp5_GA_None_2_true_true_1','temp/exp5_GA_Localized_2_true_true_1'};
@@ -85,6 +129,8 @@ if any(experimentList(:)==51)
     legend(arrRestctList);
     grid minor;
 end
+
+%% EXPERIMENT 7
 if any(experimentList(:)==7)
     nUsersList = [2];
 %     nAntennasList = [4 5 6 7 8 9 10].^2;
@@ -93,6 +139,8 @@ if any(experimentList(:)==7)
     plotFLAG = true;
     experiment7(nIter,nUsersList,nAntennasList,plotFLAG);
 end
+
+%% EXPERIMENT 8
 if any(experimentList(:)==8)
     nUsersList = [2];
 %     nAntennasList = [4 5 6 7 8 9 10].^2;
@@ -102,6 +150,22 @@ if any(experimentList(:)==8)
     experiment8(nIter,nUsersList,nAntennasList,plotFLAG);
 end
 
+%% --------------------- EXPERIMENT IMPLEMENTATION --------------------- %%
+%-------------------------------------------------------------------------%
+%-------------------------------------------------------------------------%
+%-------------------------------------------------------------------------%
+%-------------------------------------------------------------------------%
+%-------------------------------------------------------------------------%
+%-------------------------------------------------------------------------%
+%-------------------------------------------------------------------------%
+%-------------------------------------------------------------------------%
+
+
+
+
+
+
+%% EXPERIMENT 1
 function experiment1(varargin)
     % EXPERIMENT 1 - Capacity offered
     % In this experiment we evaluate the capacity that the heuristics are able
@@ -130,15 +194,159 @@ function experiment1(varargin)
     % main_plotting(problem,TXbitsTot,THTot,baseFlows,lastSelFlow);
 end
 
-% EXPERIMENT 2 - Chances of achieving the demanded throughput
-% To-Do. It uses the whole simulator and takes the real traffic as input.
 
-% EXPERIMENT 3 - Performance comparisson against null-forcing technique
+
+
+
+
+
+%% EXPERIMENT 2 - Convergency analysis
+function fileName = experiment2(input)
+    fprintf('Running experiment 2...\n');
+    % Store input struct in local
+    nUsers              = input.nUsers;
+    nIter               = input.nIter;
+    nAntennasList       = input.nAntennasList;
+    arrayRestriction    = input.arrayRestriction;
+    Maxgenerations_Data = input.Maxgenerations_Data;
+    algorithm           = input.algorithm;
+    detLocation         = input.detLocation;
+    useCasesLocation    = input.useCasesLocation;
+    useCaseLocation     = input.useCaseLocation;
+    % Load basic parameters
+    problem = o_read_input_problem('data/metaproblem_test.dat');
+    conf = o_read_config('data/config_test.dat');
+    % Override (problem) parameters
+    problem.nUsers = nUsers;  % Number of users in the simulation
+    problem.MinObjFIsSNR = true;  % (arbitrary)
+    problem.MinObjF = 100.*ones(1,problem.nUsers);  % Same #ant per user. Random SNR (30dB)
+    problem.arrayRestriction = 'None';  % Possibilities: "None", "Localized", "Interleaved", "DiagInterleaved"
+    % Override (conf) parameters
+    conf.verbosity = 2;
+    conf.algorithm = algorithm;  % Heuristic algorithm
+    conf.arrayRestriction = arrayRestriction;
+    conf.PopulationSize_Data = 30;
+    conf.Maxgenerations_Data = Maxgenerations_Data;
+    conf.EliteCount_Data = ceil(conf.PopulationSize_Data/5);
+    conf.MaxStallgenerations_Data = conf.Maxgenerations_Data;  % Force it to cover all the generations
+    conf.FunctionTolerance_Data = 1e-10;  % Heuristics stops when not improving solution by this much
+    conf.NumPhaseShifterBits = 60;  % Number of 
+    conf.multiPath = false;  % LoS channel (for now)
+    conf.detLocation = detLocation;  % Use fixed pre-stored locations
+    conf.useCasesLocation = useCasesLocation;  % Use the use-case locations
+    conf.useCaseLocation = useCaseLocation;  % Specify the use-case location
+    % Output parameters
+    bestScores1 = zeros(length(nAntennasList),nIter,conf.Maxgenerations_Data);  % temp
+    bestScores = zeros(length(nAntennasList),conf.Maxgenerations_Data);  % final
+    fileName = strcat('temp/exp2_',conf.algorithm,'_',problem.arrayRestriction,'_',mat2str(nUsers),'_',mat2str(conf.detLocation),'_',mat2str(conf.useCasesLocation),'_',mat2str(conf.useCaseLocation));
+    % For each case we execute ES and the GA
+    for idxAnt = 1:length(nAntennasList)
+        for idxIter = 1:nIter
+            fprintf('Iteration %d with nAntenas %d\n',idxIter,nAntennasList(idxAnt));
+            % Configure the simulation environment. Need to place users in new
+            % locations (if not fixed) and create new channels 
+            % to have statistically meaningful results (if not LoS)
+            [problem,~,~] = f_configuration(conf,problem);
+            % Select number of antennas
+            problem.N_Antennas = nAntennasList(idxAnt);
+            % Adjust parameters
+            problem.NxPatch = floor(sqrt(problem.N_Antennas));
+            problem.NyPatch = floor(problem.N_Antennas./problem.NxPatch);
+            problem.N_Antennas = problem.NxPatch.*problem.NyPatch;
+            % Call heuristics
+            fprintf('\t** %d Antennas and %d Users...\n',problem.N_Antennas,problem.nUsers);
+            % We will paralelize the solution computations: we need (if not already
+            % created) a parallelization processes pool
+            gcp;
+            %Create subarray partition
+            problem = o_create_subarray_partition(problem);
+            problem.NzPatch = problem.NxPatch;
+            problem.dz = problem.dx;
+            %Create the antenna handler and the data structure with all possible pos.
+            problem.handle_Ant = phased.CosineAntennaElement('FrequencyRange',...
+                [problem.freq-(problem.Bw/2) problem.freq+(problem.Bw/2)],...
+                'CosinePower',[1.5 2.5]); % [1.5 2.5] values set porque sí
+            handle_ConformalArray = phased.URA([problem.NyPatch,problem.NzPatch],...
+                'Lattice','Rectangular','Element',problem.handle_Ant,...
+            'ElementSpacing',[problem.dy,problem.dz]);
+            problem.possible_locations = handle_ConformalArray.getElementPosition;
+            % Boolean flag indicating if we have already found a feasible solution
+            problem = o_compute_antennas_per_user(problem,1:nUsers);
+            % We will accumulate in the assignments_status var the
+            % antennas / subarrays assigned as soon as we assign them
+            [~,orderedIndices] = sort(problem.MinObjF,'descend');
+            u = orderedIndices(1);
+            problem.IDUserAssigned = u;
+            % Genetic Algorithm
+            fprintf('Solving... (Genetic Algorithm)\n')
+            [~,~,~,~,tempBS] = ...
+                o_solveSingleNmaxUserInstance(conf,problem,...
+                problem.NmaxArray(problem.IDUserAssigned));
+            bestScores1(idxAnt,idxIter,1:length(tempBS)) = tempBS;
+            % Smoothen out results in tail
+            if length(tempBS)<conf.Maxgenerations_Data
+                stillCover = length(tempBS)+1:conf.Maxgenerations_Data;
+                bestScores1(idxAnt,idxIter,stillCover) = repmat(bestScores1(idxAnt,idxIter,length(tempBS)),1,length(stillCover));
+            end
+        end
+        t = mean(bestScores1(idxAnt,:,:),2);
+        bestScores(idxAnt,:) = t(:).';
+        save(fileName,'bestScores',...
+             'nUsers','nAntennasList','arrayRestriction',...
+             'detLocation','useCaseLocation','useCaseLocation');
+    end
+end
+
+%% EXPERIMENT 2 - Plotting
+function experiment2_plot(fileName)
+    % Plot results
+    load(fileName,'score_tot','nAntennasList','arrRestctList');
+    Maxgenerations_Data = size(score_tot,3);  %#ok
+    figure; hold on;
+    colList = {'r','b','g'};
+    colList{1} = [0 0 255]./255;
+    colList{2} = [0 51 102]./255;
+    colList{3} = [0 128 255]./255;
+    colList{4} = [0 180 255]./255;
+    colList{5} = [0 220 255]./255;
+    lineStyleList = {'-','-.','--',':'};
+    leg = cell(length(arrRestctList)*length(nAntennasList),1);  %#ok
+    for restIdx = 1:length(arrRestctList)
+        col = colList{restIdx};
+        for antIdx = 1:length(nAntennasList)
+%             lin = lineStyleList{1+mod(antIdx-1,length(nAntennasList))};
+            res = score_tot(restIdx,antIdx,:);  %#ok
+            score_TOT(:,(restIdx-1)*length(nAntennasList) + antIdx) = res(:);  %#ok
+            leg((restIdx-1)*length(nAntennasList) + antIdx) = strcat(arrRestctList{restIdx},{' '},'--',{' '},mat2str(nAntennasList(antIdx)));  %#ok
+        end
+    end
+    plot(1:Maxgenerations_Data,score_TOT,'LineWidth',1,'color',col,'LineStyle',lin,'Marker','.','MarkerSize',10);
+    grid minor;
+    xlabel('Generations','FontSize',12);
+    ylabel('Fitness value','FontSize',12);
+    title('Convergency analysis','FontSize',12);
+    hleg = legend(leg);
+    set(hleg,'FontSize',12);
+end
+
+
+
+
+
+
+
+%% EXPERIMENT 3 - Performance comparisson against null-forcing technique
 % To-Do. The comparisson needs to be agains a more updated technique such
 % as the JSDM. Waiting for reply from Kaushik to write to them and get the
 % code.
 
-% EXPERIMENT 4 - Convergency analysis
+
+
+
+
+
+
+%% EXPERIMENT 4 - Convergency analysis
 function experiment4(nIter,nUsers,nAntennasList,plotFLAG)
     % EXPERIMENT 4 -- 
     % 
@@ -220,13 +428,13 @@ function experiment4(nIter,nUsers,nAntennasList,plotFLAG)
             % created) a parallelization processes pool
             gcp;
 
-            %% Create subarray partition
+            % Create subarray partition
             problem = o_create_subarray_partition(problem);
 
             problem.NzPatch = problem.NxPatch;
             problem.dz = problem.dx;
 
-            %% Create the antenna handler and the data structure with all possible pos.
+            % Create the antenna handler and the data structure with all possible pos.
             problem.handle_Ant = phased.CosineAntennaElement('FrequencyRange',...
                 [problem.freq-(problem.Bw/2) problem.freq+(problem.Bw/2)],...
                 'CosinePower',[1.5 2.5]); % [1.5 2.5] values set porque sí
@@ -295,6 +503,13 @@ function experiment4(nIter,nUsers,nAntennasList,plotFLAG)
     end
 end
 
+
+
+
+
+
+
+%% EXPERIMENT 5
 function fileName = experiment5(input,plotFLAG)
     % EXPERIMENT 5 -- 
     % 
@@ -375,10 +590,10 @@ function fileName = experiment5(input,plotFLAG)
     problem.MinObjF = 100.*ones(1,problem.nUsers);  % Same #ant per user. Random SNR (30dB)
     problem.arrayRestriction = arrayRestriction;  % Possibilities: "None", "Localized", "Interleaved", "DiagInterleaved"
     % Override (conf) parameters
-    conf.verbosity = 0;
+    conf.verbosity = 1;
     conf.algorithm = algorithm;  % Heuristic algorithm
     conf.PopulationSize_Data = 30;
-    conf.Maxgenerations_Data = 150;
+    conf.Maxgenerations_Data = 30;
     conf.EliteCount_Data = ceil(conf.PopulationSize_Data/5);
     conf.MaxStallgenerations_Data = ceil(conf.Maxgenerations_Data/10);  % Force it to cover all the generations
     conf.FunctionTolerance_Data = 1e-10;  % Heuristics stops when not improving solution by this much
@@ -503,6 +718,7 @@ function fileName = experiment5(input,plotFLAG)
              'detLocation','useCaseLocation','useCaseLocation');
 end
 
+%% EXPERIMENT 5 - PLOTTING
 function experiment5_plot(fileName)
     % EXPERIMENT 5 - Plotting results
     % Load results
@@ -609,6 +825,13 @@ function experiment5_plot(fileName)
     title(tit,'FontSize',12);
 end
 
+
+
+
+
+
+
+%% EXPERIMENT 6
 function [Cap,SINR_BB,SINR_PB,DirOK,DirNOK_gntd,DirNOK_pcvd] = experiment6(nIter,nUsers,nAntennasList,plotFLAG)
     %
     fprintf('Running experiment 6...\n');
@@ -793,6 +1016,13 @@ function [Cap,SINR_BB,SINR_PB,DirOK,DirNOK_gntd,DirNOK_pcvd] = experiment6(nIter
     save(fileName,'Cap','SINR_BB','SINR_PB','DirOK','DirNOK_gntd','DirNOK_pcvd','DirOKTot','DirNOKTot','nUsers','nAntennasList');
 end
 
+
+
+
+
+
+
+%% EXPERIMENT 7
 function experiment7(nIter,nUsersList,nAntennasList,plotFLAG)
     % EXPERIMENT 7 -- 
     % 
@@ -891,6 +1121,13 @@ function experiment7(nIter,nUsersList,nAntennasList,plotFLAG)
     end
 end
 
+
+
+
+
+
+
+%% EXPERIMENT 8
 function experiment8(nIter,nUsersList,nAntennasList,plotFLAG)
     % EXPERIMENT 8 -- 
     % 
