@@ -12,29 +12,33 @@ if any(experimentList(:)==1);    experiment1();   end
 if any(experimentList(:)==2)
     arrRestctList    = {'None','Localized'};
     % Input parameters
-    input.nIter               = 2;  % Total number of iterations
+    input.nIter               = 15;  % Total number of iterations
     input.nUsers              = 2;  % Number of users deployed
-    input.nAntennasList       = [4 8 12 16].^2;  % Number of antennas in array
-    input.Maxgenerations_Data = 100;
+    input.nAntennasList       = [4 12 24 32].^2;  % Number of antennas in array
+    input.Maxgenerations_Data = 150;
     input.algorithm           = 'GA';  % Heuristic algorithm
     input.detLocation         = true;  % Deterministic locations if true
     input.useCasesLocation    = true;  % Use-Case locations if true
     input.useCaseLocation     = 1;  % Use-case ID
     fileNameList = cell(length(arrRestctList),1);
     score_tot = zeros(length(arrRestctList),length(input.nAntennasList),input.Maxgenerations_Data);
+    DirOK_tot = zeros(length(arrRestctList),length(input.nAntennasList));
+    DirNOK_tot = zeros(length(arrRestctList),length(input.nAntennasList));
     for restIdx = 1:length(arrRestctList)
         % Input parameters extra
         input.arrayRestriction = arrRestctList{restIdx};
         % Main
         fileNameList{restIdx} = experiment2(input);
         % Parse results
-        load(fileNameList{restIdx},'bestScores');
+        load(fileNameList{restIdx},'bestScores','DirOKTot','DirNOKTot');
         score_tot(restIdx,:,:) = bestScores;
+        DirOK_tot(restIdx,:) = DirOKTot;
+        DirNOK_tot(restIdx,:) = DirNOKTot;
     end
     % Save results
     fileName = strcat('temp/exp2_',input.algorithm,'_TOT_',mat2str(input.nUsers),'_',mat2str(input.detLocation),'_',mat2str(input.useCasesLocation),'_',mat2str(input.useCaseLocation));
     nAntennasList = input.nAntennasList; Maxgenerations_Data=input.Maxgenerations_Data;
-    save(fileName,'score_tot','nAntennasList','arrRestctList','Maxgenerations_Data');
+    save(fileName,'score_tot','DirOK_tot','DirNOK_tot','nAntennasList','arrRestctList','Maxgenerations_Data');
     % Plot results
     experiment2_plot(fileName);
 end
@@ -252,9 +256,13 @@ function fileName = experiment2(input)
     % Output parameters
     bestScores1 = zeros(length(nAntennasList),nIter,conf.Maxgenerations_Data);  % temp
     bestScores = zeros(length(nAntennasList),conf.Maxgenerations_Data);  % final
+    DirOKTot = -Inf(1,length(nAntennasList));  % final
+    DirNOKTot = -Inf(nUsers-1,length(nAntennasList));  % final
     fileName = strcat('temp/exp2_',conf.algorithm,'_',problem.arrayRestriction,'_',mat2str(nUsers),'_',mat2str(conf.detLocation),'_',mat2str(conf.useCasesLocation),'_',mat2str(conf.useCaseLocation));
     % For each case we execute ES and the GA
     for idxAnt = 1:length(nAntennasList)
+        DirOK1 = -Inf(1,nIter);
+        DirNOK1 = -Inf(nUsers,nIter);
         for idxIter = 1:nIter
             fprintf('Iteration %d with nAntenas %d\n',idxIter,nAntennasList(idxAnt));
             % Configure the simulation environment. Need to place users in new
@@ -293,7 +301,7 @@ function fileName = experiment2(input)
             problem.IDUserAssigned = u;
             % Genetic Algorithm
             fprintf('Solving... (Genetic Algorithm)\n')
-            [~,~,~,~,tempBS] = ...
+            [~,W,~,~,tempBS] = ...
                 o_solveSingleNmaxUserInstance(conf,problem,...
                 problem.NmaxArray(problem.IDUserAssigned));
             bestScores1(idxAnt,idxIter,1:length(tempBS)) = tempBS;
@@ -302,35 +310,60 @@ function fileName = experiment2(input)
                 stillCover = length(tempBS)+1:conf.Maxgenerations_Data;
                 bestScores1(idxAnt,idxIter,stillCover) = repmat(bestScores1(idxAnt,idxIter,length(tempBS)),1,length(stillCover));
             end
+            % Extract Directivity (intended user and towards others)
+            id = 1;  % We only evaluate user 1
+            problem.ant_elem = sum(W(id,:)~=0);
+            relevant_positions = (W(id,:)~=0);
+            Taper_user = W(id,relevant_positions);
+            handle_Conf_Array = phased.ConformalArray('Element',problem.handle_Ant,...
+                                  'ElementPosition',...
+                                  [zeros(1,problem.ant_elem);...
+                                  problem.possible_locations(2,relevant_positions);...
+                                  problem.possible_locations(3,relevant_positions)],...
+                                  'Taper',Taper_user);
+            % Extract Rx Power (in dB)
+            DirOK1(1,idxIter) = patternAzimuth(handle_Conf_Array,problem.freq,problem.thetaUsers(id),'Azimuth',problem.phiUsers(id),'Type','powerdb');
+            fprintf('* Directivity IDmax: %.2f (dB)\n',DirOK1(1,idxIter));
+            % Extract interference generated to others (in dB)
+            for id1 = 1:1:problem.nUsers
+                if id1~=id
+                    DirNOK1(id1,idxIter) = patternAzimuth(handle_Conf_Array,problem.freq,problem.thetaUsers(id1),'Azimuth',problem.phiUsers(id1),'Type','powerdb');
+                    fprintf('  Directivity IDmin(%d): %.2f (dB)\n',id1,DirNOK1(id1,idxIter));
+                end
+            end
         end
         t = mean(bestScores1(idxAnt,:,:),2);
         bestScores(idxAnt,:) = t(:).';
-        save(fileName,'bestScores',...
+        DirOKTot(1,idxAnt) = pow2db(mean(db2pow(DirOK1)));
+        DirNOKTot(:,idxAnt) = pow2db(mean(db2pow(DirNOK1(2:end,:)),2));
+    end
+    save(fileName,'bestScores','DirOKTot','DirNOKTot',...
              'nUsers','nAntennasList','arrayRestriction',...
              'detLocation','useCaseLocation','useCaseLocation');
-    end
 end
 
 %% EXPERIMENT 2 - Plotting
 function experiment2_plot(fileName)
-    % Plot results
+    load(fileName,'score_tot','DirOK_tot','DirNOK_tot','nAntennasList','arrRestctList');
     load(fileName,'score_tot','nAntennasList','arrRestctList');
     Maxgenerations_Data = size(score_tot,3);  %#ok
+    % Plot best scores - convergency
     figure; hold on;
     colorList = [[0 0 255]./255;[0 51 102]./255];
     lineStyleList = {'-s','-.o','--x',':*'};
+%     lineStyleList = {'-','-.','--',':'};
     legendList = cell(length(arrRestctList)*length(nAntennasList),1);  %#ok
     figure(1); hold on;
     set(gca, 'ColorOrder', colorList, 'linestyleorder', lineStyleList, 'NextPlot', 'replacechildren');  % Change to new colors.
     for antIdx = 1:length(nAntennasList)
         for restIdx = 1:length(arrRestctList)
-            idx = (antIdx-1)*length(arrRestctList) + restIdx
+            idx = (antIdx-1)*length(arrRestctList) + restIdx;
             res = score_tot(restIdx,antIdx,:);  %#ok
             score_TOT(:,idx) = res(:);  %#ok
             legendList(idx) = strcat(arrRestctList{restIdx},{' '},'--',{' '},mat2str(nAntennasList(antIdx)));  %#ok
         end
     end
-    plot(1:Maxgenerations_Data,score_TOT,'LineWidth',1.2,'MarkerSize',5);
+    plot(1:Maxgenerations_Data,score_TOT,'LineWidth',1.2,'MarkerSize',4);
     grid minor;
     xlabel('Generations','FontSize',12);
     ylabel('Fitness value','FontSize',12);
@@ -339,10 +372,25 @@ function experiment2_plot(fileName)
     hList = hList(end:-1:1);
     ah1 = gca;
     leg = legend(ah1,hList(1:2:2*length(nAntennasList)),legendList(1:2:2*length(nAntennasList)));
-    set(leg,'FontSize',12);
+    set(leg,'FontSize',10);
     ah2 = axes('position',get(gca,'position'),'visible','off');
     leg = legend(ah2,hList(2:2:2*length(nAntennasList)),legendList(2:2:2*length(nAntennasList)));
-    set(leg,'FontSize',12);
+    set(leg,'FontSize',10);
+    ylim([-1 -0.25]);
+    figure; hold on;
+    set(gca, 'ColorOrder', colorList, 'NextPlot', 'replacechildren');  % Change to new colors.
+    % Plot directivities
+    x = 1:length(nAntennasList);
+    bar(x,DirOK_tot.');
+    hold on
+    colorList = [[255 0 0]./255;[139 0 0]./255];
+    set(gca, 'ColorOrder', colorList);  % Change to new colors.
+    bar(x,DirNOK_tot.');
+    hold off
+    xticklabels(nAntennasList)
+    grid minor;
+    leg = legend('None - Intended user','Localized - Intended user','None - Other users','Localized - Other users');
+    set(leg,'FontSize',10);
 end
 
 
