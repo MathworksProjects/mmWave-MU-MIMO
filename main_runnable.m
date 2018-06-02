@@ -10,42 +10,50 @@ if any(experimentList(:)==1);    experiment1();   end
 
 %% EXPERIMENT 2
 if any(experimentList(:)==2)
-    arrRestctList    = {'None','Localized'};
+%     arrRestctList    = {'None','Localized'};
+    arrRestctList = {'None'};
     % Input parameters
-    input.nIter               = 15;  % Total number of iterations
+    input.nIter               = 10;  % Total number of iterations
     input.nUsers              = 2;  % Number of users deployed
-    input.nAntennasList       = [4 12 24 32].^2;  % Number of antennas in array
-    input.Maxgenerations_Data = 150;
+    input.nAntennasList       = [4 8 12 16].^2;  % Number of antennas in array
+    input.Maxgenerations_Data = 100;
     input.algorithm           = 'GA';  % Heuristic algorithm
     input.detLocation         = true;  % Deterministic locations if true
     input.useCasesLocation    = true;  % Use-Case locations if true
-    input.useCaseLocation     = 1;  % Use-case ID
-    fileNameList = cell(length(arrRestctList),1);
-    score_tot = zeros(length(arrRestctList),length(input.nAntennasList),input.Maxgenerations_Data);
-    DirOK_tot = zeros(length(arrRestctList),length(input.nAntennasList));
-    DirNOK_tot = zeros(length(arrRestctList),length(input.nAntennasList));
-    for restIdx = 1:length(arrRestctList)
-        % Input parameters extra
-        input.arrayRestriction = arrRestctList{restIdx};
-        % Main
-        fileNameList{restIdx} = experiment2(input);
-        % Parse results
-        load(fileNameList{restIdx},'bestScores','DirOKTot','DirNOKTot');
-        score_tot(restIdx,:,:) = bestScores;
-        DirOK_tot(restIdx,:) = DirOKTot;
-        DirNOK_tot(restIdx,:) = DirNOKTot;
+    useCaseLocationList = 1;
+    for locID = 1:length(useCaseLocationList)
+        input.useCaseLocation     = useCaseLocationList(locID);  % Use-case ID
+        fileNameList = cell(length(arrRestctList),1);
+        score_tot = zeros(length(arrRestctList),length(input.nAntennasList),input.Maxgenerations_Data);
+        DirOK_tot = zeros(length(arrRestctList),length(input.nAntennasList));
+        DirNOK_tot = zeros(length(arrRestctList),length(input.nAntennasList));
+        for restIdx = 1:length(arrRestctList)
+            % Input parameters extra
+            input.arrayRestriction = arrRestctList{restIdx};
+            % Main
+            fileNameList{restIdx} = experiment2(input);
+            % Parse results
+            load(fileNameList{restIdx},'bestScores','DirOKTot','DirNOKTot');
+            score_tot(restIdx,:,:) = bestScores;
+            DirOK_tot(restIdx,:) = DirOKTot;
+            DirNOK_tot(restIdx,:) = DirNOKTot;
+        end
+        % Save results
+        fileName = strcat('temp/exp2_',input.algorithm,'_TOT_',mat2str(input.nUsers),'_',mat2str(input.detLocation),'_',mat2str(input.useCasesLocation),'_',mat2str(input.useCaseLocation));
+        nAntennasList = input.nAntennasList; Maxgenerations_Data=input.Maxgenerations_Data;
+        save(fileName,'score_tot','DirOK_tot','DirNOK_tot','nAntennasList','arrRestctList','Maxgenerations_Data');
+        % Plot results
+        experiment2_plot(fileName);
     end
-    % Save results
-    fileName = strcat('temp/exp2_',input.algorithm,'_TOT_',mat2str(input.nUsers),'_',mat2str(input.detLocation),'_',mat2str(input.useCasesLocation),'_',mat2str(input.useCaseLocation));
-    nAntennasList = input.nAntennasList; Maxgenerations_Data=input.Maxgenerations_Data;
-    save(fileName,'score_tot','DirOK_tot','DirNOK_tot','nAntennasList','arrRestctList','Maxgenerations_Data');
-    % Plot results
-    experiment2_plot(fileName);
 end
 
 %% EXPERIMENT 2 - PLOTTING
 if any(experimentList(:)==21)
-    fileName = strcat('temp/exp2_GA_TOT_2_true_true_1');
+    % Get results by parameters
+    algorithm = 'GA';
+    nUsers = 2;
+    useCaseLocation = 4;
+    fileName = strcat('temp/exp2_',algorithm,'_TOT_',mat2str(nUsers),'_true_true_',mat2str(useCaseLocation));
     experiment2_plot(fileName);
 end
 
@@ -231,6 +239,7 @@ function fileName = experiment2(input)
     detLocation         = input.detLocation;
     useCasesLocation    = input.useCasesLocation;
     useCaseLocation     = input.useCaseLocation;
+    fprintf('Input parameters:\n\tnUsers:\t%d\n\tIter:\t%d\n\tAntennasList:\t%s\n\tarrayRestriction:\t%s\n\talgorithm:\t%s\n\tdetLocation:\t%s\n\tuseCasesLocation:\t%s\n\tuseCaseLocation:\t%d\n',nUsers,nIter,mat2str(nAntennasList),arrayRestriction,algorithm,mat2str(detLocation),mat2str(useCasesLocation),useCaseLocation);
     % Load basic parameters
     problem = o_read_input_problem('data/metaproblem_test.dat');
     conf = o_read_config('data/config_test.dat');
@@ -238,11 +247,10 @@ function fileName = experiment2(input)
     problem.nUsers = nUsers;  % Number of users in the simulation
     problem.MinObjFIsSNR = true;  % (arbitrary)
     problem.MinObjF = 100.*ones(1,problem.nUsers);  % Same #ant per user. Random SNR (30dB)
-    problem.arrayRestriction = 'None';  % Possibilities: "None", "Localized", "Interleaved", "DiagInterleaved"
+    problem.arrayRestriction = arrayRestriction;  % Possibilities: "None", "Localized", "Interleaved", "DiagInterleaved"
     % Override (conf) parameters
-    conf.verbosity = 2;
+    conf.verbosity = 0;
     conf.algorithm = algorithm;  % Heuristic algorithm
-    conf.arrayRestriction = arrayRestriction;
     conf.PopulationSize_Data = 30;
     conf.Maxgenerations_Data = Maxgenerations_Data;
     conf.EliteCount_Data = ceil(conf.PopulationSize_Data/5);
@@ -344,53 +352,146 @@ end
 
 %% EXPERIMENT 2 - Plotting
 function experiment2_plot(fileName)
+    % Load variables
     load(fileName,'score_tot','DirOK_tot','DirNOK_tot','nAntennasList','arrRestctList');
     load(fileName,'score_tot','nAntennasList','arrRestctList');
+    parse = strsplit(fileName,'_');
+    userLocation = parse{end};
+    nUsers = parse{4};
     Maxgenerations_Data = size(score_tot,3);  %#ok
-    % Plot best scores - convergency
-    figure; hold on;
-    colorList = [[0 0 255]./255;[0 51 102]./255];
-    lineStyleList = {'-s','-.o','--x',':*'};
-%     lineStyleList = {'-','-.','--',':'};
+    h =  findobj('type','figure');
+    figIdx = length(h) + 1;
+    % Configure plots 1
+    colorList = [[0 0 255]./255 ; [0 51 102]./255];
+%     lineStyleList = {'-s','-.o','--x',':*'};
+    lineStyleList = {'-','-.','--',':'};
     legendList = cell(length(arrRestctList)*length(nAntennasList),1);  %#ok
-    figure(1); hold on;
-    set(gca, 'ColorOrder', colorList, 'linestyleorder', lineStyleList, 'NextPlot', 'replacechildren');  % Change to new colors.
+%     FigSize = [350 250];
+    FigSize = [530 260];
+    % Parse aditional results
     for antIdx = 1:length(nAntennasList)
         for restIdx = 1:length(arrRestctList)
             idx = (antIdx-1)*length(arrRestctList) + restIdx;
             res = score_tot(restIdx,antIdx,:);  %#ok
             score_TOT(:,idx) = res(:);  %#ok
-            legendList(idx) = strcat(arrRestctList{restIdx},{' '},'--',{' '},mat2str(nAntennasList(antIdx)));  %#ok
+            legendList(idx) = strcat(arrRestctList{restIdx},{' '},'-',{' '},mat2str(nAntennasList(antIdx)));  %#ok
         end
     end
-    plot(1:Maxgenerations_Data,score_TOT,'LineWidth',1.2,'MarkerSize',4);
+    % Plot 1
+    fHandle = figure(figIdx); hold on; figIdx = figIdx + 1;
+    set(gca, 'ColorOrder', colorList, 'linestyleorder', lineStyleList, 'NextPlot', 'replacechildren');  % Change to new colors.
+    plot(1:Maxgenerations_Data,score_TOT,'LineWidth',1.5,'MarkerSize',4);
+    ylim([-1 -0.05]);
     grid minor;
     xlabel('Generations','FontSize',12);
     ylabel('Fitness value','FontSize',12);
-    title('Convergency analysis','FontSize',12);
+    titl = strcat('Convergency analysis for',{' '},nUsers,{' '},'users - Location',{' '},userLocation);
+    title(titl,'FontSize',12);
     hList = findobj('Type', 'line');  % Returns lines in inverse order
     hList = hList(end:-1:1);
     ah1 = gca;
     leg = legend(ah1,hList(1:2:2*length(nAntennasList)),legendList(1:2:2*length(nAntennasList)));
-    set(leg,'FontSize',10);
+    set(leg,'FontSize',8);
     ah2 = axes('position',get(gca,'position'),'visible','off');
     leg = legend(ah2,hList(2:2:2*length(nAntennasList)),legendList(2:2:2*length(nAntennasList)));
-    set(leg,'FontSize',10);
-    ylim([-1 -0.25]);
-    figure; hold on;
+    set(leg,'FontSize',8);
+    set(fHandle,'Position',[fHandle.Position(1) fHandle.Position(2) FigSize(1) FigSize(2)]);
+
+    % Configure plot Directivities 2 (dB)
+    colorList = [[0 0 255]./255;[0 51 102]./255;[255 0 0]./255;[139 0 0]./255];
+    FigSize = [530 260];
+    % Plot Directivities (dB)
+    fHandle = figure(figIdx); hold on;
     set(gca, 'ColorOrder', colorList, 'NextPlot', 'replacechildren');  % Change to new colors.
-    % Plot directivities
-    x = 1:length(nAntennasList);
-    bar(x,DirOK_tot.');
-    hold on
-    colorList = [[255 0 0]./255;[139 0 0]./255];
-    set(gca, 'ColorOrder', colorList);  % Change to new colors.
-    bar(x,DirNOK_tot.');
-    hold off
-    xticklabels(nAntennasList)
+    data(:,1,1) = DirOK_tot(1,:).';  %#ok
+    data(:,2,1) = DirOK_tot(2,:).';
+    data(:,1,2) = -DirNOK_tot(1,:).';  %#ok
+    data(:,2,2) = -DirNOK_tot(2,:).';
+    Xneg = data;
+    Xneg(Xneg>0) = 0;
+    Xpos = data;
+    Xpos(Xpos<0) = 0;
+    groupLabels = nAntennasList;
+    plotBarStackGroups(Xpos, groupLabels);
+    plotBarStackGroups(Xneg, groupLabels);
+    ylim([-10 90]);
+    xlim([1-0.5 length(nAntennasList)+0.5])
+    xticklabels(nAntennasList);
     grid minor;
-    leg = legend('None - Intended user','Localized - Intended user','None - Other users','Localized - Other users');
-    set(leg,'FontSize',10);
+    titl = strcat(nUsers,{' '},'users - Location',{' '},userLocation);
+    title(titl,'FontSize',11)
+    ylabel('Directivity (dB)','FontSize',11)
+    xlabel('Number of antennas','FontSize',11)
+	leg = legend('No Restr. - target','No Restr. - others','Restr. - target','Restr. - others');
+    set(leg,'FontSize',8,'Location','NorthWest');
+    set(fHandle,'Position',[fHandle.Position(1) fHandle.Position(2) FigSize(1) FigSize(2)]);
+    
+    % Print use case locations
+    nUsers = str2double(nUsers);
+    % UC 1
+    uc_el(1,:) = [0 0];      uc_az(1,:) = [+15 -15];  uc_dist(1,:) = [5 5];
+    % UC 2
+    uc_el(2,:) = [0 0];      uc_az(2,:) = [+30 -30];  uc_dist(2,:) = [5 5];
+    % UC 3
+    uc_el(3,:) = [+15 -15];  uc_az(3,:) = [0 0];      uc_dist(3,:) = [5 5];
+    % UC 4
+    uc_el(4,:) = [+15 -15];  uc_az(4,:) = [15 -15];   uc_dist(4,:) = [5 5];
+    % UC 5
+    uc_el(5,:) = [+15 -15];  uc_az(5,:) = [15 15];    uc_dist(5,:) = [5 5];
+    % UC 6
+    uc_el(6,:) = [+15 +15];  uc_az(6,:) = [15 -15];   uc_dist(6,:) = [5 5];
+    % Visualize user location/channels
+    dx = 0.1;   dy = 0.1;   dz = 0.3;
+    colorList = {'r','b','g','k','c','m'};
+    IDmax = 1;  % selected user for exp2 is 1
+    legendList = cell(6,1);
+    figure; hold on; grid minor;
+    for location = 1:1:6
+        problem.phiUsers = uc_az(location,:);
+        problem.thetaUsers = uc_el(location,:);
+        [x_u,y_u,z_u] = sph2cart(problem.phiUsers/360*2*pi,...
+                                 problem.thetaUsers/360*2*pi,...
+                                 3+50*ones(size(problem.phiUsers)));
+        for i = 1:nUsers
+            hF(location) = line([0,x_u(i)],[0,y_u(i)],[0,z_u(i)],'color',colorList{location},'LineWidth',2);
+            if i == IDmax;   scatter3(x_u(i),y_u(i),z_u(i),'MarkerEdgeColor',colorList{location},'MarkerFaceColor',colorList{location});
+            else;            scatter3(x_u(i),y_u(i),z_u(i),'MarkerEdgeColor',colorList{location},'MarkerFaceColor',colorList{location});
+            end
+            text(x_u(i)+dx, y_u(i)+dy, z_u(i)+dz, strcat('User [',num2str(problem.phiUsers(i)),{' '},num2str(problem.thetaUsers(i)),']'));
+        end
+        legendList(location) = strcat('Use-case',{' '},mat2str(location));
+    end
+    % Draw array reference
+    problem = o_read_input_problem('data/metaproblem_test.dat');
+    problem.NxPatch = floor(sqrt(problem.N_Antennas));
+    problem.NyPatch = floor(problem.N_Antennas./problem.NxPatch);
+    problem.N_Antennas = problem.NxPatch.*problem.NyPatch;
+    problem = o_create_subarray_partition(problem);
+    problem.NzPatch = problem.NxPatch;
+    problem.dz = problem.dx;
+    problem.handle_Ant = phased.CosineAntennaElement('FrequencyRange',...
+                         [problem.freq-(problem.Bw/2) problem.freq+(problem.Bw/2)],...
+                         'CosinePower',[1.5 2.5]); % [1.5 2.5] values set porque s\ED
+    handle_ConformalArray = phased.URA([problem.NyPatch,problem.NzPatch],...
+                         'Lattice','Rectangular','Element',problem.handle_Ant,...
+                         'ElementSpacing',[problem.dy,problem.dz]);
+    possible_locations = handle_ConformalArray.getElementPosition;
+    possible_locations = possible_locations.*1000;
+    for i = 1:size(possible_locations,2)
+        scatter3(possible_locations(1,i),possible_locations(2,i),possible_locations(3,i),'s','MarkerEdgeColor','k','MarkerFaceColor','k');
+    end
+    % Draw edges references
+    a = [max(xlim)-5 0 0]; b = [0 min(ylim)+5 0]; c = [0 0 max(zlim)];
+    starts = zeros(3,3);
+    ends = [a;b;c];
+    quiver3(starts(:,1), starts(:,2), starts(:,3), ends(:,1), ends(:,2), ends(:,3),'color','k','lineStyle','-.','LineWidth',1.5);
+    hl = legend(hF,legendList);
+    set(hl,'FontSize',9,'Location','SouthWest');
+    view([50,30]);
+    title('User use-cases fixed location','FontSize',12);
+    xlabel('x-plane','FontSize',12);
+    ylabel('y-plane','FontSize',12);
+    zlabel('z-plane','FontSize',12);
 end
 
 
