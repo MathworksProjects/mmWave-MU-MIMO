@@ -1,7 +1,12 @@
 % ---------------- BASIC PARAMETERS ------------------------------------- %
 detLocation      = true;  % Determine if location is deterministic
+<<<<<<< HEAD
 useCasesLocation = true;  % Determines if the location is useCase based. For further information about use cases, check o_generate_positions.
 useCaseLocation   = 1;     % Defines the use case (1,2,3,4,5,6)
+=======
+useCasesLocation = true;  % Determines if the location is useCase based. For further information about use cases, check o_generate_positions.
+useCaseLocation   = 1;     % Defines the use case (1,2,3,4,5,6)
+>>>>>>> stash@{0}
 % ----------------------------------------------------------------------- %
 
 % ---------------- OPTIMIZATION PARAMETERS ------------------------------ %
@@ -28,7 +33,7 @@ CrossoverFraction_Data   = 0.3;    % Heuristics
 Maxgenerations_Data      = 10;     % Maximum number of Generations in the algorithm
 MaxStallgenerations_Data = 10;     % Maximum number of Generations after which, if not outperforming previous generations, stop the algorithm
 FunctionTolerance_Data   = 1e-10;  % Heuristics stops when not improving solution by this much
-GArndImpact              = 0.5;    % GA-rnd sub-heuristics impact (random modifications introduced) on final GA solution
+GArndImpact              = 0;    % GA-rnd sub-heuristics impact (random modifications introduced) on final GA solution
 GArndmodifyAmpl          = false;  % GA-rnd sub-heuristics: modify also the amplitudes?
 % ----------------------------------------------------------------------- %
 

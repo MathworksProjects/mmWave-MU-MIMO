@@ -1329,9 +1329,9 @@ function experiment8(nIter,nUsersList,nAntennasList,plotFLAG)
     conf.multiPath = false;  % LoS channel (for now)
     
     % Override GA parameters
-    conf.PopulationSize_Data = 15;
-    conf.Maxgenerations_Data = 10;
-    conf.EliteCount_Data = 2;
+    conf.PopulationSize_Data = 150;
+    conf.Maxgenerations_Data = 100;
+    conf.EliteCount_Data = 25;
     conf.MaxStallgenerations_Data = 40;  % Force it to cover all the generations
     %h1 = figure;
     %hold on

@@ -44,7 +44,7 @@ function x_rnd = apply_random_modification_assignment(x,impact,structure,nAntenn
     if strcmp(structure,'onlyAssigned')
         x_rnd = x;
         nAntennasAssigned = (size(x,2)-1)/3;
-        nAntennasToModify = ceil(impact*nAntennasAssigned);
+        nAntennasToModify = min(1,floor(impact*nAntennasAssigned));
         antennasToModify = randperm(nAntennasAssigned,nAntennasToModify);
         antennasNotAssigned = setdiff(1:nAntennas,x(1:nAntennasAssigned));
         if ~isempty(antennasNotAssigned)
