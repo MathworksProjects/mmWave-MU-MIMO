@@ -76,8 +76,8 @@ end
 if any(experimentList(:)==8)
     nUsersList = [2];
 %     nAntennasList = [4 5 6 7 8 9 10].^2;
-    nAntennasList = [2 3 4 5].^2;
-    nIter = 2;
+    nAntennasList = [4 8 12 16 20 24];% [2 3 4 5].^2;
+    nIter = 8;
     plotFLAG = true;
     experiment8(nIter,nUsersList,nAntennasList,plotFLAG);
 end
@@ -878,16 +878,16 @@ function experiment8(nIter,nUsersList,nAntennasList,plotFLAG)
     % Override (problem) parameters
     problem.MinObjFIsSNR = true;  % (arbitrary)
     % Override (conf) parameters
-    conf.verbosity = 1;
+    conf.verbosity = 0;
     conf.NumPhaseShifterBits = 0;  % Number of 
     conf.NbitsAmplitude = 0;
     conf.FunctionTolerance_Data = 1e-6;  % Heuristics stops when not improving solution by this much
     conf.multiPath = false;  % LoS channel (for now)
     
     % Override GA parameters
-    conf.PopulationSize_Data = 15;
-    conf.Maxgenerations_Data = 10;
-    conf.EliteCount_Data = 2;
+    conf.PopulationSize_Data = 150;
+    conf.Maxgenerations_Data = 100;
+    conf.EliteCount_Data = 25;
     conf.MaxStallgenerations_Data = 40;  % Force it to cover all the generations
     %h1 = figure;
     %hold on
@@ -917,13 +917,13 @@ function experiment8(nIter,nUsersList,nAntennasList,plotFLAG)
                 problem_temp.N_Antennas = problem_temp.NxPatch.*problem_temp.NyPatch;
                 % Call heuristics
                 fprintf('\t** %d Antennas and %d Users...\n',problem_temp.N_Antennas,problem_temp.nUsers);
-                conf.algorithm = 'GA';  % Heuristic algorithm
-                [~,~,~,estObj] = f_heuristics(problem_temp,conf,candSet);
-                estObj_heur(idxAnt,idxIter,idxUsers) = mat2cell(estObj,1);
+%                 conf.algorithm = 'GA';  % Heuristic algorithm
+%                 [~,~,~,estObj] = f_heuristics(problem_temp,conf,candSet);
+%                 estObj_heur(idxAnt,idxIter,idxUsers) = mat2cell(estObj,1);
                 conf.algorithm = 'GA-rnd';  % Heuristic algorithm
                 [~,~,~,estObj] = f_heuristics(problem_temp,conf,candSet);
                 estObj_rnd(idxAnt,idxIter,idxUsers) = mat2cell(estObj,1);
-                save('temp/exp8-results_so_far','estObj_heur',...
+                save('temp/exp8-rnd1ant-results_so_far',...%'estObj_heur',...
                     'estObj_rnd','nUsersList','nAntennasList');
             end
         end
