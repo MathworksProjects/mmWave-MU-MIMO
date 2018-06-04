@@ -1,12 +1,7 @@
 % ---------------- BASIC PARAMETERS ------------------------------------- %
 detLocation      = true;  % Determine if location is deterministic
-<<<<<<< HEAD
 useCasesLocation = true;  % Determines if the location is useCase based. For further information about use cases, check o_generate_positions.
 useCaseLocation   = 1;     % Defines the use case (1,2,3,4,5,6)
-=======
-useCasesLocation = true;  % Determines if the location is useCase based. For further information about use cases, check o_generate_positions.
-useCaseLocation   = 1;     % Defines the use case (1,2,3,4,5,6)
->>>>>>> stash@{0}
 % ----------------------------------------------------------------------- %
 
 % ---------------- OPTIMIZATION PARAMETERS ------------------------------ %
