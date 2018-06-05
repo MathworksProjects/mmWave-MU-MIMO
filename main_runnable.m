@@ -1,8 +1,10 @@
 %% Setup the environment
 clear; clc; close all;
 addpath('utilities','-end');  % Add utilities folder at the end of search path
+
 %% Define several experiments here and override variable values accordingly
 experimentList = 21;
+
 %% Experiment selection
 
 %% EXPERIMENT 1
@@ -49,12 +51,15 @@ end
 
 %% EXPERIMENT 2 - PLOTTING
 if any(experimentList(:)==21)
-    % Get results by parameters
+    % Get results by parameters - individual
     algorithm = 'GA';
     nUsers = 2;
     useCaseLocation = 4;
-    fileName = strcat('temp/exp2_',algorithm,'_TOT_',mat2str(nUsers),'_true_true_',mat2str(useCaseLocation));
-    experiment2_plot(fileName);
+%     fileName = strcat('temp/exp2_',algorithm,'_TOT_',mat2str(nUsers),'_true_true_',mat2str(useCaseLocation));
+%     experiment2_plot(fileName);
+    % Get results by parameters - global
+    useCaseLocationList = [1 2 3 4 5 6];
+	experiment2_plot(algorithm,nUsers,useCaseLocationList);
 end
 
 %% EXPERIMENT 3
@@ -351,83 +356,166 @@ function fileName = experiment2(input)
 end
 
 %% EXPERIMENT 2 - Plotting
-function experiment2_plot(fileName)
-    % Load variables
-    load(fileName,'score_tot','DirOK_tot','DirNOK_tot','nAntennasList','arrRestctList');
-    load(fileName,'score_tot','nAntennasList','arrRestctList');
-    parse = strsplit(fileName,'_');
-    userLocation = parse{end};
-    nUsers = parse{4};
-    Maxgenerations_Data = size(score_tot,3);  %#ok
+function experiment2_plot(varargin)
     h =  findobj('type','figure');
     figIdx = length(h) + 1;
-    % Configure plots 1
-    colorList = [[0 0 255]./255 ; [0 51 102]./255];
-%     lineStyleList = {'-s','-.o','--x',':*'};
-    lineStyleList = {'-','-.','--',':'};
-    legendList = cell(length(arrRestctList)*length(nAntennasList),1);  %#ok
-%     FigSize = [350 250];
     FigSize = [530 260];
-    % Parse aditional results
-    for antIdx = 1:length(nAntennasList)
-        for restIdx = 1:length(arrRestctList)
-            idx = (antIdx-1)*length(arrRestctList) + restIdx;
-            res = score_tot(restIdx,antIdx,:);  %#ok
-            score_TOT(:,idx) = res(:);  %#ok
-            legendList(idx) = strcat(arrRestctList{restIdx},{' '},'-',{' '},mat2str(nAntennasList(antIdx)));  %#ok
+    colNoneList = [[139 0 0]./255 ; [178 34 34]./255 ; [220 20 60]./255 ; [205 92 92]./255 ; [250 128 114]./255 ; [255 160 122]./255];
+    colLocList  = [[0 0 128]./255 ; [0 0 205]./255 ; [0 0 255]./255 ; [65 105 225]./255 ; [100 149 237]./255 ; [0 191 255]./255];
+    if nargin == 1
+        % Plot individual
+        fileName = varargin{1};
+        % Load variables
+        load(fileName,'score_tot','DirOK_tot','DirNOK_tot','nAntennasList','arrRestctList');
+        parse = strsplit(fileName,'_');
+        userLocation = parse{end};
+        nUsers = parse{4};
+        Maxgenerations_Data = size(score_tot,3);  %#ok
+        % Configure plots 1
+        colorList = [[0 0 255]./255 ; [0 51 102]./255];
+    %     lineStyleList = {'-s','-.o','--x',':*'};
+        lineStyleList = {'-','-.','--',':'};
+        legendList = cell(length(arrRestctList)*length(nAntennasList),1);  %#ok
+        % Parse aditional results
+        for antIdx = 1:length(nAntennasList)
+            for restIdx = 1:length(arrRestctList)
+                idx = (antIdx-1)*length(arrRestctList) + restIdx;
+                res = score_tot(restIdx,antIdx,:);  %#ok
+                score_TOT(:,idx) = res(:);  %#ok
+                legendList(idx) = strcat(arrRestctList{restIdx},{' '},'-',{' '},mat2str(nAntennasList(antIdx)));  %#ok
+            end
         end
-    end
-    % Plot 1
-    fHandle = figure(figIdx); hold on; figIdx = figIdx + 1;
-    set(gca, 'ColorOrder', colorList, 'linestyleorder', lineStyleList, 'NextPlot', 'replacechildren');  % Change to new colors.
-    plot(1:Maxgenerations_Data,score_TOT,'LineWidth',1.5,'MarkerSize',4);
-    ylim([-1 -0.05]);
-    grid minor;
-    xlabel('Generations','FontSize',12);
-    ylabel('Fitness value','FontSize',12);
-    titl = strcat('Convergency analysis for',{' '},nUsers,{' '},'users - Location',{' '},userLocation);
-    title(titl,'FontSize',12);
-    hList = findobj('Type', 'line');  % Returns lines in inverse order
-    hList = hList(end:-1:1);
-    ah1 = gca;
-    leg = legend(ah1,hList(1:2:2*length(nAntennasList)),legendList(1:2:2*length(nAntennasList)));
-    set(leg,'FontSize',8);
-    ah2 = axes('position',get(gca,'position'),'visible','off');
-    leg = legend(ah2,hList(2:2:2*length(nAntennasList)),legendList(2:2:2*length(nAntennasList)));
-    set(leg,'FontSize',8);
-    set(fHandle,'Position',[fHandle.Position(1) fHandle.Position(2) FigSize(1) FigSize(2)]);
+        % Plot 1
+        fHandle = figure(figIdx); hold on; figIdx = figIdx + 1;
+        set(gca, 'ColorOrder', colorList, 'linestyleorder', lineStyleList, 'NextPlot', 'replacechildren');  % Change to new colors.
+        plot(1:Maxgenerations_Data,score_TOT,'LineWidth',1.5,'MarkerSize',4);
+        ylim([-1 -0.05]);
+        grid minor;
+        xlabel('Generations','FontSize',12);
+        ylabel('Fitness value','FontSize',12);
+        titl = strcat('Convergency analysis for',{' '},nUsers,{' '},'users - Location',{' '},userLocation);
+        title(titl,'FontSize',12);
+        hList = findobj('Type', 'line');  % Returns lines in inverse order
+        hList = hList(end:-1:1);
+        ah1 = gca;
+        leg = legend(ah1,hList(1:2:2*length(nAntennasList)),legendList(1:2:2*length(nAntennasList)));
+        set(leg,'FontSize',8);
+        ah2 = axes('position',get(gca,'position'),'visible','off');
+        leg = legend(ah2,hList(2:2:2*length(nAntennasList)),legendList(2:2:2*length(nAntennasList)));
+        set(leg,'FontSize',8);
+        set(fHandle,'Position',[fHandle.Position(1) fHandle.Position(2) FigSize(1) FigSize(2)]);
 
-    % Configure plot Directivities 2 (dB)
-    colorList = [[0 0 255]./255;[0 51 102]./255;[255 0 0]./255;[139 0 0]./255];
-    FigSize = [530 260];
-    % Plot Directivities (dB)
-    fHandle = figure(figIdx); hold on;
-    set(gca, 'ColorOrder', colorList, 'NextPlot', 'replacechildren');  % Change to new colors.
-    data(:,1,1) = DirOK_tot(1,:).';  %#ok
-    data(:,2,1) = DirOK_tot(2,:).';
-    data(:,1,2) = -DirNOK_tot(1,:).';  %#ok
-    data(:,2,2) = -DirNOK_tot(2,:).';
-    Xneg = data;
-    Xneg(Xneg>0) = 0;
-    Xpos = data;
-    Xpos(Xpos<0) = 0;
-    groupLabels = nAntennasList;
-    plotBarStackGroups(Xpos, groupLabels);
-    plotBarStackGroups(Xneg, groupLabels);
-    ylim([-10 90]);
-    xlim([1-0.5 length(nAntennasList)+0.5])
-    xticklabels(nAntennasList);
-    grid minor;
-    titl = strcat(nUsers,{' '},'users - Location',{' '},userLocation);
-    title(titl,'FontSize',11)
-    ylabel('Directivity (dB)','FontSize',11)
-    xlabel('Number of antennas','FontSize',11)
-	leg = legend('No Restr. - target','No Restr. - others','Restr. - target','Restr. - others');
-    set(leg,'FontSize',8,'Location','NorthWest');
-    set(fHandle,'Position',[fHandle.Position(1) fHandle.Position(2) FigSize(1) FigSize(2)]);
+        % Configure plot Directivities 2 (dB)
+        colorList = [[0 0 255]./255;[0 51 102]./255;[255 0 0]./255;[139 0 0]./255];
+        FigSize = [530 260];
+        % Plot Directivities (dB)
+        fHandle = figure(figIdx); hold on; figIdx = figIdx + 1;
+        set(gca, 'ColorOrder', colorList, 'NextPlot', 'replacechildren');  % Change to new colors.
+        data(:,1,1) = DirOK_tot(1,:).';  %#ok
+        data(:,2,1) = DirOK_tot(2,:).';
+        data(:,1,2) = -DirNOK_tot(1,:).';  %#ok
+        data(:,2,2) = -DirNOK_tot(2,:).';
+        Xneg = data;
+        Xneg(Xneg>0) = 0;
+        Xpos = data;
+        Xpos(Xpos<0) = 0;
+        groupLabels = nAntennasList;
+        plotBarStackGroups(Xpos, groupLabels);
+        plotBarStackGroups(Xneg, groupLabels);
+        ylim([-10 90]);
+        xlim([1-0.5 length(nAntennasList)+0.5])
+        xticklabels(nAntennasList);
+        grid minor;
+        titl = strcat(nUsers,{' '},'users - Location',{' '},userLocation);
+        title(titl,'FontSize',11)
+        ylabel('Directivity (dB)','FontSize',11)
+        xlabel('Number of antennas','FontSize',11)
+        leg = legend('No Restr. - target','No Restr. - others','Restr. - target','Restr. - others');
+        set(leg,'FontSize',8,'Location','NorthWest');
+        set(fHandle,'Position',[fHandle.Position(1) fHandle.Position(2) FigSize(1) FigSize(2)]);
+        nUsers = str2double(nUsers);  % Parse it for future plots
+    elseif nargin==3
+        % Plot list
+        algorithm = varargin{1};
+        nUsers = varargin{2};
+        useCaseLocationList = varargin{3};
+        legendList = cell(4,1);
+        
+        for idx = 1:length(useCaseLocationList)
+            userLocation = useCaseLocationList(idx);
+            fileName = strcat('temp/exp2_',algorithm,'_TOT_',mat2str(nUsers),'_true_true_',mat2str(userLocation));
+            load(fileName,'score_tot','DirOK_tot','DirNOK_tot','nAntennasList','arrRestctList');
+            DirOK_None(idx,:) = DirOK_tot(1,:);  %#ok
+            DirOK_Localized(idx,:) = DirOK_tot(2,:);  %#ok
+            DirNOK_None(idx,:) = DirNOK_tot(1,:);  %#ok
+            DirNOK_Localized(idx,:) = DirNOK_tot(2,:);  %#ok
+            data_OK_None(:,idx,1) = DirOK_tot(1,:).';  %#ok
+            data_NOK_None(:,idx,1) = DirNOK_tot(1,:).';  %#ok
+            data_OK_Localized(:,idx,1) = DirOK_tot(2,:).';  %#ok
+            data_NOK_Localized(:,idx,1) = DirNOK_tot(2,:).';  %#ok
+            % Correction for higher values
+            DirNOK_None(DirNOK_None<-100) = -100;  %#ok
+            DirNOK_Localized(DirNOK_Localized<-100) = -100;  %#ok
+            data_NOK_None(data_NOK_None<-100) = -100;  %#ok
+            data_NOK_Localized(data_NOK_Localized<-100) = -100;  %#ok
+            legendList(idx) = strcat('Localization -',{' '},mat2str(userLocation));
+        end
+        
+        % Plot No geometry restriction
+        fHandle = figure(figIdx); hold on; figIdx = figIdx + 1;
+        groupLabels = nAntennasList;
+        subplot(1,2,1);
+        set(gca, 'ColorOrder', colNoneList, 'NextPlot', 'replacechildren');  % Change to new colors
+        plotBarStackGroups(data_OK_None, groupLabels);
+        grid minor;
+        ylabel('Directivity (dB)','FontSize',11)
+        xlabel('Number of antennas','FontSize',11)
+        leg = legend(legendList);
+        set(leg,'FontSize',8,'Location','NorthWest');
+        subplot(1,2,2);
+        set(gca, 'ColorOrder', colNoneList, 'NextPlot', 'replacechildren');  % Change to new colors
+        plotBarStackGroups(-data_NOK_None, groupLabels);
+        grid minor;
+        ylabel('Directivity (dB)','FontSize',11)
+        xlabel('Number of antennas','FontSize',11)
+        yt = yticklabels;
+        yt = -str2double(yt);
+        yt = num2cell(yt);
+        yticklabels(yt);
+        leg = legend(legendList);
+        set(leg,'FontSize',8,'Location','NorthWest');
+        set(fHandle,'Position',[fHandle.Position(1) fHandle.Position(2) FigSize(1) FigSize(2)]);
+        
+        % Plot Localized geometry
+        fHandle = figure(figIdx); hold on; figIdx = figIdx + 1;
+        groupLabels = nAntennasList;
+        subplot(1,2,1);
+        set(gca, 'ColorOrder', colLocList, 'NextPlot', 'replacechildren');  % Change to new colors
+        plotBarStackGroups(data_OK_Localized, groupLabels);
+        grid minor;
+        ylabel('Directivity (dB)','FontSize',11)
+        xlabel('Number of antennas','FontSize',11)
+        leg = legend(legendList);
+        set(leg,'FontSize',8,'Location','NorthWest');
+        subplot(1,2,2);
+        set(gca, 'ColorOrder', colLocList, 'NextPlot', 'replacechildren');  % Change to new colors
+        plotBarStackGroups(-data_NOK_Localized, groupLabels);
+        grid minor;
+        ylabel('Directivity (dB)','FontSize',11)
+        xlabel('Number of antennas','FontSize',11)
+        yt = yticklabels;
+        yt = -str2double(yt);
+        yt = num2cell(yt);
+        yticklabels(yt);
+        leg = legend(legendList);
+        set(leg,'FontSize',8,'Location','NorthWest');
+        set(fHandle,'Position',[fHandle.Position(1) fHandle.Position(2) FigSize(1) FigSize(2)]);
+    else
+        error('wrong number of parameters');
+    end
+
     
     % Print use case locations
-    nUsers = str2double(nUsers);
     % UC 1
     uc_el(1,:) = [0 0];      uc_az(1,:) = [+15 -15];  uc_dist(1,:) = [5 5];
     % UC 2
@@ -445,7 +533,8 @@ function experiment2_plot(fileName)
     colorList = {'r','b','g','k','c','m'};
     IDmax = 1;  % selected user for exp2 is 1
     legendList = cell(6,1);
-    figure; hold on; grid minor;
+    figure(figIdx); hold on; figIdx = figIdx + 1;
+    grid minor;
     for location = 1:1:6
         problem.phiUsers = uc_az(location,:);
         problem.thetaUsers = uc_el(location,:);
