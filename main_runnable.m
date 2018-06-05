@@ -514,20 +514,43 @@ function experiment2_plot(varargin)
         error('wrong number of parameters');
     end
 
-    
     % Print use case locations
-    % UC 1
-    uc_el(1,:) = [0 0];      uc_az(1,:) = [+15 -15];  uc_dist(1,:) = [5 5];
-    % UC 2
-    uc_el(2,:) = [0 0];      uc_az(2,:) = [+30 -30];  uc_dist(2,:) = [5 5];
-    % UC 3
-    uc_el(3,:) = [+15 -15];  uc_az(3,:) = [0 0];      uc_dist(3,:) = [5 5];
-    % UC 4
-    uc_el(4,:) = [+15 -15];  uc_az(4,:) = [15 -15];   uc_dist(4,:) = [5 5];
-    % UC 5
-    uc_el(5,:) = [+15 -15];  uc_az(5,:) = [15 15];    uc_dist(5,:) = [5 5];
-    % UC 6
-    uc_el(6,:) = [+15 +15];  uc_az(6,:) = [15 -15];   uc_dist(6,:) = [5 5];
+    nUsers = 50;  % For better visualization
+    problem.nUsers = nUsers;
+    Delta = 90/problem.nUsers;
+    if mod(problem.nUsers,2)==0  % even
+        ini = Delta/2;
+        vect = [(-problem.nUsers/2:1:-1) (1:1:problem.nUsers/2)];
+    else                         % odd
+        ini = Delta;
+        vect = [(-floor(problem.nUsers/2):1:-1) 0 (1:1:floor(problem.nUsers/2))];
+    end
+    vect = ini.*vect;
+    % UC 1 - Located horizontally (no elevation)
+    uc_el(1,:) = zeros(1,problem.nUsers);
+    uc_az(1,:) = vect;
+    uc_dist(1,:) = 5.*ones(1,problem.nUsers);
+    % UC 2 - Located horizontally (no elevation - a bit more separation)
+    uc_el(2,:) = zeros(1,problem.nUsers);
+    uc_az(2,:) = 1.5.*vect;
+    uc_dist(2,:) = 5.*ones(1,problem.nUsers);
+    % UC 3 - Located vertically (no azymuth)
+    uc_el(3,:) = vect;
+    uc_az(3,:) = zeros(1,problem.nUsers);
+    uc_dist(3,:) = 5.*ones(1,problem.nUsers);
+    % UC 4 - Located diagonaly
+    uc_el(4,:) = vect;
+    uc_az(4,:) = vect;
+    uc_dist(4,:) = 5.*ones(1,problem.nUsers);
+    % UC 5 - Located vertically (15 deg azymuth)
+    uc_el(5,:) = vect;
+    uc_az(5,:) = 15.*ones(1,problem.nUsers);
+    uc_dist(5,:) = 5.*ones(1,problem.nUsers);
+    % UC 6 - Located horizontally (15 deg elevation)
+    uc_el(6,:) = 15.*ones(1,problem.nUsers);
+    uc_az(6,:) = vect;
+    uc_dist(6,:) = 5.*ones(1,problem.nUsers);
+    
     % Visualize user location/channels
     dx = 0.1;   dy = 0.1;   dz = 0.3;
     colorList = {'r','b','g','k','c','m'};
@@ -546,7 +569,7 @@ function experiment2_plot(varargin)
             if i == IDmax;   scatter3(x_u(i),y_u(i),z_u(i),'MarkerEdgeColor',colorList{location},'MarkerFaceColor',colorList{location});
             else;            scatter3(x_u(i),y_u(i),z_u(i),'MarkerEdgeColor',colorList{location},'MarkerFaceColor',colorList{location});
             end
-            text(x_u(i)+dx, y_u(i)+dy, z_u(i)+dz, strcat('User [',num2str(problem.phiUsers(i)),{' '},num2str(problem.thetaUsers(i)),']'));
+%             text(x_u(i)+dx, y_u(i)+dy, z_u(i)+dz, strcat('User [',num2str(problem.phiUsers(i)),{' '},num2str(problem.thetaUsers(i)),']'));
         end
         legendList(location) = strcat('Use-case',{' '},mat2str(location));
     end
