@@ -3,7 +3,7 @@ clear; clc; close all;
 addpath('utilities','-end');  % Add utilities folder at the end of search path
 
 %% Define several experiments here and override variable values accordingly
-experimentList = 21;
+experimentList = 51;
 
 %% Experiment selection
 
@@ -57,7 +57,7 @@ if any(experimentList(:)==21)
     useCaseLocation = 4;
 %     fileName = strcat('temp/exp2_',algorithm,'_TOT_',mat2str(nUsers),'_true_true_',mat2str(useCaseLocation));
 %     experiment2_plot(fileName);
-    % Get results by parameters - global
+    % Call plot
     useCaseLocationList = [1 2 3 4 5 6];
 	experiment2_plot(algorithm,nUsers,useCaseLocationList);
 end
@@ -117,46 +117,12 @@ end
 
 %% EXPERIMENT 5 - PLOTTING
 if any(experimentList(:)==51)
-    arrRestctList = {'None','Localized'};
-    fileNameList = cell(length(arrRestctList),1);
-    legendList = cell(length(arrRestctList),1);
-    locList = [1 2 3 4 5 6];
-    % colorList from: https://en.wikipedia.org/wiki/Web_colors
-    colNoneList = [[139 0 0]./255 ; [178 34 34]./255 ; [220 20 60]./255 ; [205 92 92]./255 ; [250 128 114]./255 ; [255 160 122]./255];
-    colLocList  = [[0 0 128]./255 ; [0 0 205]./255 ; [0 0 255]./255 ; [65 105 225]./255 ; [100 149 237]./255 ; [0 191 255]./255];
-    colListTot = [colNoneList(1:length(locList),:);colLocList(1:length(locList),:)];
-    lineStyleList = {'-','-.','--',':'};
-    figure(1); hold on;
-    set(gca, 'ColorOrder', colListTot, 'NextPlot', 'replacechildren');  % Change to new colors.
-    for locIdx = 1:length(locList)
-        fileNameList{1} = strcat('temp/exp5_GA_',arrRestctList{1},'_2_true_true_',mat2str(locList(locIdx)));
-        fileNameList{2} = strcat('temp/exp5_GA_',arrRestctList{2},'_2_true_true_',mat2str(locList(locIdx)));
-        fileName = strcat('temp/exp5_GA_TOT_2_true_true_',mat2str(locList(locIdx)));
-        % Plot individual results
-%         for restIdx = 1:length(arrRestctList)
-%             experiment5_plot(fileNameList{restIdx});
-%         end
-        % Store global results
-        load(fileName,'Cap_tot','SINR_BB_tot','SINR_PB_tot','nUsers','nAntennasList','arrRestctList');
-        Cap_TOT(:,locIdx) = Cap_tot(:,1);  %#ok
-        Cap_TOT(:,locIdx + length(locList)) = Cap_tot(:,2);  %#ok
-        legendList(locIdx)                   = strcat(' No restr. - Loc. ',{' '},mat2str(locList(locIdx)));
-        legendList(locIdx + length(locList)) = strcat('Sq. restr. - Loc. ',{' '},mat2str(locList(locIdx)));
-    end
-    plot(nAntennasList,Cap_TOT,'LineWidth',1.3,'Marker','x','MarkerSize',3.5);
-    title('Average capacity','FontSize',12);
-    xlabel('Number of antennas','FontSize',12);
-    ylabel('Capacity in bits/Hz/s','FontSize',12);
-    hList = findobj('Type', 'line');  % Returns lines in inverse order
-    ah1 = gca;
-    leg = legend(ah1,hList(1:length(locList)),legendList(length(locList)+1:2*length(locList)));
-    set(leg,'FontSize',10);
-    ah2 = axes('position',get(gca,'position'),'visible','off');
-    leg = legend(ah2,hList(length(locList)+1:2*length(locList)),legendList(1:length(locList)));
-    set(leg,'FontSize',10);
-    figure(1);
-    xlim([min(nAntennasList)-50 max(nAntennasList)+50]);
-    grid minor;
+    nUsers = 2;  % Number of users considered in the simulation
+    arrRestctList = {'None','Localized'};  % List of sub-array restrictions to consider
+    my_nAntennasList = [4 8 12 16].^2;  % List of antennas to plot over
+    locList = [1 2 3 4 5 6];  % List of locations to plot over
+    % Call plot
+    experiment5_plot(nUsers,arrRestctList,locList,my_nAntennasList);
 end
 
 %% EXPERIMENT 7
@@ -461,55 +427,59 @@ function experiment2_plot(varargin)
             legendList(idx) = strcat('Localization -',{' '},mat2str(userLocation));
         end
         
-        % Plot No geometry restriction
+        % Plot No geometry restriction - OK
         fHandle = figure(figIdx); hold on; figIdx = figIdx + 1;
         groupLabels = nAntennasList;
-        subplot(1,2,1);
+        fHandle = figure(figIdx); hold on; figIdx = figIdx + 1;
         set(gca, 'ColorOrder', colNoneList, 'NextPlot', 'replacechildren');  % Change to new colors
         plotBarStackGroups(data_OK_None, groupLabels);
         grid minor;
-        ylabel('Directivity (dB)','FontSize',11)
-        xlabel('Number of antennas','FontSize',11)
+        ylabel('Directivity (dB)','FontSize',12)
+        xlabel('Number of antennas','FontSize',12)
+        title('No restriction - target','FontSize',14)
         leg = legend(legendList);
-        set(leg,'FontSize',8,'Location','NorthWest');
-        subplot(1,2,2);
+        set(leg,'FontSize',10,'Location','NorthWest');
+        % Plot No geometry restriction - NOK
+        fHandle = figure(figIdx); hold on; figIdx = figIdx + 1;
         set(gca, 'ColorOrder', colNoneList, 'NextPlot', 'replacechildren');  % Change to new colors
         plotBarStackGroups(-data_NOK_None, groupLabels);
         grid minor;
-        ylabel('Directivity (dB)','FontSize',11)
-        xlabel('Number of antennas','FontSize',11)
+        ylabel('Directivity (dB)','FontSize',12)
+        xlabel('Number of antennas','FontSize',12)
+        title('No restriction - others','FontSize',14)
+        leg = legend(legendList);
+        set(leg,'FontSize',10,'Location','NorthWest');
         yt = yticklabels;
         yt = -str2double(yt);
         yt = num2cell(yt);
         yticklabels(yt);
-        leg = legend(legendList);
-        set(leg,'FontSize',8,'Location','NorthWest');
-        set(fHandle,'Position',[fHandle.Position(1) fHandle.Position(2) FigSize(1) FigSize(2)]);
-        
-        % Plot Localized geometry
+        % Plot Localized geometry - OK
         fHandle = figure(figIdx); hold on; figIdx = figIdx + 1;
         groupLabels = nAntennasList;
-        subplot(1,2,1);
+        fHandle = figure(figIdx); hold on; figIdx = figIdx + 1;
         set(gca, 'ColorOrder', colLocList, 'NextPlot', 'replacechildren');  % Change to new colors
         plotBarStackGroups(data_OK_Localized, groupLabels);
         grid minor;
         ylabel('Directivity (dB)','FontSize',11)
         xlabel('Number of antennas','FontSize',11)
+        title('Localized restriction - target','FontSize',12)
         leg = legend(legendList);
-        set(leg,'FontSize',8,'Location','NorthWest');
-        subplot(1,2,2);
+        set(leg,'FontSize',10,'Location','NorthWest');
+        % Plot Localized geometry - NOK
+        fHandle = figure(figIdx); hold on; figIdx = figIdx + 1;
         set(gca, 'ColorOrder', colLocList, 'NextPlot', 'replacechildren');  % Change to new colors
         plotBarStackGroups(-data_NOK_Localized, groupLabels);
         grid minor;
-        ylabel('Directivity (dB)','FontSize',11)
-        xlabel('Number of antennas','FontSize',11)
+        ylabel('Directivity (dB)','FontSize',12)
+        xlabel('Number of antennas','FontSize',12)
+        title('Localized restriction - others','FontSize',14)
+        leg = legend(legendList);
+        set(leg,'FontSize',10,'Location','NorthWest');
         yt = yticklabels;
         yt = -str2double(yt);
         yt = num2cell(yt);
         yticklabels(yt);
-        leg = legend(legendList);
-        set(leg,'FontSize',8,'Location','NorthWest');
-        set(fHandle,'Position',[fHandle.Position(1) fHandle.Position(2) FigSize(1) FigSize(2)]);
+        
     else
         error('wrong number of parameters');
     end
@@ -990,110 +960,178 @@ function fileName = experiment5(input,plotFLAG)
 end
 
 %% EXPERIMENT 5 - PLOTTING
-function experiment5_plot(fileName)
-    % EXPERIMENT 5 - Plotting results
-    % Load results
-    load(fileName);
-    % Get figure number
-    h = findobj('type','figure');
-    figNum = length(h) + 1;
-    % Plot Directivities
-    figure(figNum);  figNum = figNum + 1;
-    leg = cell(nUsers,1);
-    for id = 1:nUsers
-        subplot(1,3,1); hold on;
-        plot(nAntennasList,DirOK(id,:),'LineWidth',2,'Marker','s');
-        subplot(1,3,2); hold on;
-        plot(nAntennasList,DirNOK_gntd(id,:),'LineWidth',2,'Marker','s');
-        subplot(1,3,3); hold on;
-        plot(nAntennasList,DirNOK_pcvd(id,:),'LineWidth',2,'Marker','s');
-        leg{id} = cell2mat(strcat('user',{' '},num2str(id)));
+function experiment5_plot(varargin)
+    h =  findobj('type','figure');
+    figIdx = length(h) + 1;
+    
+    if nargin ==1
+        fileName = varargin{1};
+        % EXPERIMENT 5 - Plotting results
+        % Load results
+        load(fileName,'DirOK','DirNOK_gntd','DirNOK_pcvd','nUsers','nAntennasList','arrayRestriction');
+        % Plot Directivities
+        figure(figNum);  figNum = figNum + 1;
+        leg = cell(nUsers,1);
+        for id = 1:nUsers
+            subplot(1,3,1); hold on;
+            plot(nAntennasList,DirOK(id,:),'LineWidth',2,'Marker','s');
+            subplot(1,3,2); hold on;
+            plot(nAntennasList,DirNOK_gntd(id,:),'LineWidth',2,'Marker','s');
+            subplot(1,3,3); hold on;
+            plot(nAntennasList,DirNOK_pcvd(id,:),'LineWidth',2,'Marker','s');
+            leg{id} = cell2mat(strcat('user',{' '},num2str(id)));
+        end
+        subplot(1,3,1);
+        grid minor;
+        xlabel('Number of available antennas','FontSize',12);
+        ylabel('Power in dB','FontSize',12);
+        title('Directivity to intended user','FontSize',12);
+        legend(leg,'FontSize',12);
+        subplot(1,3,2);
+        grid minor;
+        xlabel('Number of available antennas','FontSize',12);
+        ylabel('Power in dB','FontSize',12);
+        title('Interference generated to other users','FontSize',12);
+        legend(leg,'FontSize',12);
+        subplot(1,3,3);
+        grid minor;
+        xlabel('Number of available antennas','FontSize',12);
+        ylabel('Power in dB','FontSize',12);
+        title('Interference generated to intended user','FontSize',12);
+        suptt = strcat(mat2str(nUsers),{' '},'usr -',{' '},arrayRestriction,{' '},'geometry');
+        tit = suptitle(suptt{:});
+        set(tit,'FontSize',12)
+        legend(leg,'FontSize',12);
+        % Plot perceived SINRs
+        figure(figNum);  figNum = figNum + 1;
+        for id = 1:nUsers
+            subplot(1,2,1); hold on;
+            plot(nAntennasList,SINR_BB(id,:),'LineWidth',2,'Marker','s');
+            subplot(1,2,2); hold on;
+            plot(nAntennasList,SINR_PB(id,:),'LineWidth',2,'Marker','s');
+        end
+        subplot(1,2,1);
+        grid minor;
+        xlabel('Number of available antennas','FontSize',12);
+        ylabel('Power in dB','FontSize',12);
+        tit = strcat('BB-SINR -',{' '},mat2str(nUsers),{' '},'usr -',{' '},arrayRestriction,{' '},'geometry');
+        title(tit,'FontSize',12);
+        legend(leg,'FontSize',12);
+        subplot(1,2,2);
+        grid minor;
+        xlabel('Number of available antennas','FontSize',12);
+        ylabel('Power in dB','FontSize',12);
+        tit = strcat('PB-SINR -',{' '},mat2str(nUsers),{' '},'usr -',{' '},arrayRestriction,{' '},'geometry');
+        title(tit,'FontSize',12);
+        legend(leg,'FontSize',12);
+        % Plot perceived Capacities
+        figure(figNum);  figNum = figNum + 1;
+        for id = 1:nUsers
+            hold on;
+            plot(nAntennasList,Cap(id,:),'LineWidth',2,'Marker','s');
+        end
+        grid minor;
+        xlabel('Number of available antennas','FontSize',12);
+        ylabel('Capacity in bits/Hz/s','FontSize',12);
+        tit = strcat('Capacities  -',{' '},mat2str(nUsers),{' '},'usr -',{' '},arrayRestriction,{' '},'geometry');
+        title(tit,'FontSize',12);
+        legend(leg,'FontSize',12);
+        % Plot average Capacities
+        figure(figNum);  figNum = figNum + 1;
+        Cap_lin = db2pow(Cap);
+        Cap_av = pow2db(mean(Cap_lin,1));
+        plot(nAntennasList,Cap_av,'LineWidth',2,'Marker','s');
+        grid minor;
+        xlabel('Number of available antennas','FontSize',12);
+        ylabel('Average Capacity in bits/Hz/s','FontSize',12);
+        tit = strcat('Capacity  -',{' '},mat2str(nUsers),{' '},'usr -',{' '},arrayRestriction,{' '},'geometry');
+        title(tit,'FontSize',12);
+        % Plot average SINR (BB)
+        figure(figNum);  figNum = figNum + 1;
+        SINR_BB_lin = db2pow(SINR_BB);
+        SINR_BB_av = pow2db(mean(SINR_BB_lin,1));
+        plot(nAntennasList,SINR_BB_av,'LineWidth',2,'Marker','s');
+        grid minor;
+        xlabel('Number of available antennas','FontSize',12);
+        ylabel('SINR in dB','FontSize',12);
+        tit = strcat('Average BB-SINR -',{' '},mat2str(nUsers),{' '},'usr -',{' '},arrayRestriction,{' '},'geometry');
+        title(tit,'FontSize',12);
+        % Plot average SINR (PB)
+        figure(figNum);  figNum = figNum + 1;                              %#ok
+        SINR_PB_lin = db2pow(SINR_PB);
+        SINR_PB_av = pow2db(mean(SINR_PB_lin,1));
+        plot(nAntennasList,SINR_PB_av,'LineWidth',2,'Marker','s');
+        grid minor;
+        xlabel('Number of available antennas','FontSize',12);
+        ylabel('SINR in dB','FontSize',12);
+        tit = strcat('Average PB-SINR -',{' '},mat2str(nUsers),{' '},'usr -',{' '},arrayRestriction,{' '},'geometry');
+        title(tit,'FontSize',12);
+        
+    elseif nargin == 4
+        nUsers = varargin{1};
+        arrRestctList = varargin{2};
+        locList = varargin{3};
+        my_nAntennasList = varargin{4};
+
+        fileNameList = cell(length(arrRestctList),1);
+        legendList = cell(length(arrRestctList),1);
+        % colorList from: https://en.wikipedia.org/wiki/Web_colors
+        colNoneList = [[139 0 0]./255 ; [178 34 34]./255 ; [220 20 60]./255 ; [205 92 92]./255 ; [250 128 114]./255 ; [255 160 122]./255];
+        colLocList  = [[0 0 128]./255 ; [0 0 205]./255 ; [0 0 255]./255 ; [65 105 225]./255 ; [100 149 237]./255 ; [0 191 255]./255];
+        colListTot = [colNoneList(1:length(locList),:);colLocList(1:length(locList),:)];
+
+        figure(figIdx); hold on; figIdx = figIdx + 1;
+        set(gca, 'ColorOrder', colListTot, 'NextPlot', 'replacechildren');  % Change to new colors.
+        for locIdx = 1:length(locList)
+            fileNameList{1} = strcat('temp/exp5_GA_',arrRestctList{1},'_2_true_true_',mat2str(locList(locIdx)));
+            fileNameList{2} = strcat('temp/exp5_GA_',arrRestctList{2},'_2_true_true_',mat2str(locList(locIdx)));
+            fileName = strcat('temp/exp5_GA_TOT_',mat2str(nUsers),'_true_true_',mat2str(locList(locIdx)));
+            % Store global results
+            load(fileName,'Cap_tot','SINR_BB_tot','SINR_PB_tot','nUsers','nAntennasList','arrRestctList');
+            Cap_TOT(:,locIdx) = Cap_tot(:,1);  %#ok
+            Cap_TOT(:,locIdx + length(locList)) = Cap_tot(:,2);  %#ok
+            legendList(locIdx)                   = strcat(' No restr. - Loc. ',{' '},mat2str(locList(locIdx)));
+            legendList(locIdx + length(locList)) = strcat('Sq. restr. - Loc. ',{' '},mat2str(locList(locIdx)));
+        end
+        [~,ia,~] = intersect(nAntennasList,my_nAntennasList);  %#ok
+        nAntennasList = nAntennasList(ia);
+        plot(nAntennasList,Cap_TOT(1:length(nAntennasList),:),'LineWidth',1.3,'Marker','x','MarkerSize',3.5);
+        title('Average capacity','FontSize',12);
+        xlabel('Number of antennas','FontSize',12);
+        ylabel('Capacity in bits/Hz/s','FontSize',12);
+        hList = findobj('Type', 'line');  % Returns lines in inverse order
+        ah1 = gca;
+        leg = legend(ah1,hList(1:length(locList)),legendList(length(locList)+1:2*length(locList)));
+        set(leg,'FontSize',10);
+        ah2 = axes('position',get(gca,'position'),'visible','off');
+        leg = legend(ah2,hList(length(locList)+1:2*length(locList)),legendList(1:length(locList)));
+        set(leg,'FontSize',10);
+        figure(figIdx - 1);
+        xlim([min(nAntennasList)-50 max(nAntennasList)+50]);
+        grid minor;
+
+        data(:,:,1) = Cap_TOT(1:length(nAntennasList),:);
+
+        groupLabels = nAntennasList;
+        figure(figIdx); hold on;
+        xlim([0.5 length(nAntennasList)+0.5]);
+        grid minor;
+        set(gca, 'ColorOrder', colListTot, 'NextPlot', 'replacechildren');  % Change to new colors
+        plotBarStackGroups(data, groupLabels);
+        title('Average capacity','FontSize',14);
+        xlabel('Number of antennas','FontSize',12);
+        ylabel('Capacity in bits/Hz/s','FontSize',12);
+        hList = findobj('Type', 'line');  % Returns lines in inverse order
+        ah1 = gca;
+        leg = legend(ah1,hList(1:length(locList)),legendList(length(locList)+1:2*length(locList)));
+        set(leg,'FontSize',10,'Location','SouthEast');
+        ah2 = axes('position',get(gca,'position'),'visible','off');
+        leg = legend(ah2,hList(length(locList)+1:2*length(locList)),legendList(1:length(locList)));
+        set(leg,'FontSize',10,'Location','SouthWest');
+        figure(figIdx);
+    else
+        error('wrong number of parameters');
     end
-    subplot(1,3,1);
-    grid minor;
-    xlabel('Number of available antennas','FontSize',12);
-    ylabel('Power in dB','FontSize',12);
-    title('Directivity to intended user','FontSize',12);
-    legend(leg,'FontSize',12);
-    subplot(1,3,2);
-    grid minor;
-    xlabel('Number of available antennas','FontSize',12);
-    ylabel('Power in dB','FontSize',12);
-    title('Interference generated to other users','FontSize',12);
-    legend(leg,'FontSize',12);
-    subplot(1,3,3);
-    grid minor;
-    xlabel('Number of available antennas','FontSize',12);
-    ylabel('Power in dB','FontSize',12);
-    title('Interference generated to intended user','FontSize',12);
-    suptt = strcat(mat2str(nUsers),{' '},'usr -',{' '},arrayRestriction,{' '},'geometry');
-    tit = suptitle(suptt{:});
-    set(tit,'FontSize',12)
-    legend(leg,'FontSize',12);
-    % Plot perceived SINRs
-    figure(figNum);  figNum = figNum + 1;
-    for id = 1:nUsers
-        subplot(1,2,1); hold on;
-        plot(nAntennasList,SINR_BB(id,:),'LineWidth',2,'Marker','s');
-        subplot(1,2,2); hold on;
-        plot(nAntennasList,SINR_PB(id,:),'LineWidth',2,'Marker','s');
-    end
-    subplot(1,2,1);
-    grid minor;
-    xlabel('Number of available antennas','FontSize',12);
-    ylabel('Power in dB','FontSize',12);
-    tit = strcat('BB-SINR -',{' '},mat2str(nUsers),{' '},'usr -',{' '},arrayRestriction,{' '},'geometry');
-    title(tit,'FontSize',12);
-    legend(leg,'FontSize',12);
-    subplot(1,2,2);
-    grid minor;
-    xlabel('Number of available antennas','FontSize',12);
-    ylabel('Power in dB','FontSize',12);
-    tit = strcat('PB-SINR -',{' '},mat2str(nUsers),{' '},'usr -',{' '},arrayRestriction,{' '},'geometry');
-    title(tit,'FontSize',12);
-    legend(leg,'FontSize',12);
-    % Plot perceived Capacities
-    figure(figNum);  figNum = figNum + 1;
-    for id = 1:nUsers
-        hold on;
-        plot(nAntennasList,Cap(id,:),'LineWidth',2,'Marker','s');
-    end
-    grid minor;
-    xlabel('Number of available antennas','FontSize',12);
-    ylabel('Capacity in bits/Hz/s','FontSize',12);
-    tit = strcat('Capacities  -',{' '},mat2str(nUsers),{' '},'usr -',{' '},arrayRestriction,{' '},'geometry');
-    title(tit,'FontSize',12);
-    legend(leg,'FontSize',12);
-    % Plot average Capacities
-    figure(figNum);  figNum = figNum + 1;
-    Cap_lin = db2pow(Cap);
-    Cap_av = pow2db(mean(Cap_lin,1));
-	plot(nAntennasList,Cap_av,'LineWidth',2,'Marker','s');
-    grid minor;
-    xlabel('Number of available antennas','FontSize',12);
-    ylabel('Average Capacity in bits/Hz/s','FontSize',12);
-    tit = strcat('Capacity  -',{' '},mat2str(nUsers),{' '},'usr -',{' '},arrayRestriction,{' '},'geometry');
-    title(tit,'FontSize',12);
-    % Plot average SINR (BB)
-    figure(figNum);  figNum = figNum + 1;
-    SINR_BB_lin = db2pow(SINR_BB);
-    SINR_BB_av = pow2db(mean(SINR_BB_lin,1));
-	plot(nAntennasList,SINR_BB_av,'LineWidth',2,'Marker','s');
-    grid minor;
-    xlabel('Number of available antennas','FontSize',12);
-    ylabel('SINR in dB','FontSize',12);
-    tit = strcat('Average BB-SINR -',{' '},mat2str(nUsers),{' '},'usr -',{' '},arrayRestriction,{' '},'geometry');
-    title(tit,'FontSize',12);
-    % Plot average SINR (PB)
-    figure(figNum);  figNum = figNum + 1;                              %#ok
-    SINR_PB_lin = db2pow(SINR_PB);
-    SINR_PB_av = pow2db(mean(SINR_PB_lin,1));
-	plot(nAntennasList,SINR_PB_av,'LineWidth',2,'Marker','s');
-    grid minor;
-    xlabel('Number of available antennas','FontSize',12);
-    ylabel('SINR in dB','FontSize',12);
-    tit = strcat('Average PB-SINR -',{' '},mat2str(nUsers),{' '},'usr -',{' '},arrayRestriction,{' '},'geometry');
-    title(tit,'FontSize',12);
 end
 
 
