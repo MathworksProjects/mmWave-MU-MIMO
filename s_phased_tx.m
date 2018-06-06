@@ -128,7 +128,6 @@ classdef s_phased_tx < matlab.System
         function resetImpl(obj)
             release(obj.transmitter);
             release(obj.radiator);
-            release(obj.array_response);
         end
     end
 end
