@@ -3,7 +3,7 @@ clear; clc; close all;
 addpath('utilities','-end');  % Add utilities folder at the end of search path
 
 %% Define several experiments here and override variable values accordingly
-experimentList = 51;
+experimentList = 6;
 
 %% Experiment selection
 
@@ -123,6 +123,15 @@ if any(experimentList(:)==51)
     locList = [1 2 3 4 5 6];  % List of locations to plot over
     % Call plot
     experiment5_plot(nUsers,arrRestctList,locList,my_nAntennasList);
+end
+
+%% EXPERIMENT 6
+if any(experimentList(:)==6)
+    nUsersList = 2;
+    nAntennasList = [4 8 12 16].^2;
+    nIter = 1;
+    plotFLAG = true;
+    experiment6(nIter,nUsersList,nAntennasList,plotFLAG);
 end
 
 %% EXPERIMENT 7
@@ -1237,38 +1246,32 @@ function [Cap,SINR_BB,SINR_PB,DirOK,DirNOK_gntd,DirNOK_pcvd] = experiment6(nIter
                 end
                 % Compare performance with other Beamforming mechanisms
                 % Simulate a test signal using a simple rectangular pulse
-                t = linspace(0,0.3,300)';
-                testsig = zeros(size(t));
-                testsig(201:205) = 1;
-                % Incident signal
-                angle_of_arrival = [problem.phiUsers(1);problem.thetaUsers(1)];
-                x = collectPlaneWave(handle_ConformalArray,testsig,angle_of_arrival,problem.freq);
-                % Add AWGN to signal
-                rng default
-                npower = 0.5;
-                x = x + sqrt(npower/2)*(randn(size(x)) + 1i*randn(size(x)));
-                % Create interference
-                jammer_angle = [problem.phiUsers(2);problem.thetaUsers(2)];
-                jamsig = collectPlaneWave(handle_ConformalArray,x,jammer_angle,problem.freq);
-                % Add AWGN to jamming signal
-                noise = sqrt(noisePwr/2)*...
-                    (randn(size(jamsig)) + 1j*randn(size(jamsig)));
-                jamsig = jamsig + noise;
-                rxsig = x + jamsig;
-                % Create conventional Beamformer
-                convbeamformer = phased.PhaseShiftBeamformer('SensorArray',handle_Conf_Array,...
-                                'OperatingFrequency',problem.freq,'Direction',angle_of_arrival,...
-                                'WeightsOutputPort',true);
-                [~,W_convent] = convbeamformer(rxsig);
-                % Create LCMV Beamformer
-                steeringvector = phased.SteeringVector('SensorArray',handle_Conf_Array,...
-                                 'PropagationSpeed',physconst('LightSpeed'));
-                LCMVbeamformer = phased.LCMVBeamformer('DesiredResponse',1,...
-                                 'TrainingInputPort',true,'WeightsOutputPort',true);
-                LCMVbeamformer.Constraint = steeringvector(problem.freq,angle_of_arrival);
-                LCMVbeamformer.DesiredResponse = 1;
-                [~,wLCMV] = LCMVbeamformer(rxsig,jamsig);
+                elementPos = [zeros(1,problem1.ant_elem);...
+                              problem1.possible_locations(2,relevant_positions);...
+                              problem1.possible_locations(3,relevant_positions)];
+                elementPos = elementPos./problem1.lambda;
+                sv = steervec(elementPos,[problem1.phiUsers ; problem1.thetaUsers]);
+                Sn = eye(sum(relevant_positions));
+                resp = zeros(problem1.nUsers,1);
+                resp(problem1.nUsers - id + 1) = 100;
+                w = lcmvweights(sv,resp,Sn);
+                Taper_user = w;
+                handle_Conf_Array = phased.ConformalArray('Element',problem1.handle_Ant,...
+                      'ElementPosition',...
+                      elementPos.*problem.lambda,...
+                      'Taper',Taper_user);
                 problem1.IDUserAssigned = id;
+                o_plotAssignment_mod(problem1, handle_ConformalArray);
+                % Extract Rx Power (in dB)
+                DirOKTot(id,idxAnt,idxIter) = patternAzimuth(handle_Conf_Array,problem.freq,problem.thetaUsers(id),'Azimuth',problem.phiUsers(id),'Type','powerdb');
+                fprintf('* Directivity IDmax: %.2f (dB)\n',DirOKTot(id,idxAnt,idxIter));
+                % Extract interference generated to others (in dB)
+                for id1 = 1:1:problem1.nUsers
+                    if id1~=id
+                        DirNOKTot(id,id1,idxAnt,idxIter) = patternAzimuth(handle_Conf_Array,problem.freq,problem.thetaUsers(id1),'Azimuth',problem.phiUsers(id1),'Type','powerdb');
+                        fprintf('  Directivity IDmin(%d): %.2f (dB)\n',id1,DirNOKTot(id,id1,idxAnt,idxIter));
+                    end
+                end
                 if plotFLAG
                     % Plot beam pattern obtained with assignation and BF configuration
                     o_plotAssignment_mod(problem1, handle_Conf_Array);
