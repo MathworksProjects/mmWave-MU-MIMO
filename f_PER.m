@@ -36,7 +36,8 @@ centerfreq = problem.freq;
 
 % Simulation scenarios
 nUsers = length(candSet);
-angleToRx = phitheta2azel([problem.phiUsers; problem.thetaUsers]);
+% angleToRx = phitheta2azel([problem.phiUsers; problem.thetaUsers]);
+angleToRx = [problem.phiUsers; problem.thetaUsers];
 distance_3d = problem.dUsers(candSet); %% !!!ASSUME CANDSET START WITH 1 WHEN COUNTING!!!
 distance_2d = problem.dUsers(candSet); %% not so precise
 
@@ -44,9 +45,9 @@ distance_2d = problem.dUsers(candSet); %% not so precise
 nRx = 1;
 
 %% Configure system objects
-tx_phy = s_phy_tx( ...
-    'MCS', MCS, ...
-    'PSDULength', lengthPSDU);
+for i = 1 : nUsers
+    tx_phy{i} = s_phy_tx( 'PSDULength', lengthPSDU(i), 'MCS', 1);
+end
 tx_pha = s_phased_tx( ...
     'numTxElements_row',    nTx_row, ...
     'numTxElements_col',    nTx_col, ...
@@ -72,9 +73,9 @@ txWaveforms = cell(nUsers, 1);
 finalSet = false(nUsers, 1);
 
 for user_iter = 1 : nUsers
-    psdu{user_iter} = randi([0 1], lengthPSDU * 8, 1);
-    [txSymbols, cfgDMG] = tx_phy(psdu{user_iter});
-    txWaveforms{user_iter} = tx_pha(txSymbols, angleToRx(:, user_iter), W(:, user_iter));
+    psdu{user_iter} = randi([0 1], lengthPSDU(user_iter) * 8, 1);
+    [txSymbols, cfgDMG] = tx_phy{user_iter}(psdu{user_iter});
+    txWaveforms{user_iter} = tx_pha(txSymbols, angleToRx(:, user_iter), W(user_iter, :).');
 end
 
 % Get the response -- response is a nUsers x nUsers, e.g., response(1, 3)
@@ -83,7 +84,7 @@ end
 response = zeros(nUsers, nUsers);
 for outer_iter = 1 : nUsers
     for inner_iter = 1 : nUsers
-        response(outer_iter, inner_iter) = resp(centerfreq, angleToRx(:, outer_iter), W(:, inner_iter));
+        response(outer_iter, inner_iter) = resp(centerfreq, angleToRx(:, outer_iter), W(inner_iter, :).');
     end
 end
 

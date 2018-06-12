@@ -17,7 +17,7 @@ classdef s_phased_channel_handle_version < matlab.System
     
     methods
         % Constructor
-        function obj = s_phased_channel(varargin)
+        function obj = s_phased_channel_handle_version(varargin)
             setProperties(obj,nargin,varargin{:})
         end
     end

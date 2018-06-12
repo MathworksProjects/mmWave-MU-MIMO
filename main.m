@@ -80,14 +80,14 @@ elseif (nargin==0)
     problem = o_read_input_problem('data/metaproblem_test.dat');
     conf = o_read_config('data/config_test.dat');
     %% Input parameters
-    problem = f_configuration(problem);  % Struct with configuration parameters
+    problem = f_configuration(conf, problem);  % Struct with configuration parameters
     %% Geographic distribution of users
     [problem.thetaUsers, problem.phiUsers, problem.dUsers] = ...
         o_generate_positions(conf, problem);
     %% Generate channels per user
     if conf.Use5GChannel
         % 5G 3GPP ETSI TR 38.901 compliant channel model
-        [~, problem.thetaChannels, problem.phiChannels, problem.alphaChannels] = ...
+        [channelHandles, problem.thetaChannels, problem.phiChannels, problem.alphaChannels] = ...
                             o_generate_5Gchannels(conf,problem.nUsers,...
                             problem.thetaUsers, problem.phiUsers, ...
                             problem.NxPatch, problem.NyPatch, problem.freq,...
@@ -153,7 +153,7 @@ while(t<Tsym)
                 [estObj] = f_heuristicsDummy(problem.MinObjF,conf.MinObjFIsSNR,problem.MCSPER.snrRange);
             elseif ~problem.heuristicsDummy && ~isempty(candSet)
                 % Real Heuristics
-                [~,~,~,estObj] = f_heuristics(problem,conf,candSet);
+                [~,W,arrayHandle,estObj] = f_heuristics(problem,conf,candSet);
             end
             % Heuristics - Post Processing
             if conf.MinObjFIsSNR;     estTH   = log2(estObj+1)*problem.Bw;  % in bps
@@ -174,7 +174,7 @@ while(t<Tsym)
                               % and the tentative achievable TH
             if ~any(estTH./candTH)<threshold
                 % Select MCS for estimated SNR
-                [~,PER] = f_selectMCS(candSet,SNRList,problem.targetPER,problem.MCSPER,problem.DEBUG);
+                [MCS,PER] = f_selectMCS(candSet,SNRList,problem.targetPER,problem.MCSPER,problem.DEBUG);
                 % Compute bits that can be transmitted and map it with the 
                 % bits remaining to be transmitted
                 TXbits = zeros(1,problem.nUsers);  % Reality - bits
@@ -198,7 +198,8 @@ while(t<Tsym)
                 % Append throughput achieved in slot
                 THTot = [THTot ; THiter];                       %#ok<AGROW>
                 % Evaluate PER
-                finalSet = f_PERtentative(candSet,PER);
+%                 finalSet = f_PERtentative(candSet,PER);
+                finalSet = f_PER(candSet, problem, W, TXbits, MCS, channelHandles, arrayHandle);
                 if ~isempty(finalSet); finalTH = THiter(finalSet);
                 else;                  finalTH = [];
                 end
