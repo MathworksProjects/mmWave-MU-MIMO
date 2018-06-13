@@ -4,8 +4,8 @@
 %   % The output of this script returns the statistical PER, in percent
 %   mcsTable.MCSPERTable(snr==mcsTable.snrRange,mcs==mcsTable.mcsRange)
 
-T = readtable('PER_TABLES\CDL_ALL_1_First.txt');
-profile = 'CDL-A';
+T = readtable('PER_TABLES\CDL_ALL_DelaySpread16ns.txt');
+profile = 'CDL-C';
 
 mcsTable.snrRange = unique(T.Var3);
 mcsTable.mcsRange = unique(T.Var2);
@@ -14,7 +14,6 @@ tempTable = sortrows(T{index, 2:end}, 1);
 tempTable = sortrows(tempTable, 2);
 
 mcsTable.MCSPERTable = reshape(tempTable(:, 3), length(mcsTable.mcsRange), length(mcsTable.snrRange))';
-
 
 markers = 'ox*sd^v><ph+';
 color = 'bmcrgbrkymcr';
