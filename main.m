@@ -45,7 +45,7 @@ function [flows,CapTot,TXbitsTot,THTot,lastSlotSim,lastSelFlow,varargout] = main
 %
 %------------- BEGIN CODE --------------
 
-% Check correct number of input arguments. If none, then set-up default
+%% Check correct number of input arguments. If none, then set-up default
 % parameters from configuration functions
 if (nargin==3)
     fprintf('Main: Parameters extracted from runnable. Running main...\n');
@@ -73,39 +73,14 @@ if (nargin==3)
     flows = varargin{3};
 elseif (nargin==0)
     % No parameters were inputted to the main
-    %% Clear workspace
+    % Clear workspace
     clear; clc; close all;
     addpath('utilities','-end');  % Add utilities folder at the end of search path
-    %% Load configuration
+    % Load configuration
     problem = o_read_input_problem('data/metaproblem_test.dat');
     conf = o_read_config('data/config_test.dat');
-    %% Input parameters
-    problem = f_configuration(conf, problem);  % Struct with configuration parameters
-    %% Geographic distribution of users
-    [problem.thetaUsers, problem.phiUsers, problem.dUsers] = ...
-        o_generate_positions(conf, problem);
-    %% Generate channels per user
-    if conf.Use5GChannel
-        % 5G 3GPP ETSI TR 38.901 compliant channel model
-        [channelHandles, problem.thetaChannels, problem.phiChannels, problem.alphaChannels] = ...
-                            o_generate_5Gchannels(conf,problem.nUsers,...
-                            problem.thetaUsers, problem.phiUsers, ...
-                            problem.NxPatch, problem.NyPatch, problem.freq,...
-                            problem.maxnChannelPaths);
-    else
-        % Basic channel model (for the moment, including channel gains (alphas) !!!
-        [problem.thetaChannels, problem.phiChannels, problem.alphaChannels] = ...
-                            o_generate_channels(conf,problem.nUsers,...
-                            problem.maxnChannelPaths);
-    end
-    %% Handle traffic
-    [traffic,maxTime] = f_genDetTraffic(problem.class,problem.trafficType,problem.DEBUG);
-    if maxTime~=0
-        problem.Tsym = maxTime;  % Adequate Simulation time to the last packet arrival
-    end
-    % Convert traffic (arrivals) into individual Flow for each user. Flows may
-    % overlap in time as the inter-arrival time may be less than Tslot
-    [flows] = f_arrivalToFlow(problem.Tslot,traffic);
+    % Input parameters
+    [problem,~,flows] = f_configuration(conf, problem);  % Struct with configuration parameters
     % Copy initial flows for plotting purposes (to see progression of sim)
     varargout{1} = flows;  % baseFlows: for printing purposes at the end of execution
     fprintf('Main: Parameters ovewritten in Main. Running main...\n');
@@ -154,6 +129,7 @@ while(t<Tsym)
             elseif ~problem.heuristicsDummy && ~isempty(candSet)
                 % Real Heuristics
                 [~,W,arrayHandle,estObj] = f_heuristics(problem,conf,candSet);
+                [~,~]  = f_BF_results(W,arrayHandle,problem,conf,true);
             end
             % Heuristics - Post Processing
             if conf.MinObjFIsSNR;     estTH   = log2(estObj+1)*problem.Bw;  % in bps
@@ -198,8 +174,8 @@ while(t<Tsym)
                 % Append throughput achieved in slot
                 THTot = [THTot ; THiter];                       %#ok<AGROW>
                 % Evaluate PER
-%                 finalSet = f_PERtentative(candSet,PER);
-                finalSet = f_PER(candSet, problem, W, TXbits, MCS, channelHandles, arrayHandle);
+                finalSet = f_PERtentative(candSet,PER);
+%                 finalSet = f_PER(candSet, problem, W, TXbits, MCS, channelHandles, arrayHandle);
                 if ~isempty(finalSet); finalTH = THiter(finalSet);
                 else;                  finalTH = [];
                 end

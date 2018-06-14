@@ -32,9 +32,9 @@ function [thetaPos, phiPos, dPos] = o_generate_positions(conf,problem)
     uc_az(1,:) = vect;
     uc_dist(1,:) = 5.*ones(1,problem.nUsers);
     % UC 2 - Located horizontally (no elevation - a bit more separation)
-    uc_el(1,:) = zeros(1,problem.nUsers);
-    uc_az(1,:) = 1.5.*vect;
-    uc_dist(1,:) = 5.*ones(1,problem.nUsers);
+    uc_el(2,:) = zeros(1,problem.nUsers);
+    uc_az(2,:) = 1.5.*vect;
+    uc_dist(2,:) = 5.*ones(1,problem.nUsers);
     % UC 3 - Located vertically (no azymuth)
     uc_el(3,:) = vect;
     uc_az(3,:) = zeros(1,problem.nUsers);

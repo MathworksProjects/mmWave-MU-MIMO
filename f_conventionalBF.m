@@ -1,4 +1,4 @@
-function [W_LCMV,W_CBF] = f_conventionalBF(problem,conf,candSet)
+function [W_LCMV,W_CBF,handle_ConformalArray] = f_conventionalBF(problem,candSet)
     % Restrict sub-arrays to Localized for LCMV
     problem.arrayRestriction = 'Localized';
     % Compute number of sub-arrays to assign per user
@@ -42,28 +42,17 @@ function [W_LCMV,W_CBF] = f_conventionalBF(problem,conf,candSet)
                       problem.possible_locations(3,relevant_positions{id})];
         elementPosNorm = elementPos./problem.lambda;
         
+        PhiTheta = ([-problem.phiUsers ; -problem.thetaUsers]);
+        
         % Apply LCMV Beamformer for selected user
-        sv = steervec(elementPosNorm,[problem.phiUsers ; problem.thetaUsers]);
+        sv = steervec(elementPosNorm,PhiTheta);
         Sn = eye(Nant_user);
-        resp = zeros(problem.nUsers,1);
-%         resp(problem.nUsers - id + 1) = 33;  % Maximum restricted to limit (33dB)
-        resp(id) = 33;  % Maximum restricted to limit (33dB)
+        resp = zeros(problem.nUsers,1) + eps;
+        resp(id) = 1;  % Maximum restricted to limit (33dB)
         w_lcmv = lcmvweights(sv,resp,Sn);  % LCMV Beamformer method
         
         % Apply Convencional Beamformer for selected user
-        w_cbf = cbfweights(elementPosNorm,[problem.phiUsers(id) ; problem.thetaUsers(id)]);  % conventional beamformer
-        
-        if conf.verbosity > 1
-            problem.IDUserAssigned = id;
-            % LCMV
-            handle_Conf_Array = phased.ConformalArray('Element', problem.handle_Ant,...
-                                'ElementPosition', elementPos, 'Taper', w_lcmv);
-            o_plotAssignment_mod(problem, handle_Conf_Array); 
-            % Conventional BF
-            handle_Conf_Array = phased.ConformalArray('Element', problem.handle_Ant,...
-                                'ElementPosition', elementPos, 'Taper', w_cbf);
-            o_plotAssignment_mod(problem, handle_Conf_Array);
-        end
+        w_cbf = cbfweights(elementPosNorm,PhiTheta(:,id));  % conventional beamformer
         
         % Store results in global W
         W_LCMV(id,relevant_positions{id}) = w_lcmv.';

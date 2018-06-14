@@ -136,7 +136,7 @@ if any(experimentList(:)==6)
     input.detLocation          = true;
     input.useCasesLocation     = true;
     input.useCaseLocationList  = [1 2 3 4 5 6];  % List of locations to plot over;
-    plotFLAG                   = true;  % Plotting flag
+    plotFLAG                   = false;  % Plotting flag
     for nUsers = nUsersList
         input.nUsers = nUsers;
         experiment6(input,plotFLAG);
@@ -889,60 +889,16 @@ function fileName = experiment5(input,plotFLAG)
             problem.N_Antennas = problem.NxPatch.*problem.NyPatch;
             % Call heuristics
             fprintf('\t** %d Antennas and %d Users...\n',problem.N_Antennas,problem.nUsers);
-            [~,W,~,estObj] = f_heuristics(problem,conf,candSet);
+            [~,W,arrayHandle,estObj] = f_heuristics(problem,conf,candSet);
             % Heuristics - Post Processing
             if conf.MinObjFIsSNR;     CapTot(:,idxAnt,idxIter)  = log2(estObj+1);  % in bps/Hz
                                       SINRTot(:,idxAnt,idxIter) = pow2db(estObj);  % in dB
             else;                     CapTot(:,idxAnt,idxIter)  = estObj;  % in bps/Hz
                                       SINRTot(:,idxAnt,idxIter) = pow2db(2.^(estTH/problem.Bw) - 1);  % in dB
             end
-            % Reconstruct array
-            % Create handle per user
-            problem1 = o_create_subarray_partition(problem);
-            problem1.NzPatch = problem1.NxPatch;
-            problem1.dz = problem1.dx;
-            problem1.handle_Ant = phased.CosineAntennaElement('FrequencyRange',...
-                                    [problem1.freq-(problem1.Bw/2) problem1.freq+(problem1.Bw/2)],...
-                                    'CosinePower',[1.5 2.5]); % [1.5 2.5] values set porque si
-            handle_ConformalArray = phased.URA([problem1.NyPatch,problem1.NzPatch],...
-                                    'Lattice','Rectangular','Element',problem1.handle_Ant,...
-                                    'ElementSpacing',[problem1.dy,problem1.dz]);
-            problem1.possible_locations = handle_ConformalArray.getElementPosition;
-            for id = 1:1:problem1.nUsers
-                problem1.ant_elem = sum(W(id,:)~=0);
-                relevant_positions = (W(id,:)~=0);
-                Taper_user = W(id,relevant_positions);
-                handle_Conf_Array = phased.ConformalArray('Element',problem1.handle_Ant,...
-                                      'ElementPosition',...
-                                      [zeros(1,problem1.ant_elem);...
-                                      problem1.possible_locations(2,relevant_positions);...
-                                      problem1.possible_locations(3,relevant_positions)],...
-                                      'Taper',Taper_user);
-                % Extract Rx Power (in dB)
-                DirOKTot(id,idxAnt,idxIter) = patternAzimuth(handle_Conf_Array,problem.freq,problem.thetaUsers(id),'Azimuth',problem.phiUsers(id),'Type','powerdb');
-                fprintf('* Directivity IDmax: %.2f (dB)\n',DirOKTot(id,idxAnt,idxIter));
-                % Extract interference generated to others (in dB)
-                for id1 = 1:1:problem1.nUsers
-                    if id1~=id
-                        DirNOKTot(id,id1,idxAnt,idxIter) = patternAzimuth(handle_Conf_Array,problem.freq,problem.thetaUsers(id1),'Azimuth',problem.phiUsers(id1),'Type','powerdb');
-                        fprintf('  Directivity IDmin(%d): %.2f (dB)\n',id1,DirNOKTot(id,id1,idxAnt,idxIter));
-                    end
-                end
-                problem1.IDUserAssigned = id;
-                if plotFLAG
-                    % Plot beam pattern obtained with assignation and BF configuration
-                    o_plotAssignment_mod(problem1, handle_Conf_Array);
-                end
-            end
-            if plotFLAG
-                % Plot assignation
-                px = problem1.possible_locations(3,:);  % Antenna allocation on x-axis
-                py = problem1.possible_locations(2,:);  % Antenna allocation on y-axis
-                pz = problem1.possible_locations(1,:);  % Antenna allocation on z-axispatch = o_getPatch(problem.NxPatch,problem.NyPatch,px,py);
-                patch = o_getPatch(problem1.NxPatch,problem1.NyPatch,px,py);
-                arrays = o_getArrays(problem1.nUsers,W,px,py,pz);
-                o_plot_feasible_comb(problem1,conf,patch,arrays);
-            end
+            % Process results after Beamforming
+            [DirOKTot(:,idxAnt,idxIter),DirNOKTot(:,:,idxAnt,idxIter)]  = ...
+                f_BF_results(W,arrayHandle,problem,conf,false);
             save(fileName_temp,'DirOKTot','DirNOKTot','nUsers','nAntennasList');
         end
     end
@@ -1184,7 +1140,7 @@ function fileName = experiment6(input,plotFLAG)
     problem.MinObjF = 100.*ones(1,problem.nUsers);  % Same #ant per user. Random SNR (30dB)
     problem.arrayRestriction = arrayRestriction;
     % Override (conf) parameters
-    conf.verbosity = 2;
+    conf.verbosity = 0;
     conf.algorithm = algorithm;  % Heuristic algorithm
     conf.NumPhaseShifterBits = 60;  % Number of bits to control heuristic solution
     conf.FunctionTolerance_Data = 1e-10;  % Heuristics stops when not improving solution by this much
@@ -1196,10 +1152,10 @@ function fileName = experiment6(input,plotFLAG)
     SINRTot = zeros(problem.nUsers,length(useCaseLocationList),nIter);  % SINR (heuristics)
     DirOKTot = -Inf(problem.nUsers,length(useCaseLocationList),nIter);  % Directivity target (heuristics)
     DirNOKTot = -Inf(problem.nUsers,problem.nUsers,length(useCaseLocationList),nIter);  % Directivity others (heuristics)
-    CapLCMVTot = zeros(problem.nUsers,length(useCaseLocationList),nIter);  % Capacity (heuristics)
-    SINRLCMVTot = zeros(problem.nUsers,length(useCaseLocationList),nIter);  % SINR (heuristics)
-    DirOKLCMVTot = -Inf(problem.nUsers,length(useCaseLocationList),nIter);  % Directivity target (heuristics)
-    DirNOKLCMVTot = -Inf(problem.nUsers,problem.nUsers,length(useCaseLocationList),nIter);  % Directivity others (heuristics)
+    DirOKLCMVTot = -Inf(problem.nUsers,length(useCaseLocationList),nIter);  % Directivity target (LCMV)
+    DirNOKLCMVTot = -Inf(problem.nUsers,problem.nUsers,length(useCaseLocationList),nIter);  % Directivity others (LCMV)
+    DirOKCBFTot = -Inf(problem.nUsers,length(useCaseLocationList),nIter);  % Directivity target (Conventional)
+    DirNOKCBFTot = -Inf(problem.nUsers,problem.nUsers,length(useCaseLocationList),nIter);  % Directivity others (Conventional)
     fileName = strcat('temp/exp6_',conf.algorithm,'_',problem.arrayRestriction,'_',mat2str(nUsers),'_',mat2str(nAntennas),'_',mat2str(conf.detLocation),'_',mat2str(conf.useCasesLocation),'_TOT');
     % Linearize combinations and asign Population size (To be replaced with
     % convergency analysis values)
@@ -1225,17 +1181,22 @@ function fileName = experiment6(input,plotFLAG)
             % locations and create new channels to have statistically
             % meaningful results
             [problem,~,~] = f_configuration(conf,problem);
-            problem.phiUsers = [15 0];
-            problem.thetaUsers = [0 25];
             % Select number of antennas
             problem.N_Antennas = nAntennas;
             % Adjust parameters
             problem.NxPatch = floor(sqrt(problem.N_Antennas));
             problem.NyPatch = floor(problem.N_Antennas./problem.NxPatch);
             problem.N_Antennas = problem.NxPatch.*problem.NyPatch;
-            % Conventional Beamforming - LCMV
+            % Conventional Beamforming + LCMV
             fprintf('SOLVING LCMV\n');
-            [W_LCMV,W_CBF,handle_ConformalArray] = f_conventionalBF(problem,conf,candSet);
+            [W_LCMV,W_CBF,handle_ConformalArray] = f_conventionalBF(problem,candSet);
+            % Normalize weigths
+            idx1 = find(W_LCMV(1,:)~=0.0);
+            idx2 = find(W_LCMV(2,:)~=0.0);
+            W_LCMV(1,idx1) = (1/sqrt(W_LCMV(1,idx1)*W_LCMV(1,idx1)')) * W_LCMV(1,idx1);
+            W_LCMV(2,idx2) = (1/sqrt(W_LCMV(2,idx2)*W_LCMV(2,idx2)')) * W_LCMV(2,idx2);
+            W_CBF(1,idx1) = (1/sqrt(W_CBF(1,idx1)*W_CBF(1,idx1)')) * W_CBF(1,idx1);
+            W_CBF(2,idx2) = (1/sqrt(W_CBF(2,idx2)*W_CBF(2,idx2)')) * W_CBF(2,idx2);
             % Compute directivity for LCMV
             [DirOKLCMVTot(:,idxLoc,idxIter),DirNOKLCMVTot(:,:,idxLoc,idxIter)]  = ...
                 f_BF_results(W_LCMV,handle_ConformalArray,problem,conf,plotFLAG);
@@ -1245,6 +1206,11 @@ function fileName = experiment6(input,plotFLAG)
             % Call heuristics
             fprintf('SOLVING HEURISTICS\n');
             [~,W,~,estObj] = f_heuristics(problem,conf,candSet);
+            % Normalize weigths
+            idx1 = find(W(1,:)~=0.0);
+            idx2 = find(W(2,:)~=0.0);
+            W(1,idx1) = (1/sqrt(W(1,idx1)*W(1,idx1)')) * W(1,idx1);
+            W(2,idx2) = (1/sqrt(W(2,idx2)*W(2,idx2)')) * W(2,idx2);
             % Compute directivity for Heuristics
             [DirOKTot(:,idxLoc,idxIter),DirNOKTot(:,:,idxLoc,idxIter)]  = ...
                 f_BF_results(W,handle_ConformalArray,problem,conf,plotFLAG);
@@ -1263,6 +1229,8 @@ function fileName = experiment6(input,plotFLAG)
     DirNOKTot_lin = db2pow(DirNOKTot);
     DirOKLCMVTot_lin = db2pow(DirOKLCMVTot);
     DirNOKLCMVTot_lin = db2pow(DirNOKLCMVTot);
+    DirOKCBFTot_lin = db2pow(DirOKCBFTot);
+    DirNOKCBFTot_lin = db2pow(DirNOKCBFTot);
     % Compute average Directivities
     DirOK_lin = zeros(nUsers,length(useCaseLocationList));  % Directivity generated by intended user
     DirNOK_gntd_lin = zeros(nUsers,length(useCaseLocationList));  % Generated interference by intended user
@@ -1270,6 +1238,9 @@ function fileName = experiment6(input,plotFLAG)
 	DirOKLCMV_lin = zeros(nUsers,length(useCaseLocationList));  % Directivity generated by intended user
     DirNOKLCMV_gntd_lin = zeros(nUsers,length(useCaseLocationList));  % Generated interference by intended user
     DirNOKLCMV_pcvd_lin = zeros(nUsers,length(useCaseLocationList));  % Perceived interference by intended user
+    DirOKCBF_lin = zeros(nUsers,length(useCaseLocationList));  % Directivity generated by intended user
+    DirNOKCBF_gntd_lin = zeros(nUsers,length(useCaseLocationList));  % Generated interference by intended user
+    DirNOKCBF_pcvd_lin = zeros(nUsers,length(useCaseLocationList));  % Perceived interference by intended user
     for antIdx = 1:length(useCaseLocationList)
         DirOK_lin(:,antIdx) = mean(DirOKTot_lin(:,antIdx,:),3);
         DirNOK_gntd_lin(:,antIdx) = sum(mean(DirNOKTot_lin(:,:,antIdx,:),4),1); % Generated interference 
@@ -1277,13 +1248,19 @@ function fileName = experiment6(input,plotFLAG)
         DirOKLCMV_lin(:,antIdx) = mean(DirOKLCMVTot_lin(:,antIdx,:),3);
         DirNOKLCMV_gntd_lin(:,antIdx) = sum(mean(DirNOKLCMVTot_lin(:,:,antIdx,:),4),1); % Generated interference 
         DirNOKLCMV_pcvd_lin(:,antIdx) = sum(mean(DirNOKLCMVTot_lin(:,:,antIdx,:),4),2); % Perceived interference
+        DirOKCBF_lin(:,antIdx) = mean(DirOKCBFTot_lin(:,antIdx,:),3);
+        DirNOKCBF_gntd_lin(:,antIdx) = sum(mean(DirNOKCBFTot_lin(:,:,antIdx,:),4),1); % Generated interference 
+        DirNOKCBF_pcvd_lin(:,antIdx) = sum(mean(DirNOKCBFTot_lin(:,:,antIdx,:),4),2); % Perceived interference
     end
-    DirOK = pow2db(DirOK_lin);  %#ok % Directivity generated to intended user
-    DirNOK_gntd = pow2db(DirNOK_gntd_lin);  %#ok  % Directivity being generated by intended user
-    DirNOK_pcvd = pow2db(DirNOK_pcvd_lin);  %#ok  % Directivity inflicted to intended user
-    DirOKLCMV = pow2db(DirOKLCMV_lin);  %#ok  % Directivity generated to intended user
-    DirNOKLCMV_gntd = pow2db(DirNOKLCMV_gntd_lin);  %#ok  % Directivity being generated by intended user
-    DirNOKLCMV_pcvd = pow2db(DirNOKLCMV_pcvd_lin);  %#ok  % Directivity inflicted to intended user
+    DirOK = pow2db(DirOK_lin);  %#ok % Directivity generated to intended user (heuristics)
+    DirNOK_gntd = pow2db(DirNOK_gntd_lin);  %#ok  % Directivity being generated by intended user (heuristics)
+    DirNOK_pcvd = pow2db(DirNOK_pcvd_lin);  %#ok  % Directivity inflicted to intended user (heuristics)
+    DirOKLCMV = pow2db(DirOKLCMV_lin);  %#ok  % Directivity generated to intended user (LCMV)
+    DirNOKLCMV_gntd = pow2db(DirNOKLCMV_gntd_lin);  %#ok  % Directivity being generated by intended user (LCMV)
+    DirNOKLCMV_pcvd = pow2db(DirNOKLCMV_pcvd_lin);  %#ok  % Directivity inflicted to intended user (LCMV)
+    DirOKCBF = pow2db(DirOKCBF_lin);  %#ok  % Directivity generated to intended user (Conventional)
+    DirNOKCBF_gntd = pow2db(DirNOKCBF_gntd_lin);  %#ok  % Directivity being generated by intended user (Conventional)
+    DirNOKCBF_pcvd = pow2db(DirNOKCBF_pcvd_lin);  %#ok  % Directivity inflicted to intended user (Conventional)
     % Compute comms parameters 
     chLoss_lin = ((problem.lambda ./ (4*pi*problem.dUsers(1:nUsers))).^2).';  % Losses
     chLoss_lin = repmat(chLoss_lin,1,length(useCaseLocationList));
@@ -1297,8 +1274,13 @@ function fileName = experiment6(input,plotFLAG)
     SINRLCMV_PB_lin = (DirOKLCMV_lin.*chLoss_lin) ./(DirNOKLCMV_gntd_lin.*chLoss_lin + Noise_lin);
     SINRLCMV_PB = pow2db(SINRLCMV_PB_lin);  %#ok
     CapLCMV = log2(1 + SINRLCMV_PB_lin);  %#ok
+    % Compute SINR and Capacities - LCMV
+    SINRCBF_PB_lin = (DirOKCBF_lin.*chLoss_lin) ./(DirNOKCBF_gntd_lin.*chLoss_lin + Noise_lin);
+    SINRCBF_PB = pow2db(SINRLCMV_PB_lin);  %#ok
+    CapCBF = log2(1 + SINRCBF_PB_lin);  %#ok
     save(fileName,'Cap','SINR_BB','SINR_PB','DirOK','DirNOK_gntd','DirNOK_pcvd','DirOKTot','DirNOKTot',...
                   'CapLCMV','SINRLCMV_PB','DirOKLCMV','DirNOKLCMV_gntd','DirNOKLCMV_pcvd','DirOKLCMVTot','DirNOKLCMVTot',...
+                  'CapCBF','SINRCBF_PB','DirOKCBF','DirNOKCBF_gntd','DirNOKCBF_pcvd','DirOKCBFTot','DirNOKCBFTot',...
                   'nUsers','nAntennas');
 end
 
