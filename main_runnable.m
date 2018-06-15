@@ -127,7 +127,7 @@ end
 
 %% EXPERIMENT 6
 if any(experimentList(:)==6)
-    nUsersList = [2 4 6];
+    nUsersList = [2 3 4 5 6 7 8 9 10];
     % Input parameters
     input.nIter                = 1;
     input.nAntennas            = 16.^2;
@@ -135,12 +135,22 @@ if any(experimentList(:)==6)
     input.algorithm            = 'GA';
     input.detLocation          = true;
     input.useCasesLocation     = true;
-    input.useCaseLocationList  = [1 2 3 4 5 6];  % List of locations to plot over;
+    input.useCaseLocationList  = 1;  % List of locations to plot over;
     plotFLAG                   = false;  % Plotting flag
     for nUsers = nUsersList
         input.nUsers = nUsers;
         experiment6(input,plotFLAG);
     end
+end
+
+%% EXPERIMENT 6 - PLOTTING
+if any(experimentList(:)==61)
+    nUsersList = [2 3 4 5 6 7 8 9 10];
+    arrRestct = 'None';  % Sub-array restrictions to consider
+    nAntennas = 16.^2;  % List of antennas to plot over
+    locList = 1;
+    % Call plot
+    experiment6_plot(nUsersList,arrRestct,locList,nAntennas);
 end
 
 %% EXPERIMENT 7
@@ -1118,7 +1128,7 @@ end
 
 
 %% EXPERIMENT 6
-function fileName = experiment6(input,plotFLAG)
+function experiment6(input,plotFLAG)
     %
     fprintf('Running experiment 6...\n');
 	% Store input struct in local
@@ -1145,6 +1155,10 @@ function fileName = experiment6(input,plotFLAG)
     conf.NumPhaseShifterBits = 60;  % Number of bits to control heuristic solution
     conf.FunctionTolerance_Data = 1e-10;  % Heuristics stops when not improving solution by this much
     conf.multiPath = false;  % LoS channel (for now)
+    % Compute basic parameters for SINR and Capacity computations
+    chLoss_lin = ((problem.lambda ./ (4*pi*problem.dUsers(1:nUsers))).^2).';  % Losses
+    Noise_lin = db2pow(problem.Noise);  % Noise power
+    Noise_lin = repmat(Noise_lin,problem.nUsers,1);
 	% Configure basic parameters
     candSet = (1:1:problem.nUsers);  % Set of users to be considered
 	% Create output variables
@@ -1156,7 +1170,6 @@ function fileName = experiment6(input,plotFLAG)
     DirNOKLCMVTot = -Inf(problem.nUsers,problem.nUsers,length(useCaseLocationList),nIter);  % Directivity others (LCMV)
     DirOKCBFTot = -Inf(problem.nUsers,length(useCaseLocationList),nIter);  % Directivity target (Conventional)
     DirNOKCBFTot = -Inf(problem.nUsers,problem.nUsers,length(useCaseLocationList),nIter);  % Directivity others (Conventional)
-    fileName = strcat('temp/exp6_',conf.algorithm,'_',problem.arrayRestriction,'_',mat2str(nUsers),'_',mat2str(nAntennas),'_',mat2str(conf.detLocation),'_',mat2str(conf.useCasesLocation),'_TOT');
     % Linearize combinations and asign Population size (To be replaced with
     % convergency analysis values)
 %     totComb = log10(problem.nUsers.*factorial(ceil(nAntennasList/problem.nUsers)));
@@ -1171,8 +1184,10 @@ function fileName = experiment6(input,plotFLAG)
         conf.PopulationSize_Data = PopSizeList(idxLoc);
         conf.Maxgenerations_Data = 150;
         conf.EliteCount_Data = ceil(conf.PopulationSize_Data/5);
-        conf.MaxStallgenerations_Data = ceil(conf.Maxgenerations_Data/10);  % Force it to cover all the generations
+        conf.MaxStallgenerations_Data = ceil(conf.Maxgenerations_Data/4);  % Force it to cover all the generations
         % Select the localization
+        conf.detLocation = detLocation;
+        conf.useCaseLocation = useCasesLocation;
         conf.useCaseLocation = useCaseLocationList(idxLoc);
         fprintf('Nusers=%d - Nant=%d - rest=%s - Loc=%d\n',problem.nUsers,nAntennas,arrayRestriction,conf.useCaseLocation);
         for idxIter = 1:nIter
@@ -1191,12 +1206,11 @@ function fileName = experiment6(input,plotFLAG)
             fprintf('SOLVING LCMV\n');
             [W_LCMV,W_CBF,handle_ConformalArray] = f_conventionalBF(problem,candSet);
             % Normalize weigths
-            idx1 = find(W_LCMV(1,:)~=0.0);
-            idx2 = find(W_LCMV(2,:)~=0.0);
-            W_LCMV(1,idx1) = (1/sqrt(W_LCMV(1,idx1)*W_LCMV(1,idx1)')) * W_LCMV(1,idx1);
-            W_LCMV(2,idx2) = (1/sqrt(W_LCMV(2,idx2)*W_LCMV(2,idx2)')) * W_LCMV(2,idx2);
-            W_CBF(1,idx1) = (1/sqrt(W_CBF(1,idx1)*W_CBF(1,idx1)')) * W_CBF(1,idx1);
-            W_CBF(2,idx2) = (1/sqrt(W_CBF(2,idx2)*W_CBF(2,idx2)')) * W_CBF(2,idx2);
+            for id = 1:problem.nUsers
+                idx = find(W_LCMV(id,:)~=0.0);  % Both LCMV and CBF have same antenna dist.
+                W_LCMV(id,idx) = (1/sqrt(W_LCMV(id,idx)*W_LCMV(id,idx)')) * W_LCMV(id,idx);
+                W_CBF(id,idx) = (1/sqrt(W_CBF(id,idx)*W_CBF(id,idx)')) * W_CBF(id,idx);
+            end
             % Compute directivity for LCMV
             [DirOKLCMVTot(:,idxLoc,idxIter),DirNOKLCMVTot(:,:,idxLoc,idxIter)]  = ...
                 f_BF_results(W_LCMV,handle_ConformalArray,problem,conf,plotFLAG);
@@ -1207,10 +1221,10 @@ function fileName = experiment6(input,plotFLAG)
             fprintf('SOLVING HEURISTICS\n');
             [~,W,~,estObj] = f_heuristics(problem,conf,candSet);
             % Normalize weigths
-            idx1 = find(W(1,:)~=0.0);
-            idx2 = find(W(2,:)~=0.0);
-            W(1,idx1) = (1/sqrt(W(1,idx1)*W(1,idx1)')) * W(1,idx1);
-            W(2,idx2) = (1/sqrt(W(2,idx2)*W(2,idx2)')) * W(2,idx2);
+            for id = 1:problem.nUsers
+                idx = find(W(id,:)~=0.0);
+                W(id,idx) = (1/sqrt(W(id,idx)*W(id,idx)')) * W(id,idx);
+            end
             % Compute directivity for Heuristics
             [DirOKTot(:,idxLoc,idxIter),DirNOKTot(:,:,idxLoc,idxIter)]  = ...
                 f_BF_results(W,handle_ConformalArray,problem,conf,plotFLAG);
@@ -1221,69 +1235,99 @@ function fileName = experiment6(input,plotFLAG)
                                       SINRTot(:,idxLoc,idxIter) = 10*log10(2.^(estTH/problem.Bw) - 1);  % in dB
             end
         end
-        fileName_temp = strcat('temp/exp6_',conf.algorithm,'_',problem.arrayRestriction,'_',mat2str(nUsers),'_',mat2str(nAntennas),'_',mat2str(conf.detLocation),'_',mat2str(conf.useCasesLocation),'_',mat2str(conf.useCaseLocation));
-        save(fileName_temp,'DirOKTot','DirNOKTot','DirOKLCMVTot','DirNOKLCMVTot','nUsers','nAntennas');
+        % Parse results for specific case - Heuristics
+        DirOKTot_lin = db2pow(DirOKTot);
+        DirNOKTot_lin = db2pow(DirNOKTot);
+        DirOK_lin = mean(DirOKTot_lin(:,idxLoc,:),3);
+        DirNOK_gntd_lin = sum(mean(DirNOKTot_lin(:,:,idxLoc,:),4),1).'; % Generated interference 
+        DirNOK_pcvd_lin = sum(mean(DirNOKTot_lin(:,:,idxLoc,:),4),2); % Perceived interference
+        DirOK = pow2db(DirOK_lin);  %#ok % Directivity generated to intended user (heuristics)
+        DirNOK_gntd = pow2db(DirNOK_gntd_lin);  %#ok  % Directivity being generated by intended user (heuristics)
+        DirNOK_pcvd = pow2db(DirNOK_pcvd_lin);  %#ok  % Directivity inflicted to intended user (heuristics)
+        % Parse results for specific case - LCMV
+        DirOKLCMVTot_lin = db2pow(DirOKLCMVTot);
+        DirNOKLCMVTot_lin = db2pow(DirNOKLCMVTot);
+        DirOKLCMV_lin = mean(DirOKLCMVTot_lin(:,idxLoc,:),3);
+        DirNOKLCMV_gntd_lin = sum(mean(DirNOKLCMVTot_lin(:,:,idxLoc,:),4),1).'; % Generated interference 
+        DirNOKLCMV_pcvd_lin = sum(mean(DirNOKLCMVTot_lin(:,:,idxLoc,:),4),2); % Perceived interference
+        DirOKLCMV = pow2db(DirOKLCMV_lin);  %#ok  % Directivity generated to intended user (LCMV)
+        DirNOKLCMV_gntd = pow2db(DirNOKLCMV_gntd_lin);  %#ok  % Directivity being generated by intended user (LCMV)
+        DirNOKLCMV_pcvd = pow2db(DirNOKLCMV_pcvd_lin);  %#ok  % Directivity inflicted to intended user (LCMV)
+        % Parse results for specific case - CBF (Conventional)
+        DirOKCBFTot_lin = db2pow(DirOKCBFTot);
+        DirNOKCBFTot_lin = db2pow(DirNOKCBFTot);
+        DirOKCBF_lin = mean(DirOKCBFTot_lin(:,idxLoc,:),3);
+        DirNOKCBF_gntd_lin = sum(mean(DirNOKCBFTot_lin(:,:,idxLoc,:),4),1).'; % Generated interference 
+        DirNOKCBF_pcvd_lin = sum(mean(DirNOKCBFTot_lin(:,:,idxLoc,:),4),2); % Perceived interference
+        DirOKCBF = pow2db(DirOKCBF_lin);  %#ok  % Directivity generated to intended user (Conventional)
+        DirNOKCBF_gntd = pow2db(DirNOKCBF_gntd_lin);  %#ok  % Directivity being generated by intended user (Conventional)
+        DirNOKCBF_pcvd = pow2db(DirNOKCBF_pcvd_lin);  %#ok  % Directivity inflicted to intended user (Conventional)
+        % Compute SINR and Capacities - Heuristics
+        SINR_BB = pow2db(mean(db2pow(SINRTot(:,idxLoc,:)),3));  %#ok  % Compute SINR Base-Band (BB)
+        SINR_PB_lin = (DirOK_lin.*chLoss_lin) ./(DirNOK_gntd_lin.*chLoss_lin + Noise_lin);
+        SINR_PB = pow2db(SINR_PB_lin);  %#ok  % Compute SINR Pass-Band (BB)
+        Cap = log2(1 + SINR_PB_lin);  %#ok  % Compute final Capacity (bits/Hz/s)
+        % Compute SINR and Capacities - LCMV
+        SINRLCMV_PB_lin = (DirOKLCMV_lin.*chLoss_lin) ./(DirNOKLCMV_gntd_lin.*chLoss_lin + Noise_lin);
+        SINRLCMV_PB = pow2db(SINRLCMV_PB_lin);  %#ok
+        CapLCMV = log2(1 + SINRLCMV_PB_lin);  %#ok
+        % Compute SINR and Capacities - LCMV
+        SINRCBF_PB_lin = (DirOKCBF_lin.*chLoss_lin) ./(DirNOKCBF_gntd_lin.*chLoss_lin + Noise_lin);
+        SINRCBF_PB = pow2db(SINRCBF_PB_lin);  %#ok
+        CapCBF = log2(1 + SINRCBF_PB_lin);  %#ok
+        % Store results in mat file
+        fileName = strcat('temp/exp6_',conf.algorithm,'_',problem.arrayRestriction,'_',mat2str(nUsers),'_',mat2str(nAntennas),'_',mat2str(conf.detLocation),'_',mat2str(conf.useCasesLocation),'_',mat2str(conf.useCaseLocation));
+        save(fileName,'DirOK','DirNOK_gntd','DirNOK_pcvd','SINR_PB','Cap',...
+                           'DirOKLCMV','DirNOKLCMV_gntd','DirNOKLCMV_pcvd','SINRLCMV_PB','CapLCMV',...
+                           'DirOKCBF','DirNOKCBF_gntd','DirNOKCBF_pcvd','SINRCBF_PB','CapCBF',...
+                           'nUsers','nAntennas','arrayRestriction');
     end
-    % Convert back to Watts (from dB)
-    DirOKTot_lin = db2pow(DirOKTot);
-    DirNOKTot_lin = db2pow(DirNOKTot);
-    DirOKLCMVTot_lin = db2pow(DirOKLCMVTot);
-    DirNOKLCMVTot_lin = db2pow(DirNOKLCMVTot);
-    DirOKCBFTot_lin = db2pow(DirOKCBFTot);
-    DirNOKCBFTot_lin = db2pow(DirNOKCBFTot);
-    % Compute average Directivities
-    DirOK_lin = zeros(nUsers,length(useCaseLocationList));  % Directivity generated by intended user
-    DirNOK_gntd_lin = zeros(nUsers,length(useCaseLocationList));  % Generated interference by intended user
-    DirNOK_pcvd_lin = zeros(nUsers,length(useCaseLocationList));  % Perceived interference by intended user
-	DirOKLCMV_lin = zeros(nUsers,length(useCaseLocationList));  % Directivity generated by intended user
-    DirNOKLCMV_gntd_lin = zeros(nUsers,length(useCaseLocationList));  % Generated interference by intended user
-    DirNOKLCMV_pcvd_lin = zeros(nUsers,length(useCaseLocationList));  % Perceived interference by intended user
-    DirOKCBF_lin = zeros(nUsers,length(useCaseLocationList));  % Directivity generated by intended user
-    DirNOKCBF_gntd_lin = zeros(nUsers,length(useCaseLocationList));  % Generated interference by intended user
-    DirNOKCBF_pcvd_lin = zeros(nUsers,length(useCaseLocationList));  % Perceived interference by intended user
-    for antIdx = 1:length(useCaseLocationList)
-        DirOK_lin(:,antIdx) = mean(DirOKTot_lin(:,antIdx,:),3);
-        DirNOK_gntd_lin(:,antIdx) = sum(mean(DirNOKTot_lin(:,:,antIdx,:),4),1); % Generated interference 
-        DirNOK_pcvd_lin(:,antIdx) = sum(mean(DirNOKTot_lin(:,:,antIdx,:),4),2); % Perceived interference
-        DirOKLCMV_lin(:,antIdx) = mean(DirOKLCMVTot_lin(:,antIdx,:),3);
-        DirNOKLCMV_gntd_lin(:,antIdx) = sum(mean(DirNOKLCMVTot_lin(:,:,antIdx,:),4),1); % Generated interference 
-        DirNOKLCMV_pcvd_lin(:,antIdx) = sum(mean(DirNOKLCMVTot_lin(:,:,antIdx,:),4),2); % Perceived interference
-        DirOKCBF_lin(:,antIdx) = mean(DirOKCBFTot_lin(:,antIdx,:),3);
-        DirNOKCBF_gntd_lin(:,antIdx) = sum(mean(DirNOKCBFTot_lin(:,:,antIdx,:),4),1); % Generated interference 
-        DirNOKCBF_pcvd_lin(:,antIdx) = sum(mean(DirNOKCBFTot_lin(:,:,antIdx,:),4),2); % Perceived interference
-    end
-    DirOK = pow2db(DirOK_lin);  %#ok % Directivity generated to intended user (heuristics)
-    DirNOK_gntd = pow2db(DirNOK_gntd_lin);  %#ok  % Directivity being generated by intended user (heuristics)
-    DirNOK_pcvd = pow2db(DirNOK_pcvd_lin);  %#ok  % Directivity inflicted to intended user (heuristics)
-    DirOKLCMV = pow2db(DirOKLCMV_lin);  %#ok  % Directivity generated to intended user (LCMV)
-    DirNOKLCMV_gntd = pow2db(DirNOKLCMV_gntd_lin);  %#ok  % Directivity being generated by intended user (LCMV)
-    DirNOKLCMV_pcvd = pow2db(DirNOKLCMV_pcvd_lin);  %#ok  % Directivity inflicted to intended user (LCMV)
-    DirOKCBF = pow2db(DirOKCBF_lin);  %#ok  % Directivity generated to intended user (Conventional)
-    DirNOKCBF_gntd = pow2db(DirNOKCBF_gntd_lin);  %#ok  % Directivity being generated by intended user (Conventional)
-    DirNOKCBF_pcvd = pow2db(DirNOKCBF_pcvd_lin);  %#ok  % Directivity inflicted to intended user (Conventional)
-    % Compute comms parameters 
-    chLoss_lin = ((problem.lambda ./ (4*pi*problem.dUsers(1:nUsers))).^2).';  % Losses
-    chLoss_lin = repmat(chLoss_lin,1,length(useCaseLocationList));
-    Noise_lin = repmat(db2pow(problem.Noise),1,length(useCaseLocationList));  % Noise power
-    % Compute SINR and Capacities - Heuristics
-    Cap = mean(CapTot,3);  %#ok  % Compute Average Capacities in the system
-    SINR_PB_lin = (DirOK_lin.*chLoss_lin) ./(DirNOK_gntd_lin.*chLoss_lin + Noise_lin);
-    SINR_PB = pow2db(SINR_PB_lin);  %#ok
-    SINR_BB = pow2db(mean(db2pow(SINRTot),3));  %#ok  % Compute SINR Base-Band (BB)
-    % Compute SINR and Capacities - LCMV
-    SINRLCMV_PB_lin = (DirOKLCMV_lin.*chLoss_lin) ./(DirNOKLCMV_gntd_lin.*chLoss_lin + Noise_lin);
-    SINRLCMV_PB = pow2db(SINRLCMV_PB_lin);  %#ok
-    CapLCMV = log2(1 + SINRLCMV_PB_lin);  %#ok
-    % Compute SINR and Capacities - LCMV
-    SINRCBF_PB_lin = (DirOKCBF_lin.*chLoss_lin) ./(DirNOKCBF_gntd_lin.*chLoss_lin + Noise_lin);
-    SINRCBF_PB = pow2db(SINRLCMV_PB_lin);  %#ok
-    CapCBF = log2(1 + SINRCBF_PB_lin);  %#ok
-    save(fileName,'Cap','SINR_BB','SINR_PB','DirOK','DirNOK_gntd','DirNOK_pcvd','DirOKTot','DirNOKTot',...
-                  'CapLCMV','SINRLCMV_PB','DirOKLCMV','DirNOKLCMV_gntd','DirNOKLCMV_pcvd','DirOKLCMVTot','DirNOKLCMVTot',...
-                  'CapCBF','SINRCBF_PB','DirOKCBF','DirNOKCBF_gntd','DirNOKCBF_pcvd','DirOKCBFTot','DirNOKCBFTot',...
-                  'nUsers','nAntennas');
 end
 
+%% EXPERIMENT 6 - PLOTTING
+function experiment6_plot(nUsersList,arrRestct,locList,nAntennas)
+    for idxLoc = 1:length(locList)
+        Cap_final = zeros(length(nUsersList),1);
+        SINR_PB_final = zeros(length(nUsersList),1);
+        CapLCMV_final = zeros(length(nUsersList),1);
+        SINRLCMV_PB_final = zeros(length(nUsersList),1);
+        CapCBF_final = zeros(length(nUsersList),1);
+        SINRCBF_PB_final = zeros(length(nUsersList),1);
+        for idxUsers = 1:length(nUsersList)
+            nUsers = nUsersList(idxUsers);
+            loc = locList(idxLoc);
+            fileName = strcat('temp/exp6_GA_',arrRestct,'_',mat2str(nUsers),'_',mat2str(nAntennas),'_true_true_',mat2str(loc));
+            load(fileName,'SINR_PB','Cap',...
+                          'SINRLCMV_PB','CapLCMV',...
+                          'SINRCBF_PB','CapCBF',...
+                          'nUsers','nAntennas','arrayRestriction');
+            Cap_final(idxUsers) = pow2db(mean(db2pow(Cap)));
+            SINR_PB_final(idxUsers) = pow2db(mean(db2pow(SINR_PB)));
+            CapLCMV_final(idxUsers) = pow2db(mean(db2pow(CapLCMV)));
+            SINRLCMV_PB_final(idxUsers) = pow2db(mean(db2pow(SINRLCMV_PB)));
+            CapCBF_final(idxUsers) = pow2db(mean(db2pow(CapCBF)));
+            SINRCBF_PB_final(idxUsers) = pow2db(mean(db2pow(SINRCBF_PB)));
+        end
+        figure; hold on; grid minor;
+        plot(nUsersList,Cap_final,'Color','k','Marker','s','LineStyle','-');
+        plot(nUsersList,CapLCMV_final,'Color','k','Marker','s','LineStyle','-.');
+        plot(nUsersList,CapCBF_final,'Color','k','Marker','s','LineStyle','--');
+        xlabel('Number of users','FontSize',12);
+        ylabel('Capacity (bits/Hz/s)','FontSize',12);
+        title('Average Capacity achieved','FontSize',12);
+        hleg = legend('Heuristics','LCMV','Conventional');
+        set(hleg,'FontSize',10,'Location','NorthEast');
+        figure; hold on; grid minor;
+        plot(nUsersList,SINR_PB_final,'Color','k','Marker','s','LineStyle','-');
+        plot(nUsersList,SINRLCMV_PB_final,'Color','k','Marker','s','LineStyle','-.');
+        plot(nUsersList,SINRCBF_PB_final,'Color','k','Marker','s','LineStyle','--');
+        xlabel('Number of users','FontSize',12);
+        ylabel('SINR (dB)','FontSize',12);
+        title('Average SINR achieved','FontSize',12);
+        hleg = legend('Heuristics','LCMV','Conventional');
+        set(hleg,'FontSize',10,'Location','NorthEast');
+    end
+end
 
 
 

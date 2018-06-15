@@ -1,9 +1,11 @@
 function [W_LCMV,W_CBF,handle_ConformalArray] = f_conventionalBF(problem,candSet)
     % Restrict sub-arrays to Localized for LCMV
     problem.arrayRestriction = 'Localized';
-    % Compute number of sub-arrays to assign per user
-    problem.NySubarrays = 2;
-    problem.NxSubarrays = problem.nUsers/problem.NySubarrays;
+    % Compute number of sub-arrays to assign per user. We ensure each user
+    % receives one array and locate them horizontaly
+    problem.NySubarrays = problem.nUsers;
+    problem.NxSubarrays = 1;
+    problem.N_Subarrays = problem.NxSubarrays*problem.NySubarrays;
     problem = o_compute_antennas_per_user(problem,candSet);
     % Create subarray partition
     problem = o_create_subarray_partition(problem);
@@ -32,6 +34,7 @@ function [W_LCMV,W_CBF,handle_ConformalArray] = f_conventionalBF(problem,candSet
     end
     
     % Compute weights (beamforming)
+    PhiTheta = ([-problem.phiUsers ; -problem.thetaUsers]);
     W_LCMV = zeros(problem.nUsers, problem.NxPatch*problem.NyPatch);
     W_CBF = zeros(problem.nUsers, problem.NxPatch*problem.NyPatch);
     for id = 1:problem.nUsers
@@ -41,8 +44,6 @@ function [W_LCMV,W_CBF,handle_ConformalArray] = f_conventionalBF(problem,candSet
                       problem.possible_locations(2,relevant_positions{id});...
                       problem.possible_locations(3,relevant_positions{id})];
         elementPosNorm = elementPos./problem.lambda;
-        
-        PhiTheta = ([-problem.phiUsers ; -problem.thetaUsers]);
         
         % Apply LCMV Beamformer for selected user
         sv = steervec(elementPosNorm,PhiTheta);
