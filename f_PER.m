@@ -70,7 +70,7 @@ resp   = phased.ArrayResponse( ...
 %% Simulations
 psdu = cell(nUsers, 1);
 txWaveforms = cell(nUsers, 1);
-finalSet = false(nUsers, 1);
+finalSet = [];
 
 for user_iter = 1 : nUsers
     psdu{user_iter} = randi([0 1], lengthPSDU(user_iter) * 8, 1);
@@ -101,7 +101,11 @@ for outer_iter = 1 : nUsers
     [psdu_rx, rxflag] = rx_phy(rxSymbols, cfgDMG);
     
     if ~isempty(psdu_rx)
-        finalSet(outer_iter) = ~(any(biterr(psdu{outer_iter}, psdu_rx)) && rxflag);
+%         finalSet(outer_iter) = ~(any(biterr(psdu{outer_iter}, psdu_rx)) && rxflag);
+        gothrough = ~(any(biterr(psdu{outer_iter}, psdu_rx)) && rxflag);
+        if gothrough
+            finalSet = [finalSet outer_iter];  %#ok<AGROW>
+        end
     end
 end
 %------------- END CODE --------------

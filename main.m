@@ -129,7 +129,9 @@ while(t<Tsym)
             elseif ~problem.heuristicsDummy && ~isempty(candSet)
                 % Real Heuristics
                 [~,W,arrayHandle,estObj] = f_heuristics(problem,conf,candSet);
-                [~,~]  = f_BF_results(W,arrayHandle,problem,conf,true);
+                [~,~]  = f_BF_results(W,arrayHandle,problem,conf,false);
+%                 [W,~,arrayHandle] = f_conventionalBF(problem,candSet);
+%                 estObj = problem.MinObjF;
             end
             % Heuristics - Post Processing
             if conf.MinObjFIsSNR;     estTH   = log2(estObj+1)*problem.Bw;  % in bps
@@ -150,7 +152,7 @@ while(t<Tsym)
                               % and the tentative achievable TH
             if ~any(estTH./candTH)<threshold
                 % Select MCS for estimated SNR
-                [MCS,PER] = f_selectMCS(candSet,SNRList,problem.targetPER,problem.MCSPER,problem.DEBUG);
+                [MCS,~] = f_selectMCS(candSet,SNRList,problem.targetPER,problem.MCSPER,problem.DEBUG);
                 % Compute bits that can be transmitted and map it with the 
                 % bits remaining to be transmitted
                 TXbits = zeros(1,problem.nUsers);  % Reality - bits

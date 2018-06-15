@@ -95,6 +95,8 @@ function problem = f_configureTraffic(problem)
     end
     
     % Load the PER-MCS table in the problem struct
-    load('data/MCSPERTable.mat','mcsTable');
+%     load('data/MCSPERTable.mat','mcsTable');  % AWGN
+    load('data/MCSPERTable-CDLC-SC.mat','mcsTable');  %5G channel - CDL-C
+%     load('data/MCSPERTable-CDLD-SC.mat','mcsTable');  %5G channel - CDL-D
     problem.MCSPER = mcsTable;
 end
