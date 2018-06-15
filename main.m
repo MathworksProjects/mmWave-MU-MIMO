@@ -174,8 +174,8 @@ while(t<Tsym)
                 % Append throughput achieved in slot
                 THTot = [THTot ; THiter];                       %#ok<AGROW>
                 % Evaluate PER
-                finalSet = f_PERtentative(candSet,PER);
-%                 finalSet = f_PER(candSet, problem, W, TXbits, MCS, channelHandles, arrayHandle);
+%                 finalSet = f_PERtentative(candSet,PER);
+                finalSet = f_PER(candSet, problem, W, TXbits, MCS, problem.fullChannels, arrayHandle);
                 if ~isempty(finalSet); finalTH = THiter(finalSet);
                 else;                  finalTH = [];
                 end
