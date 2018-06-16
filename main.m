@@ -128,10 +128,9 @@ while(t<Tsym)
                 [estObj] = f_heuristicsDummy(problem.MinObjF,conf.MinObjFIsSNR,problem.MCSPER.snrRange);
             elseif ~problem.heuristicsDummy && ~isempty(candSet)
                 % Real Heuristics
-                [~,W,arrayHandle,estObj] = f_heuristics(problem,conf,candSet);
-                [~,~]  = f_BF_results(W,arrayHandle,problem,conf,false);
-%                 [W,~,arrayHandle] = f_conventionalBF(problem,candSet);
-%                 estObj = problem.MinObjF;
+%                 [~,W,arrayHandle,estObj] = f_heuristics(problem,conf,candSet);
+                [W,~,arrayHandle,estObj,~] = f_conventionalBF(problem,conf,candSet);
+                [~,~]  = f_BF_results(W,arrayHandle,problem,conf,true);
             end
             % Heuristics - Post Processing
             if conf.MinObjFIsSNR;     estTH   = log2(estObj+1)*problem.Bw;  % in bps
