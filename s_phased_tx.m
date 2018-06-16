@@ -110,7 +110,7 @@ classdef s_phased_tx < matlab.System
             %% Radiate signals out of weights
             txWaveforms = obj.radiator(txWaveforms, ...
                 repmat([0; 0], 1, obj.numTxElements_row * obj.numTxElements_col), conj(W));
-            
+%             txWaveforms = txWaveforms * W';
             %% Visualizations
             if obj.visualization
                 scanAz = -180 : 180;

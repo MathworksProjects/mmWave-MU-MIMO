@@ -46,7 +46,7 @@ nRx = 1;
 
 %% Configure system objects
 for i = 1 : nUsers
-    tx_phy{i} = s_phy_tx( 'PSDULength', lengthPSDU(i), 'MCS', 1);
+    tx_phy{i} = s_phy_tx( 'PSDULength', lengthPSDU(i), 'MCS', MCS(i));
 end
 tx_pha = s_phased_tx( ...
     'numTxElements_row',    nTx_row, ...
@@ -61,22 +61,39 @@ channel = s_phased_channel_handle_version( ...
     'applyPathLoss',        true);
 rx_pha = s_phased_rx( ...
     'numRxElements',        nRx, ...
-    'rxGain',               20);
+    'rxGain',               60);
 rx_phy = s_phy_rx();
-resp   = phased.ArrayResponse( ...
-    'SensorArray',          array_handle, ...
-    'WeightsInputPort',     true);
+
+% resp = cell(nUsers, 1);
+possible_locations = array_handle.getElementPosition;
+for id = 1:problem.nUsers
+    relevant_positions = (W(id,:)~=0);
+    Taper_user = W(id,relevant_positions);
+    
+    handle_Conf_Array_USER{id} = phased.ConformalArray(...
+        'Element',array_handle.Element,...
+        'ElementPosition', [possible_locations(1,relevant_positions);...
+        possible_locations(2,relevant_positions);...
+        possible_locations(3,relevant_positions)],...
+        'Taper',Taper_user);
+%     resp{id} = phased.ArrayResponse( ...
+%         'SensorArray', handle_Conf_Array_USER{id}, ...
+%         'WeightsInputPort', true);
+end
 
 %% Simulations
 psdu = cell(nUsers, 1);
 txWaveforms = cell(nUsers, 1);
 finalSet = [];
+waveform_size = zeros(nUsers, 1);
 
 for user_iter = 1 : nUsers
     psdu{user_iter} = randi([0 1], lengthPSDU(user_iter) * 8, 1);
     [txSymbols, cfgDMG] = tx_phy{user_iter}(psdu{user_iter});
     txWaveforms{user_iter} = tx_pha(txSymbols, angleToRx(:, user_iter), W(user_iter, :).');
+    waveform_size(user_iter) = size(txSymbols, 1);
 end
+maximumSize = max(waveform_size);
 
 % Get the response -- response is a nUsers x nUsers, e.g., response(1, 3)
 % means, response at angle @ user 1, with W specified by user 3, i.e., the
@@ -84,15 +101,19 @@ end
 response = zeros(nUsers, nUsers);
 for outer_iter = 1 : nUsers
     for inner_iter = 1 : nUsers
-        response(outer_iter, inner_iter) = resp(centerfreq, angleToRx(:, outer_iter), W(inner_iter, :).');
+         response(outer_iter, inner_iter) =  patternAzimuth(handle_Conf_Array_USER{outer_iter}, ...
+             problem.freq,problem.thetaUsers(inner_iter),'Azimuth',problem.phiUsers(inner_iter),'Type','power');
+%          relevant_positions = (W(inner_iter,:)~=0);
+%          Taper_user = W(inner_iter,relevant_positions);
+%          resp_from_arrayResponse = abs(resp{inner_iter}(centerfreq, angleToRx(:, outer_iter), ones(8, 1))) .^ 2
     end
 end
 
 for outer_iter = 1 : nUsers
-    combined_tx_waveforms = txWaveforms{outer_iter};
+    combined_tx_waveforms = [txWaveforms{outer_iter}; zeros(maximumSize - length(txWaveforms{outer_iter}), nTx_row * nTx_col)];
     for inner_iter = 1 : nUsers
         if inner_iter ~= outer_iter
-            combined_tx_waveforms = combined_tx_waveforms + txWaveforms{inner_iter} * response(inner_iter, outer_iter);
+            combined_tx_waveforms = combined_tx_waveforms + [txWaveforms{inner_iter}; zeros(maximumSize - length(txWaveforms{inner_iter}), nTx_row * nTx_col)] * response(inner_iter, outer_iter);
         end
     end
     
@@ -101,7 +122,6 @@ for outer_iter = 1 : nUsers
     [psdu_rx, rxflag] = rx_phy(rxSymbols, cfgDMG);
     
     if ~isempty(psdu_rx)
-%         finalSet(outer_iter) = ~(any(biterr(psdu{outer_iter}, psdu_rx)) && rxflag);
         gothrough = ~(any(biterr(psdu{outer_iter}, psdu_rx)) && rxflag);
         if gothrough
             finalSet = [finalSet outer_iter];  %#ok<AGROW>
