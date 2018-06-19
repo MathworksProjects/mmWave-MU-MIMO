@@ -125,25 +125,19 @@ while(t<Tsym)
             % Heuristics - Call
             if problem.heuristicsDummy && ~isempty(candSet)
                 % Dummy heuristics
-                [estObj] = f_heuristicsDummy(problem.MinObjF,conf.MinObjFIsSNR,problem.MCSPER.snrRange);
+                [Cap,SNRList,~] = f_heuristicsDummy(problem.MinObjF,conf.MinObjFIsSNR,problem.MCSPER.snrRange);
             elseif ~problem.heuristicsDummy && ~isempty(candSet)
                 % Real Heuristics
-%                 [~,W,arrayHandle,estObj] = f_heuristics(problem,conf,candSet);
-                [W,~,arrayHandle,estObj,~] = f_conventionalBF(problem,conf,candSet);
-                [~,~]  = f_BF_results(W,arrayHandle,problem,conf,true);
+%                 [~,W,arrayHandle,~] = f_heuristics(problem,conf,candSet);
+%                 [~,~,Cap,SNRList]  = f_BF_results(W,arrayHandle,problem,conf,true);
+                [~,W,arrayHandle,~,~] = f_conventionalBF(problem,conf,candSet);
+                [~,~,Cap,SNRList]  = f_BF_results(W,arrayHandle,problem,conf,true);
             end
             % Heuristics - Post Processing
-            if conf.MinObjFIsSNR;     estTH   = log2(estObj+1)*problem.Bw;  % in bps
-                                      Caps = zeros(1,problem.nUsers);
-                                      Caps(1,candSet) = log2(estObj+1);
-                                      CapTot  = [CapTot ; Caps];  %#ok<AGROW> % in bps/Hz
-                                      SNRList = 10*log10(estObj);  % in dB
-            else;                     estTH   = estObj*problem.Bw;  % in bps
-                                      Caps = zeros(1,problem.nUsers);
-                                      Caps(1,candSet) = estObj;
-                                      CapTot  = [CapTot ; Caps];  %#ok<AGROW> % in bps/Hz
-                                      SNRList = 10*log10(2.^(estTH/problem.Bw) - 1);  % in dB
-            end
+            Caps = zeros(1,problem.nUsers);
+            Caps(1,candSet) = Cap;
+            CapTot  = [CapTot ; Caps];  %#ok<AGROW> % in bps/Hz
+            estTH   = Cap*problem.Bw;  % in bps
             %% SECTION POST HEURISTICS
             % Decide whether to take the tentative TH or give it a
             % another round (This is Policy PLk)

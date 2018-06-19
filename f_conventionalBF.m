@@ -1,104 +1,125 @@
 function [W_LCMV,W_CBF,handle_ConformalArray,estObj_LCMV,estObj_CBF] = f_conventionalBF(problem,conf,candSet)
-    % Restrict sub-arrays to Localized for LCMV
-    problem.arrayRestriction = 'Localized';
-    % Compute number of sub-arrays to assign per user. We ensure each user
-    % receives one array and locate them horizontaly
-    problem.NySubarrays = problem.nUsers;
-    problem.NxSubarrays = 1;
-    problem.N_Subarrays = problem.NxSubarrays*problem.NySubarrays;
-    problem = o_compute_antennas_per_user(problem,candSet);
-    % Create subarray partition
-    problem = o_create_subarray_partition(problem);
-    totSubArrays = (problem.NxSubarrays * problem.NySubarrays) / problem.nUsers;
-    problem.NzPatch = problem.NxPatch;
-    problem.dz = problem.dx;
-    problem.handle_Ant = phased.CosineAntennaElement('FrequencyRange',...
-                            [problem.freq-(problem.Bw/2) problem.freq+(problem.Bw/2)],...
-                            'CosinePower',[1.5 2.5]); % [1.5 2.5] values set porque si
-    handle_ConformalArray = phased.URA([problem.NyPatch,problem.NzPatch],...
-                              'Lattice','Rectangular','Element',problem.handle_Ant,...
-                              'ElementSpacing',[problem.dy,problem.dz]);
-    problem.possible_locations = handle_ConformalArray.getElementPosition;
-    
-    % Antennas assigned to each user (fixed)
-    mySubArray = (1:1:(problem.NxSubarrays * problem.NySubarrays));
-    relevant_positions = cell(problem.nUsers,1);
-    for valID = 1:problem.nUsers
-        partAssignation = mySubArray(1:totSubArrays);
-        temp = [];
-        for ass = partAssignation
-            temp = [temp problem.Partition{ass}];  %#ok<AGROW>
-        end
-        relevant_positions{valID} = temp;
-        mySubArray(mySubArray==partAssignation) = [];  % delete assigned antennas
+%
+% Syntax:  [W_LCMV,W_CBF,handle_ConformalArray,estObj_LCMV,estObj_CBF] = ...
+%                                    f_conventionalBF(problem,conf,candSet)
+%
+% Inputs:
+%    problem - struct containint configuration in data/metaproblem_test.dat
+%    conf - Struct containing configuration in data/config_test.dat
+%    candSet - Vector containing the users ID being considered in the 
+%              current slot
+%
+% Outputs:
+%    W_LCMV - Matrix [nUser x nAntennas] containg the weights for LCMV
+%    W_CBF - Matrix [nUser x nAntennas] containg the weights for CBF
+%    handle_ConformalArray - Initial conformal array
+%    estObj_LCMV - Onjective function value for LCMV. Could be either SINR
+%                  or Capacity (controlled by conf.MinObjFIsSNR)
+%    estObj_CBF - Onjective function value for CBF. Could be either SINR
+%                 or Capacity (controlled by conf.MinObjFIsSNR)
+%
+% Example: 
+%   problem = o_read_input_problem('data/metaproblem_test.dat');
+%   conf = o_read_config('data/config_test.dat');
+%   conf.verbosity = 1;  % To visualize metrics on command line
+%   problem.nUsers = 5;  % Fix number of users manually for example
+%   [problem,~,~] = f_configuration(conf,problem);
+%   problem.N_Antennas = nAntennas;  % Select number of antennas
+%   problem.NxPatch = floor(sqrt(problem.N_Antennas));  % Adjust
+%   problem.NyPatch = floor(problem.N_Antennas./problem.NxPatch);  % Adjust
+%   problem.N_Antennas = problem.NxPatch.*problem.NyPatch;  % Adjust
+%   candSet = [2 4 5];  % Users 1 and 3 are left out
+%   [W_LCMV,W_CBF,handle_ConformalArray,estObj_LCMV,estObj_CBF] = ...
+%                                    f_conventionalBF(problem,conf,candSet);
+%
+% Other m-files required: f_configuration
+% Subfunctions: none
+% MAT-files required: none
+% DAT-files required: data/metaproblem_test.dat and data/config_test.dat
+%
+% See also: main.m,  f_BF_results,  f_heuristics.m,  main_runnable.m
+
+%------------- BEGIN CODE --------------
+
+
+% Restrict sub-arrays to Localized for LCMV
+problem.arrayRestriction = 'Localized';
+% Compute number of sub-arrays to assign per user. We ensure each user
+% receives one array and locate them horizontaly
+problem.NySubarrays = problem.nUsers;
+problem.NxSubarrays = 1;
+problem.N_Subarrays = problem.NxSubarrays*problem.NySubarrays;
+problem = o_compute_antennas_per_user(problem,candSet);
+% Create subarray partition
+problem = o_create_subarray_partition(problem);
+totSubArrays = (problem.NxSubarrays * problem.NySubarrays) / problem.nUsers;
+problem.NzPatch = problem.NxPatch;
+problem.dz = problem.dx;
+problem.handle_Ant = phased.CosineAntennaElement('FrequencyRange',...
+                        [problem.freq-(problem.Bw/2) problem.freq+(problem.Bw/2)],...
+                        'CosinePower',[1.5 2.5]); % [1.5 2.5] values set porque si
+handle_ConformalArray = phased.URA([problem.NyPatch,problem.NzPatch],...
+                          'Lattice','Rectangular','Element',problem.handle_Ant,...
+                          'ElementSpacing',[problem.dy,problem.dz]);
+problem.possible_locations = handle_ConformalArray.getElementPosition;
+
+% Antennas assigned to each user (fixed)
+mySubArray = (1:1:(problem.NxSubarrays * problem.NySubarrays));
+relevant_positions = cell(problem.nUsers,1);
+for valID = 1:problem.nUsers
+    partAssignation = mySubArray(1:totSubArrays);
+    temp = [];
+    for ass = partAssignation
+        temp = [temp problem.Partition{ass}];  %#ok<AGROW>
     end
-    
-    % Compute weights (beamforming)
-    PhiTheta = ([-problem.phiUsers ; -problem.thetaUsers]);
-    W_LCMV = zeros(problem.nUsers, problem.NxPatch*problem.NyPatch);
-    W_CBF = zeros(problem.nUsers, problem.NxPatch*problem.NyPatch);
-    for id = 1:problem.nUsers
-        Nant_user = length(relevant_positions{id});
-        % Convert antenna ID's into physical locations
-        elementPos = [problem.possible_locations(1,relevant_positions{id});...
-                      problem.possible_locations(2,relevant_positions{id});...
-                      problem.possible_locations(3,relevant_positions{id})];
-        elementPosNorm = elementPos./problem.lambda;
-        
-        % Apply LCMV Beamformer for selected user
-        sv = steervec(elementPosNorm,PhiTheta);
-        Sn = eye(Nant_user);
-        resp = zeros(problem.nUsers,1) + eps;
-        resp(id) = 1;  % Maximum restricted to limit (33dB)
-        w_lcmv = lcmvweights(sv,resp,Sn);  % LCMV Beamformer method
-        
-        % Apply Convencional Beamformer for selected user
-        w_cbf = cbfweights(elementPosNorm,PhiTheta(:,id));  % conventional beamformer
-        
-        % Store results in global W
-        W_LCMV(id,relevant_positions{id}) = w_lcmv.';
-        W_CBF(id,relevant_positions{id}) = w_cbf.';
-    end
-    
-    % Extract Directivities
-    [DirOKLCMVTot,DirNOKLCMVTot]  = f_BF_results(W_LCMV,handle_ConformalArray,problem,conf,false);
-    [DirOKCBFTot,DirNOKCBFTot]  = f_BF_results(W_LCMV,handle_ConformalArray,problem,conf,false);
-    
-    % Compute basic parameters for SINR and Capacity computations
-    chLoss_lin = ((problem.lambda ./ (4*pi*problem.dUsers(1:problem.nUsers))).^2).';  % Losses
-    Noise_lin = db2pow(problem.Noise);  % Noise power
-    Noise_lin = repmat(Noise_lin,problem.nUsers,1);
-    
-    % Parse results for specific case - LCMV
-    DirOKLCMV_lin = db2pow(DirOKLCMVTot);
-    DirNOKLCMV_lin = db2pow(DirNOKLCMVTot);
-    DirNOKLCMV_gntd_lin = sum(DirNOKLCMV_lin,1).'; % Generated interference 
-    DirNOKLCMV_pcvd_lin = sum(DirNOKLCMV_lin,2); % Perceived interference
-    DirOKLCMV = pow2db(DirOKLCMV_lin);  %#ok  % Directivity generated to intended user (LCMV)
-    DirNOKLCMV_gntd = pow2db(DirNOKLCMV_gntd_lin);  %#ok  % Directivity being generated by intended user (LCMV)
-    DirNOKLCMV_pcvd = pow2db(DirNOKLCMV_pcvd_lin);  %#ok  % Directivity inflicted to intended user (LCMV)
-    % Parse results for specific case - CBF (Conventional)
-	DirOKCBF_lin = db2pow(DirOKCBFTot);
-    DirNOKCBF_lin = db2pow(DirNOKCBFTot);
-    DirNOKCBF_gntd_lin = sum(DirNOKCBF_lin,1).'; % Generated interference 
-    DirNOKCBF_pcvd_lin = sum(DirNOKCBF_lin,2); % Perceived interference
-    DirOKCBF = pow2db(DirOKCBF_lin);  %#ok  % Directivity generated to intended user (Conventional)
-    DirNOKCBF_gntd = pow2db(DirNOKCBF_gntd_lin);  %#ok  % Directivity being generated by intended user (Conventional)
-    DirNOKCBF_pcvd = pow2db(DirNOKCBF_pcvd_lin);  %#ok  % Directivity inflicted to intended user (Conventional)
-    % Compute SINR and Capacities - LCMV
-    SINRLCMV_PB_lin = (DirOKLCMV_lin.*chLoss_lin) ./(DirNOKLCMV_gntd_lin.*chLoss_lin + Noise_lin);
-    SINRLCMV_PB = pow2db(SINRLCMV_PB_lin);  % Compute SINR Pass-Band (BB)
-    Cap_LCMV = log2(1 + SINRLCMV_PB_lin);  % Compute final Capacity (bits/Hz/s)
-    % Compute SINR and Capacities - CBF (Conventional)
-    SINRCBF_PB_lin = (DirOKCBF_lin.*chLoss_lin) ./(DirNOKCBF_gntd_lin.*chLoss_lin + Noise_lin);
-    SINRCBF_PB = pow2db(SINRCBF_PB_lin);  % Compute SINR Pass-Band (BB)
-    Cap_CBF = log2(1 + SINRCBF_PB_lin);  % Compute final Capacity (bits/Hz/s)
-    
-    if conf.MinObjFIsSNR
-        estObj_LCMV = SINRLCMV_PB;
-        estObj_CBF = SINRCBF_PB;
-    else
-        estObj_LCMV = Cap_LCMV;
-        estObj_CBF = Cap_CBF;
-    end
+    relevant_positions{valID} = temp;
+    mySubArray(mySubArray==partAssignation) = [];  % delete assigned antennas
 end
+
+% Compute weights (beamforming)
+PhiTheta = ([-problem.phiUsers ; -problem.thetaUsers]);
+W_LCMV = zeros(problem.nUsers, problem.NxPatch*problem.NyPatch);
+W_CBF = zeros(problem.nUsers, problem.NxPatch*problem.NyPatch);
+for id = 1:problem.nUsers
+    Nant_user = length(relevant_positions{id});
+    % Convert antenna ID's into physical locations
+    elementPos = [problem.possible_locations(1,relevant_positions{id});...
+                  problem.possible_locations(2,relevant_positions{id});...
+                  problem.possible_locations(3,relevant_positions{id})];
+    elementPosNorm = elementPos./problem.lambda;
+
+    % Apply LCMV Beamformer for selected user
+    sv = steervec(elementPosNorm,PhiTheta);
+    Sn = eye(Nant_user);
+    resp = zeros(problem.nUsers,1) + eps;
+    resp(id) = 1;  % Maximum restricted to limit (33dB)
+    w_lcmv = lcmvweights(sv,resp,Sn);  % LCMV Beamformer method
+
+    % Apply Convencional Beamformer for selected user
+    w_cbf = cbfweights(elementPosNorm,PhiTheta(:,id));  % conventional beamformer
+
+    % Normalize weights
+    w_lcmv = (1/sqrt(w_lcmv'*w_lcmv)) * w_lcmv;
+    w_cbf = (1/sqrt(w_cbf'*w_cbf)) * w_cbf;
+
+    % Store results in global W
+    W_LCMV(id,relevant_positions{id}) = w_lcmv.';
+    W_CBF(id,relevant_positions{id}) = w_cbf.';
+end
+
+% Extract Directivities
+conf.verbosity = 0;
+[~,~,Cap_LCMV,SINRLCMV_PB]  = f_BF_results(W_LCMV,handle_ConformalArray,problem,conf,false);
+[~,~,Cap_CBF,SINRCBF_PB]  = f_BF_results(W_LCMV,handle_ConformalArray,problem,conf,false);
+
+if conf.MinObjFIsSNR
+    estObj_LCMV = db2pow(SINRLCMV_PB).';
+    estObj_CBF = db2pow(SINRCBF_PB).';
+else
+    estObj_LCMV = db2pow(Cap_LCMV).';
+    estObj_CBF = db2pow(Cap_CBF).';
+end
+
+    
+    
+% EOF

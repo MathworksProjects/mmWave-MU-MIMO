@@ -4,14 +4,14 @@
  *********************************************/
 % ---------------- SIMULATION PARAMETERS ---------------- %
 realizations     = 100;
-N_Antennas       = 16;
+N_Antennas       = 256;
 NxSubarrays      = 2;
 NySubarrays      = 2;
 NmaxArray        = 0.2:0.2:1;
 thetaUsers      = [ +15 -15 -15 +15 +30 -30 -30 +30 +15 +15 -30 -30 -15 +30 +30 -15];  % Assign Theta (elevation) values (only if detLocation=true)
 phiUsers        = [ +15 -15 +15 -15 +30 -30 +30 -30 +30 -30 -15 +15 +30 +15 -15 -30];  % Assign Phi (athymut) values (only if detLocation=true)
 anglesInRadians = false;  % To deterministically specify locations (radians or degrees)
-dUsers          = [   5   5   5   5   5   5   5   5   5   5   5   5   5   5   5   5];  % Assign distances (in m) (only if detLocation=true)
+dUsers          = [  15  15  15  15  15  15  15  15  15  15  15  15  15  15  15  15];  % Assign distances (in m) (only if detLocation=true)
 mindUsers        = 5;
 maxdUsers        = 5;
 MaxObjF          = Inf;
@@ -22,7 +22,7 @@ maxnUsers        = 20;  % Maximum number of users allowed in sim (memory preallo
 Tslot            = 10;  % Time slot in milliseconds
 Tsym             = 3e2;  % Total simulation time in milliseconds
 targetPER        = 1e-2;  % The target PER specified linearly (i.e. 1e-2 is PER of 1%)
-DEBUG            = false;  % Enable Debugger and logs for scheduling part
+DEBUG            = true;  % Enable Debugger and logs for scheduling part
 % ----------------------------------------------------- %
 
 % ---------------- COMMS CONFIG PARAMETERS ---------------- %

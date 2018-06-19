@@ -34,7 +34,7 @@
 %             of the optimization
 %             If conf.MinObjFIsSNR = true, this is no longer a capacity but
 %             a SINR in dBs
-function [sol_found,W,handle_ConformalArray,Cap] = f_heuristics(problem,conf,usersToBeAssigned)
+function [sol_found,W,handle_ConformalArray,estObj] = f_heuristics(problem,conf,usersToBeAssigned)
     % We will paralelize the solution computations: we need (if not already
     % created) a parallelization processes pool
     gcp;
@@ -126,38 +126,44 @@ function [sol_found,W,handle_ConformalArray,Cap] = f_heuristics(problem,conf,use
             PRx(u) = PRx_temp;
             I(u,:) = I_temp;
             if conf.verbosity >= 1
-                fprintf('Solved!\n')
+                fprintf('Solved!\n');
             end
         end
-        if conf.MinObjFIsSNR
-            TempMinCapacity = log2(problem.MinObjF+1);
-            TempMaxCapacity = log2(problem.MaxObjF+1);
-            [aveCap, Cap] = o_compute_averageCap_maxminthr(PRx,I,problem.Noise,...
-                TempMaxCapacity,TempMinCapacity);
-            if aveCap ~= -Inf
-                aveCap = 2^aveCap - 1;
-            end
-            Cap = 2.^Cap - 1;
-        else
-            [aveCap, Cap] = o_compute_averageCap_maxminthr(PRx,I,problem.Noise,...
-            problem.MaxObjF,problem.MinObjF);
+        
+        % Normalize weigths
+        for id = 1:problem.nUsers
+            idx = find(W(id,:)~=0.0);
+            W(id,idx) = (1/sqrt(W(id,idx)*W(id,idx)')) * W(id,idx);
         end
-        if aveCap ~= -Inf
-            sol_found = true;
-            if conf.verbosity >= 1
-                fprintf('The average capacity achieved is %f\n', aveCap);
-                display(Cap);
-            end
-        else
+
+        % Compute Capacities and SINR
+        oldVerbosity = conf.verbosity;  conf.verbosity = 0;
+        [~,~,Cap,SINR] = f_BF_results(W,handle_ConformalArray,problem,conf,false);
+        conf.verbosity = oldVerbosity;
+        
+        % Parse Results properly
+        if conf.MinObjFIsSNR;    estObj = db2pow(SINR).';  % Linear Scale
+        else;                   estObj = db2pow(Cap).';  % Linear Scale
+        end
+        if any((estObj-problem.MinObjF)<0) || any((problem.MaxObjF-estObj)<0)
+            aveEstObj = -Inf;
             if conf.verbosity >= 1
                 fprintf('The solution does not satisfy the capacity constraints.\n');
             end
+        else
+            aveEstObj = mean(estObj);
+            sol_found = true;
+            if conf.verbosity >= 1
+                fprintf('The average capacity achieved is %f\n', pow2db(mean(db2pow(Cap))));
+                fprintf('The achieved capacity per user is:\n');
+                display(Cap.');
+            end
         end
-
-        if conf.RefineSolution && (aveCap == -Inf) % No sol found...
+    
+        if conf.RefineSolution && (aveEstObj == -Inf) % No sol found...
             % Let's check how good is the antenna distribution
-            capPerAnt = Cap./problem.NmaxArray;
-            DeltaCap = Cap-problem.MinObjF;
+            capPerAnt = estObj./problem.NmaxArray;
+            DeltaCap = estObj-problem.MinObjF;
             % The DeltaCap of the users that are not to be assigned should be 0
             DeltaCap(setdiff(1:problem.nUsers,usersToBeAssigned)) = 0;
             AvailableAnt = floor(DeltaCap./capPerAnt);

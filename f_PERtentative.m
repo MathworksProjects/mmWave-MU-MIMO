@@ -28,6 +28,8 @@ function finalSet = f_PERtentative(candSet,threshold)
 % MAT-files required: none
 %
 % See also: f_PER,  main,  main_runnable
+%
+%------------- BEGIN CODE --------------
 
 % Create random value uniformly distributed between 0 and 1
 PER = rand(size(candSet));
