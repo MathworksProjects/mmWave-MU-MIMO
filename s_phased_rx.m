@@ -58,7 +58,7 @@ classdef s_phased_rx < matlab.System
         
         function rxSymbols = stepImpl(obj, txWaveforms, angle_from_tx)
             rxSymbols = obj.collector(txWaveforms, angle_from_tx);
-            rxSymbols = obj.receiver(rxSymbols);
+            rxSymbols = rxSymbols * db2mag(obj.rxGain);
             
             %% Visualize
             if obj.visualization

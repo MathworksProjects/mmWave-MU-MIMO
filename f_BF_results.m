@@ -98,7 +98,7 @@ Cap_lin = log2(1 + SINR_PB_lin);  % Compute final Capacity (bits/Hz/s)
 
 if conf.verbosity >= 1
     for id = 1:problem.nUsers
-        fprintf('* Capacity(%d): %.2f (bits/Hz/s)\n',id,Cap(id));
+        fprintf('* Capacity(%d): %.2f (bits/Hz/s)\n',id,Cap_lin(id));
         fprintf('* SINR(%d): %.2f (dB)\n',id,SINR_PB(id));
         fprintf('* Directivity IDmax: %.2f (dB)\n',DirOK(id));
         for id1 = 1:1:problem.nUsers

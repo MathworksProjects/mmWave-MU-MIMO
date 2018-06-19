@@ -73,7 +73,7 @@ classdef s_phased_tx < matlab.System
             %                 'WeightsInputPort',         true);
         end
         
-        function [txWaveforms] = stepImpl(obj, txBits, toRxAngle, W)
+        function [txWaveforms] = stepImpl(obj, txSymbols, toRxAngle, W)
             %% Temp-debug part -- 2 sub array beamformings
             if isempty(W) %% W unspecified
                 % Hybrid beamforming -- 2 sub arrays
@@ -105,12 +105,12 @@ classdef s_phased_tx < matlab.System
             end
             
             %% Amplify those signals through transmitter
-            txWaveforms = obj.transmitter(txBits);
+            txWaveforms = txSymbols * db2mag(obj.txGain);
             
             %% Radiate signals out of weights
-            txWaveforms = obj.radiator(txWaveforms, ...
-                repmat([0; 0], 1, obj.numTxElements_row * obj.numTxElements_col), conj(W));
-%             txWaveforms = txWaveforms * W';
+%             txWaveforms = obj.radiator(txWaveforms, ...
+%                 repmat([0; 0], 1, obj.numTxElements_row * obj.numTxElements_col), conj(W));
+            txWaveforms = txWaveforms * W';
             %% Visualizations
             if obj.visualization
                 scanAz = -180 : 180;

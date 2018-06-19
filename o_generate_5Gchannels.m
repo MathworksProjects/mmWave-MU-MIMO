@@ -18,11 +18,13 @@ function [FullChannels, thetaChannels, phiChannels, alphaChannels] = o_generate_
         cdlChan.SampleRate = 1760e6 / 1; %% SC-1760e6 sa/s, OFDM 2640e6 sa/s
         cdlChan.TransmitAntennaArray.Size = [NxPatch, NyPatch, 1, 1, 1];
         cdlChan.ReceiveAntennaArray.Size = [1, 1, 1, 1, 1];
-        cdlChan.DelayProfile = 'CDL-A';
+        cdlChan.DelayProfile = 'CDL-D';
         cdlChan.DelaySpread = 16e-9;
         cdlChan.CarrierFrequency = freq;
         cdlChan.AngleScaling = true;
         cdlChan.MeanAngles = [AOD_LOS 180-AOD_LOS 90+ZOD_LOS 90-ZOD_LOS];
+        cdlChan.NormalizePathGains = true;
+        cdlChan.NormalizeChannelOutputs = true;
         cdlChan.MaximumDopplerShift = (0 / 3.6) / ...
             physconst('lightspeed') * freq; % 0km/h pedestrian    
 %         FullChannels{u} = s_phased_channel_SRM( ...

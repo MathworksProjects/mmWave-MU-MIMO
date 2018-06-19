@@ -52,16 +52,16 @@ tx_pha = s_phased_tx( ...
     'numTxElements_row',    nTx_row, ...
     'numTxElements_col',    nTx_col, ...
     'antenna_array',        array_handle, ...
-    'txGain',               20, ...
+    'txGain',               0, ...
     'center_frequency',     centerfreq, ...
     'visualization',        false);
 channel = s_phased_channel_handle_version( ...
     'noiseFigure',          noiseFigure, ...
     'center_frequency',     centerfreq, ...
-    'applyPathLoss',        true);
+    'applyPathLoss',        false);
 rx_pha = s_phased_rx( ...
     'numRxElements',        nRx, ...
-    'rxGain',               60);
+    'rxGain',               0);
 rx_phy = s_phy_rx();
 
 % resp = cell(nUsers, 1);
@@ -88,8 +88,8 @@ finalSet = [];
 waveform_size = zeros(nUsers, 1);
 
 for user_iter = 1 : nUsers
-    psdu{user_iter} = randi([0 1], lengthPSDU(user_iter) * 8, 1);
-    [txSymbols, cfgDMG] = tx_phy{user_iter}(psdu{user_iter});
+    psdu = randi([0 1], lengthPSDU(user_iter) * 8, 1, 'int8');
+    [txSymbols, cfgDMG] = tx_phy{user_iter}(psdu);
     txWaveforms{user_iter} = tx_pha(txSymbols, angleToRx(:, user_iter), W(user_iter, :).');
     waveform_size(user_iter) = size(txSymbols, 1);
 end
@@ -110,10 +110,12 @@ for outer_iter = 1 : nUsers
 end
 
 for outer_iter = 1 : nUsers
-    combined_tx_waveforms = [txWaveforms{outer_iter}; zeros(maximumSize - length(txWaveforms{outer_iter}), nTx_row * nTx_col)];
+    combined_tx_waveforms = sqrt(response(outer_iter, outer_iter)) * [txWaveforms{outer_iter}; zeros(maximumSize - length(txWaveforms{outer_iter}), nTx_row * nTx_col)];
     for inner_iter = 1 : nUsers
         if inner_iter ~= outer_iter
-            combined_tx_waveforms = combined_tx_waveforms + [txWaveforms{inner_iter}; zeros(maximumSize - length(txWaveforms{inner_iter}), nTx_row * nTx_col)] * response(inner_iter, outer_iter);
+            combined_tx_waveforms = combined_tx_waveforms + ...
+                [txWaveforms{inner_iter}; zeros(maximumSize - length(txWaveforms{inner_iter}), nTx_row * nTx_col)] ...
+                * sqrt(response(inner_iter, outer_iter));
         end
     end
     
@@ -122,7 +124,7 @@ for outer_iter = 1 : nUsers
     [psdu_rx, rxflag] = rx_phy(rxSymbols, cfgDMG);
     
     if ~isempty(psdu_rx)
-        gothrough = ~(any(biterr(psdu{outer_iter}, psdu_rx)) && rxflag);
+        gothrough = ~(any(biterr(psdu, psdu_rx)) && rxflag);
         if gothrough
             finalSet = [finalSet outer_iter];  %#ok<AGROW>
         end
