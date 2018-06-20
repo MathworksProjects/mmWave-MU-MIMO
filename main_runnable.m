@@ -3,7 +3,7 @@ clear; clc; close all;
 addpath('utilities','-end');  % Add utilities folder at the end of search path
 
 %% Define several experiments here and override variable values accordingly
-experimentList = 6;
+experimentList = [6 61];
 
 %% Experiment selection
 
@@ -127,14 +127,19 @@ end
 
 %% EXPERIMENT 6
 if any(experimentList(:)==6)
-    nUsersList = [2 3 4 5 6 7 8 9 10];
+    nUsersList = [13 14 15];
+%     nUsersList = [1 2 3 4 5 6 7 8 9 10 11 12 13 14 15];
+%     nUsersList = [2 4 6 8 10 12 14 16];
+%     nUsersList = [2 4];
     % Input parameters
-    input.nIter                = 1;
-    input.nAntennas            = 16.^2;
+    input.nIter                = 5;
+    input.nAntennas            = 11.^2;
+%     input.nAntennas            = 16.^2;
+%     input.nAntennas            = 23.^2;
     input.arrayRestriction     = 'None';
     input.algorithm            = 'GA';
-    input.detLocation          = true;
-    input.useCasesLocation     = true;
+    input.detLocation          = false;
+    input.useCasesLocation     = false;
     input.useCaseLocationList  = 1;  % List of locations to plot over;
     plotFLAG                   = false;  % Plotting flag
     for nUsers = nUsersList
@@ -145,12 +150,20 @@ end
 
 %% EXPERIMENT 6 - PLOTTING
 if any(experimentList(:)==61)
-    nUsersList = [2 3 4 5 6 7 8 9 10];
-    arrRestct = 'None';  % Sub-array restrictions to consider
-    nAntennas = 16.^2;  % List of antennas to plot over
-    locList = 1;
+    nUsersList = [13 14 15];
+%     nUsersList = [1 2 3 4 5 6 7 8 9 10 11 12 13 14 15];
+%     nUsersList = [2 4 6 8 10 12 14 16];
+%     nUsersList = [2 4];
+    input.arrRestct            = 'None';
+	input.nAntennas            = 11.^2;
+%     input.nAntennas            = 16.^2;
+%     input.nAntennas            = 23.^2;
+    input.detLocation          = false;
+    input.useCasesLocation     = false;
+    input.useCaseLocationList  = 1;  % List of locations to plot over;
     % Call plot
-    experiment6_plot(nUsersList,arrRestct,locList,nAntennas);
+%     experiment6_plot(nUsersList,arrRestct,locList,nAntennas);
+    experiment6_plot(nUsersList,input);
 end
 
 %% EXPERIMENT 7
@@ -1155,10 +1168,6 @@ function experiment6(input,plotFLAG)
     conf.NumPhaseShifterBits = 60;  % Number of bits to control heuristic solution
     conf.FunctionTolerance_Data = 1e-10;  % Heuristics stops when not improving solution by this much
     conf.multiPath = false;  % LoS channel (for now)
-    % Compute basic parameters for SINR and Capacity computations
-    chLoss_lin = ((problem.lambda ./ (4*pi*problem.dUsers(1:nUsers))).^2).';  % Losses
-    Noise_lin = db2pow(problem.Noise);  % Noise power
-    Noise_lin = repmat(Noise_lin,problem.nUsers,1);
 	% Configure basic parameters
     candSet = (1:1:problem.nUsers);  % Set of users to be considered
 	% Create output variables
@@ -1191,7 +1200,7 @@ function experiment6(input,plotFLAG)
         conf.MaxStallgenerations_Data = ceil(conf.Maxgenerations_Data/4);  % Force it to cover all the generations
         % Select the localization
         conf.detLocation = detLocation;
-        conf.useCaseLocation = useCasesLocation;
+        conf.useCasesLocation = useCasesLocation;
         conf.useCaseLocation = useCaseLocationList(idxLoc);
         fprintf('Nusers=%d - Nant=%d - rest=%s - Loc=%d\n',problem.nUsers,nAntennas,arrayRestriction,conf.useCaseLocation);
         for idxIter = 1:nIter
@@ -1207,20 +1216,21 @@ function experiment6(input,plotFLAG)
             problem.NyPatch = floor(problem.N_Antennas./problem.NxPatch);
             problem.N_Antennas = problem.NxPatch.*problem.NyPatch;
             % Conventional Beamforming + LCMV
-            fprintf('SOLVING LCMV\n');
-            [W_LCMV,W_CBF,handle_ConformalArray,~,~] = f_conventionalBF(problem,candSet);
+            [W_LCMV,W_CBF,handle_ConformalArray,~,~] = f_conventionalBF(problem,conf,candSet);
             % Compute directivity for LCMV
+            fprintf('SOLVING LCMV\n');
             [DirOKLCMVTot(:,idxLoc,idxIter),DirNOKLCMVTot(:,:,idxLoc,idxIter), ...
              CapLCMVTot(:,idxLoc,idxIter),SINRLCMVTot(:,idxLoc,idxIter)]     = ...
                f_BF_results(W_LCMV,handle_ConformalArray,problem,conf,plotFLAG);
             % Compute directivity for Conventional
+            fprintf('SOLVING CBF\n');
             [DirOKCBFTot(:,idxLoc,idxIter),DirNOKCBFTot(:,:,idxLoc,idxIter), ...
              CapCBFTot(:,idxLoc,idxIter),SINRCBFTot(:,idxLoc,idxIter)]     = ...
                f_BF_results(W_CBF,handle_ConformalArray,problem,conf,plotFLAG);
             % Call heuristics
-            fprintf('SOLVING HEURISTICS\n');
             [~,W,handle_ConformalArray,~] = f_heuristics(problem,conf,candSet);
             % Compute directivity for Heuristics
+            fprintf('SOLVING HEURISTICS\n');
             [DirOKTot(:,idxLoc,idxIter),DirNOKTot(:,:,idxLoc,idxIter), ...
              CapTot(:,idxLoc,idxIter),SINRTot(:,idxLoc,idxIter)]     = ...
                f_BF_results(W,handle_ConformalArray,problem,conf,plotFLAG);
@@ -1256,46 +1266,62 @@ function experiment6(input,plotFLAG)
         % Compute SINR and Capacities - Heuristics
         SINR_PB_lin = mean(SINRTot(:,idxLoc,:),3);  % Compute SINR Pass-Band (Linear)
         SINR_PB = pow2db(SINR_PB_lin);  %#ok  % Compute SINR Pass-Band (dB)
-        Cap = log2(1 + SINR_PB_lin);  %#ok  % Compute final Capacity (bits/Hz/s)
+        Cap = log2(1 + SINR_PB_lin);  % Compute final Average Capacity (bits/Hz/s)
+        CapSum = sum(Cap);  %#ok  % Compute final Total Capacity (bits/Hz/s)
         % Compute SINR and Capacities - LCMV
         SINRLCMV_PB_lin = mean(SINRLCMVTot(:,idxLoc,:),3);  % Compute SINR Pass-Band (Linear)
         SINRLCMV_PB = pow2db(SINRLCMV_PB_lin);  %#ok  % Compute SINR Pass-Band (dB)
-        CapLCMV = log2(1 + SINRLCMV_PB_lin);  %#ok  % Compute final Capacity (bits/Hz/s)
+        CapLCMV = log2(1 + SINRLCMV_PB_lin);  % Compute final Average Capacity (bits/Hz/s)
+        CapLCMVSum = sum(CapLCMV);  %#ok  % Compute final Total Capacity (bits/Hz/s)
         % Compute SINR and Capacities - LCMV
         SINRCBF_PB_lin = mean(SINRCBFTot(:,idxLoc,:),3);  % Compute SINR Pass-Band (Linear)
         SINRCBF_PB = pow2db(SINRCBF_PB_lin);  %#ok  % Compute SINR Pass-Band (dB)
-        CapCBF = log2(1 + SINRCBF_PB_lin);  %#ok  % Compute final Capacity (bits/Hz/s)
+        CapCBF = log2(1 + SINRCBF_PB_lin);  % Compute final Average Capacity (bits/Hz/s)
+        CapCBFSum = sum(CapCBF);  %#ok  % Compute final Total Capacity (bits/Hz/s)
         % Store results in mat file
         fileName = strcat('temp/exp6_',conf.algorithm,'_',problem.arrayRestriction,'_',mat2str(nUsers),'_',mat2str(nAntennas),'_',mat2str(conf.detLocation),'_',mat2str(conf.useCasesLocation),'_',mat2str(conf.useCaseLocation));
-        save(fileName,'DirOK','DirNOK_gntd','DirNOK_pcvd','SINR_PB','Cap',...
-                      'DirOKLCMV','DirNOKLCMV_gntd','DirNOKLCMV_pcvd','SINRLCMV_PB','CapLCMV',...
-                      'DirOKCBF','DirNOKCBF_gntd','DirNOKCBF_pcvd','SINRCBF_PB','CapCBF',...
+        save(fileName,'DirOK','DirNOK_gntd','DirNOK_pcvd','SINR_PB','Cap','CapSum',...
+                      'DirOKLCMV','DirNOKLCMV_gntd','DirNOKLCMV_pcvd','SINRLCMV_PB','CapLCMV','CapLCMVSum',...
+                      'DirOKCBF','DirNOKCBF_gntd','DirNOKCBF_pcvd','SINRCBF_PB','CapCBF','CapCBFSum',...
                       'nUsers','nAntennas','arrayRestriction');
     end
 end
 
 %% EXPERIMENT 6 - PLOTTING
-function experiment6_plot(nUsersList,arrRestct,locList,nAntennas)
-    for idxLoc = 1:length(locList)
+% function experiment6_plot(nUsersList,arrRestct,locList,nAntennas)
+function experiment6_plot(nUsersList,input)
+    arrRestct = input.arrRestct;
+    nAntennas = input.nAntennas;
+    detLocation = input.detLocation;
+    useCasesLocation = input.useCasesLocation;
+    useCaseLocationList = input.useCaseLocationList;
+    for idxLoc = 1:length(useCaseLocationList)
         Cap_final = zeros(length(nUsersList),1);
+        CapSum_final = zeros(length(nUsersList),1);
         SINR_PB_final = zeros(length(nUsersList),1);
         CapLCMV_final = zeros(length(nUsersList),1);
+        CapLCMVSum_final = zeros(length(nUsersList),1);
         SINRLCMV_PB_final = zeros(length(nUsersList),1);
         CapCBF_final = zeros(length(nUsersList),1);
+        CapCBFSum_final = zeros(length(nUsersList),1);
         SINRCBF_PB_final = zeros(length(nUsersList),1);
         for idxUsers = 1:length(nUsersList)
             nUsers = nUsersList(idxUsers);
-            loc = locList(idxLoc);
-            fileName = strcat('temp/exp6_GA_',arrRestct,'_',mat2str(nUsers),'_',mat2str(nAntennas),'_true_true_',mat2str(loc));
-            load(fileName,'SINR_PB','Cap',...
-                          'SINRLCMV_PB','CapLCMV',...
-                          'SINRCBF_PB','CapCBF',...
+            loc = useCaseLocationList(idxLoc);
+            fileName = strcat('temp/exp6_GA_',arrRestct,'_',mat2str(nUsers),'_',mat2str(nAntennas),'_',mat2str(detLocation),'_',...
+                mat2str(useCasesLocation),'_',mat2str(loc));
+            load(fileName,'SINR_PB','Cap','CapSum',...
+                          'SINRLCMV_PB','CapLCMV','CapLCMVSum',...
+                          'SINRCBF_PB','CapCBF','CapCBFSum',...
                           'nUsers','nAntennas','arrayRestriction');
             Cap_final(idxUsers) = pow2db(mean(db2pow(Cap)));
+            CapSum_final(idxUsers) = pow2db(mean(db2pow(CapSum)));
             SINR_PB_final(idxUsers) = pow2db(mean(db2pow(SINR_PB)));
             CapLCMV_final(idxUsers) = pow2db(mean(db2pow(CapLCMV)));
+            CapLCMVSum_final(idxUsers) = pow2db(mean(db2pow(CapLCMVSum)));
             SINRLCMV_PB_final(idxUsers) = pow2db(mean(db2pow(SINRLCMV_PB)));
             CapCBF_final(idxUsers) = pow2db(mean(db2pow(CapCBF)));
+            CapCBFSum_final(idxUsers) = pow2db(mean(db2pow(CapCBFSum)));
             SINRCBF_PB_final(idxUsers) = pow2db(mean(db2pow(SINRCBF_PB)));
         end
         figure; hold on; grid minor;
@@ -1305,6 +1331,15 @@ function experiment6_plot(nUsersList,arrRestct,locList,nAntennas)
         xlabel('Number of users','FontSize',12);
         ylabel('Capacity (bits/Hz/s)','FontSize',12);
         title('Average Capacity achieved','FontSize',12);
+        hleg = legend('Heuristics','LCMV','Conventional');
+        set(hleg,'FontSize',10,'Location','NorthEast');
+        figure; hold on; grid minor;
+        plot(nUsersList,CapSum_final,'Color','k','Marker','s','LineStyle','-');
+        plot(nUsersList,CapLCMVSum_final,'Color','k','Marker','s','LineStyle','-.');
+        plot(nUsersList,CapCBFSum_final,'Color','k','Marker','s','LineStyle','--');
+        xlabel('Number of users','FontSize',12);
+        ylabel('Capacity (bits/Hz/s)','FontSize',12);
+        title('Total Capacity achieved','FontSize',12);
         hleg = legend('Heuristics','LCMV','Conventional');
         set(hleg,'FontSize',10,'Location','NorthEast');
         figure; hold on; grid minor;
