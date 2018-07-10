@@ -34,7 +34,8 @@ GArndmodifyAmpl          = false;  % GA-rnd sub-heuristics: modify also the ampl
 
 % ---------------- CHANNEL PARAMETERS ----------------------------------- %
 Use5GChannel   = true;  % Sets whether we use a real 5G 3GPP TR 138 901 complaint channel or a basic one
-multiPath      = false;  % multi-path channel or LOS channel. The former requires information of the paths in the input file
+multiPath      = false;  % Multi-path channel or LOS channel. The former requires information of the paths in the input file
+DelayProfile   = 'CDL-D';  % Sets the channel delay profile ('CDL-A', 'CDL-B', 'CDL-C', 'CDL-D', 'CDL-E')
 % ----------------------------------------------------------------------- %
 
 % ---------------- DEBUGGING PARAMETERS --------------------------------- %

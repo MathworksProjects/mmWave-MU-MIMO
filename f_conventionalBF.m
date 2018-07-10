@@ -46,13 +46,27 @@ function [W_LCMV,W_CBF,handle_ConformalArray,estObj_LCMV,estObj_CBF] = f_convent
 problem.arrayRestriction = 'Localized';
 % Compute number of sub-arrays to assign per user. We ensure each user
 % receives one array and locate them horizontaly
-problem.NySubarrays = problem.nUsers;
-problem.NxSubarrays = 1;
+if ceil(sqrt(problem.N_Antennas)) > problem.nUsers
+    problem.NySubarrays = problem.nUsers;
+    problem.NxSubarrays = 1;
+else
+    if mod(problem.nUsers,2)~=0;  t = factor(problem.nUsers + 1);  % odd
+    else;                         t = factor(problem.nUsers);  % even
+    end
+    t = [t(1) prod(t(2:end))];
+    problem.NxSubarrays = t(1);
+    problem.NySubarrays = t(2);
+end
 problem.N_Subarrays = problem.NxSubarrays*problem.NySubarrays;
 problem = o_compute_antennas_per_user(problem,candSet);
 % Create subarray partition
 problem = o_create_subarray_partition(problem);
-totSubArrays = (problem.NxSubarrays * problem.NySubarrays) / problem.nUsers;
+% Distribute partitions amongst users
+totSubArrays_1 = floor((problem.NxSubarrays * problem.NySubarrays) / problem.nUsers);
+remainder = rem((problem.NxSubarrays * problem.NySubarrays),problem.nUsers);
+totSubArrays = totSubArrays_1 .* ones(1,problem.nUsers);
+totSubArrays(1:remainder) = totSubArrays(1:remainder) + 1;
+% Recreate the conformal array
 problem.NzPatch = problem.NxPatch;
 problem.dz = problem.dx;
 problem.handle_Ant = phased.CosineAntennaElement('FrequencyRange',...
@@ -67,13 +81,15 @@ problem.possible_locations = handle_ConformalArray.getElementPosition;
 mySubArray = (1:1:(problem.NxSubarrays * problem.NySubarrays));
 relevant_positions = cell(problem.nUsers,1);
 for valID = 1:problem.nUsers
-    partAssignation = mySubArray(1:totSubArrays);
+    partAssignation = mySubArray(1:totSubArrays(valID));
     temp = [];
     for ass = partAssignation
         temp = [temp problem.Partition{ass}];  %#ok<AGROW>
     end
     relevant_positions{valID} = temp;
-    mySubArray(mySubArray==partAssignation) = [];  % delete assigned antennas
+    for k = partAssignation
+        mySubArray(mySubArray==k) = [];  % delete assigned antennas
+    end
 end
 
 % Compute weights (beamforming)
