@@ -127,11 +127,13 @@ while(t<Tsym)
                 % Dummy heuristics
                 [Cap,SNRList,~] = f_heuristicsDummy(problem.MinObjF,conf.MinObjFIsSNR,problem.MCSPER.snrRange);
             elseif ~problem.heuristicsDummy && ~isempty(candSet)
+                % Conventional Beamforming (CBF and LCMV)
+                [~,W_CBF,arrayHandle,~,~] = f_conventionalBF(problem,conf,candSet);
+                [~,~,Cap,SNRList]  = f_BF_results(W_CBF,arrayHandle,problem,conf,false);  %#ok
+                problem.initialW = W_CBF;
                 % Real Heuristics
-%                 [~,W,arrayHandle,~] = f_heuristics(problem,conf,candSet);
-%                 [~,~,Cap,SNRList]  = f_BF_results(W,arrayHandle,problem,conf,true);
-                [~,W,arrayHandle,~,~] = f_conventionalBF(problem,conf,candSet);
-                [~,~,Cap,SNRList]  = f_BF_results(W,arrayHandle,problem,conf,true);
+                [~,W,arrayHandle,~] = f_heuristics(problem,conf,candSet);
+                [~,~,Cap,SNRList]  = f_BF_results(W,arrayHandle,problem,conf,false);
             end
             % Heuristics - Post Processing
             Caps = zeros(1,problem.nUsers);

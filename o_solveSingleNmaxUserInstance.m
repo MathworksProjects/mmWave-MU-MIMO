@@ -31,23 +31,12 @@ function [gene,W,PRx,I,bestScores] = o_solveSingleNmaxUserInstance(conf,problem,
     
     %% 
     if ~random_calc
-        % constructing a conformal array
+        % Configure initial conformal array with preliminary weigths and
+        % phases
+        [handle_Conf_Array,~,~,~] = o_geneToAssignment(X0_elem,problem,conf);
 
-        % Array geometry and pattern for initial values.
-
-        % Extracting taper avalues from the input vector
-        Taper_value = X0_elem(problem.ant_elem+1:problem.ant_elem*2) .* ...
-            exp(1i.*X0_elem(problem.ant_elem*2+1:problem.ant_elem*3));
-
-        % Creating a Conformal Array with cosine elements.
-        % Conformal array will be limited to a single plane
-        handle_Conf_Array = phased.ConformalArray('Element',problem.handle_Ant,...
-            'ElementPosition',[zeros(1,problem.ant_elem);...
-            problem.possible_locations(2,X0_elem(1:problem.ant_elem));...
-            problem.possible_locations(3,X0_elem(1:problem.ant_elem))],...
-            'Taper',Taper_value);
         if conf.plotAssignmentInitialAndFinal
-            o_plotAssignment(problem,handle_Conf_Array);
+            o_plotAssignment_mod(problem, handle_Conf_Array);
         end
         %% 
         % Define lower and upper bounds

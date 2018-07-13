@@ -18,12 +18,12 @@ genStructure   = onlyAssigned;  % Sets the data structure for the Algorithm 1 so
 NoCut          = false;
 feasibility    = true;
 % ---------------- EXTRA PARAMETERS ------------------------------------- %
-NumPhaseShifterBits      = 60;      % Controls the number of bits available to control the weights' phases (set to 0 for unrestricted)
-NbitsAmplitude           = 60;      % Controls the number of bits available to control the weights' amplitudes (set to 0 for unrestricted)
-percMutatedGens          = 10;     % Percentage of gens modified every mutation
+NumPhaseShifterBits      = 60;     % Controls the number of bits available to control the weights' phases (set to 0 for unrestricted)
+NbitsAmplitude           = 60;     % Controls the number of bits available to control the weights' amplitudes (set to 0 for unrestricted)
+percMutatedGens          = 30;     % Percentage of gens modified every mutation
 mutationImpact           = 0.2;    % Standard deviation of the normal distribution used in the mutation
 PopulationSize_Data      = 30;     % Heuristics
-EliteCount_Data          = 15;     % Heuristics
+EliteCount_Data          = 7;      % Heuristics
 CrossoverFraction_Data   = 0.3;    % Heuristics
 Maxgenerations_Data      = 150;    % Maximum number of Generations in the algorithm
 MaxStallgenerations_Data = 50;     % Maximum number of Generations after which, if not outperforming previous generations, stop the algorithm

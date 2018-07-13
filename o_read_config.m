@@ -46,6 +46,9 @@ function [conf] = o_read_config(config_file)
         % Sets the data structure for the Algorithm 1 solver (either genetic or
         % pattern) 'onlyAssigned' recommended
         conf.genStructure = 'onlyAssigned'; %'nchoosek' / 'onlyAssigned' / 'allAntennas'
+        % Delay profile for 5G channel used in simulations. Possible values
+        % are ('CDL-A', 'CDL-B', 'CDL-C', 'CDL-D', 'CDL-E')
+        conf.DelayProfile = 'CDL-A';
         % Sets the initial figure Id for combination of assignments' plots (to
         % avoid collisions with radiation pattern plots)
         % conf.figIdx = 100;
@@ -99,6 +102,7 @@ function [conf] = o_read_config(config_file)
                     % Channel parameters
                     struct('name','Use5GChannel','type','bool');
                     struct('name','multiPath','type','bool');
+                    struct('name','DelayProfile','type','char');
                     % Debugging parameters
                     struct('name','verbosity','type','int');
                     % Plotting parameters

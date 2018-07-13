@@ -9,9 +9,9 @@ function mutationChildren  = o_mutationArrayGA(parents, options, nvars, ...
     if strcmp(conf.genStructure,'allAntennas')
         for i=1:length(parents)
             parent = thisPopulation(parents(i),:); % Normally thisPopulation(parents(i),:)
+            child = parent;  % Initialize before making changes
             % Swap two weights
             p = ceil(nvars/2 * rand(1,2));
-            child = parent;
             child(p(1)) = parent(p(2));
             child(p(2)) = parent(p(1));
             % Randomly modify percMutatedGens % of the weights
@@ -55,9 +55,9 @@ function mutationChildren  = o_mutationArrayGA(parents, options, nvars, ...
     elseif strcmp(conf.genStructure,'onlyAssigned')
         for i=1:length(parents)
             parent = thisPopulation(parents(i),:); % Normally thisPopulation(parents(i),:)
+            child = parent;  % Initialize before making changes
             % Swap two antennas
             p = ceil(((nvars-1)/3) * rand(1,2));
-            child = parent;
             child(p(1)) = parent(p(2));
             child(p(2)) = parent(p(1));
             % Randomly modify min(one tenth,1) of the weights

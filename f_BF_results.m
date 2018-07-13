@@ -1,12 +1,13 @@
 function [DirOK,DirNOK,Cap_lin,SINR_PB_lin]  = f_BF_results(W,handle_ConformalArray,problem,conf,plotFLAG)
-% f_BF_RESULTS - 
+% f_BF_RESULTS - Parses the results obtained by the beamformer and outputs
+% performance metrics to evaluate the correctness of the system.
 %
 % Syntax:  [DirOK,DirNOK,Cap,SINR_PB,estObj]  = ...
 %               f_BF_results(W,handle_ConformalArray,problem,conf,plotFLAG)
 % Inputs:
 %    W - Matrix [nUser x nAntennas] containg the weights for LCMV
 %    handle_ConformalArray - Initial conformal array
-%    problem - struct containint configuration in data/metaproblem_test.dat
+%    problem - struct containing configuration in data/metaproblem_test.dat
 %    conf - Struct containing configuration in data/config_test.dat
 %    plotFLAG - True for plotting the beam pattern. False otherwise.
 %
@@ -73,14 +74,17 @@ for id = 1:problem.nUsers
         % Plot beamforming per user
         problem.IDUserAssigned = id;
         o_plotAssignment_mod(problem, handle_Conf_Array_USER);
-        % Plot assignation
-        px = possible_locations(3,:);  % Antenna allocation on x-axis
-        py = possible_locations(2,:);  % Antenna allocation on y-axis
-        pz = possible_locations(1,:);  % Antenna allocation on z-axispatch = o_getPatch(problem.NxPatch,problem.NyPatch,px,py);
-        patch = o_getPatch(problem.NxPatch,problem.NyPatch,px,py);
-        arrays = o_getArrays(problem.nUsers,W,px,py,pz);
-        o_plot_feasible_comb(problem,conf,patch,arrays);
     end
+end
+
+if plotFLAG
+    % Plot assignation
+    px = possible_locations(3,:);  % Antenna allocation on x-axis
+    py = possible_locations(2,:);  % Antenna allocation on y-axis
+    pz = possible_locations(1,:);  % Antenna allocation on z-axispatch = o_getPatch(problem.NxPatch,problem.NyPatch,px,py);
+    patch = o_getPatch(problem.NxPatch,problem.NyPatch,px,py);
+    arrays = o_getArrays(problem.nUsers,W,px,py,pz);
+    o_plot_feasible_comb(problem,conf,patch,arrays);
 end
 
 % Compute basic parameters for SINR and Capacity computations
@@ -90,7 +94,7 @@ Noise_lin = repmat(Noise_lin,problem.nUsers,1);
 % Parse results for specific case
 DirOK_lin = db2pow(DirOK);
 DirNOK_lin = db2pow(DirNOK);
-DirNOK_pcvd_lin = sum(DirNOK_lin,2); % Perceived interference
+DirNOK_pcvd_lin = sum(DirNOK_lin,1).'; % Perceived interference
 % Compute SINR and Capacities - LCMV
 SINR_PB_lin = (DirOK_lin.*chLoss_lin) ./(DirNOK_pcvd_lin.*chLoss_lin + Noise_lin);  % Compute SINR Pass-Band (BB)
 SINR_PB = pow2db(SINR_PB_lin);  % Compute SINR Pass-Band (BB)
@@ -108,5 +112,6 @@ if conf.verbosity >= 1
         end
     end
 end
-    
+
+
 % EOF
