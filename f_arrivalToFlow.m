@@ -38,6 +38,7 @@ function [flows] = f_arrivalToFlow(Tslot,traffic)
     % distribution accros the interval <tArrival,tDeadline>
     for id = 1:Nusers
         arrivals = traffic(id).arrivalTimes;
+        arrivals(arrivals==0) = eps;  % Infinitesimal time correction
         deadlines = traffic(id).deadlines;
         Npkt = length(traffic(id).arrivalTimes);
         % Pre-allocate memory for a faster execution

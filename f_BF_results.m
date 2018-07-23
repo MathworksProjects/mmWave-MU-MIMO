@@ -1,4 +1,4 @@
-function [DirOK,DirNOK,Cap_lin,SINR_PB_lin]  = f_BF_results(W,handle_ConformalArray,problem,conf,plotFLAG)
+function [DirOK,DirNOK,Cap_lin,SINR_PB_lin]  = f_BF_results(W,handle_ConformalArray,candSet,problem,conf,plotFLAG)
 % f_BF_RESULTS - Parses the results obtained by the beamformer and outputs
 % performance metrics to evaluate the correctness of the system.
 %
@@ -7,6 +7,7 @@ function [DirOK,DirNOK,Cap_lin,SINR_PB_lin]  = f_BF_results(W,handle_ConformalAr
 % Inputs:
 %    W - Matrix [nUser x nAntennas] containg the weights for LCMV
 %    handle_ConformalArray - Initial conformal array
+%    candSet - Subset of users scheduled to be served in current slot
 %    problem - struct containing configuration in data/metaproblem_test.dat
 %    conf - Struct containing configuration in data/config_test.dat
 %    plotFLAG - True for plotting the beam pattern. False otherwise.
@@ -22,7 +23,7 @@ function [DirOK,DirNOK,Cap_lin,SINR_PB_lin]  = f_BF_results(W,handle_ConformalAr
 %   problem = o_read_input_problem('data/metaproblem_test.dat');
 %   conf = o_read_config('data/config_test.dat');
 %   conf.verbosity = 1;  % To visualize metrics on command line
-%   problem.nUsers = 5;  % Fix number of users manually for example
+%   nUsers = 5;  % Fix number of users manually for example
 %   [problem,~,~] = f_configuration(conf,problem);
 %   problem.N_Antennas = nAntennas;  % Select number of antennas
 %   problem.NxPatch = floor(sqrt(problem.N_Antennas));  % Adjust
@@ -43,14 +44,16 @@ function [DirOK,DirNOK,Cap_lin,SINR_PB_lin]  = f_BF_results(W,handle_ConformalAr
 
 %------------- BEGIN CODE --------------
 
+nUsers = length(candSet);  % Turn it into local variable
+
 % Output parameters
-DirOK = -Inf(problem.nUsers,1);  % Directivity target (heuristics)
-DirNOK = -Inf(problem.nUsers,problem.nUsers);  % Directivity others (heuristics)
+DirOK = -Inf(nUsers,1);  % Directivity target (heuristics)
+DirNOK = -Inf(nUsers,nUsers);  % Directivity others (heuristics)
 
 % Antenna location in the array
 possible_locations = handle_ConformalArray.getElementPosition;
 
-for id = 1:problem.nUsers
+for id = 1:nUsers
     relevant_positions = (W(id,:)~=0);
     Taper_user = W(id,relevant_positions);
 
@@ -64,7 +67,7 @@ for id = 1:problem.nUsers
     % Extract Rx Power (in dB)
     DirOK(id) = patternAzimuth(handle_Conf_Array_USER,problem.freq,problem.thetaUsers(id),'Azimuth',problem.phiUsers(id),'Type','powerdb');
     % Extract interference generated to others (in dB)
-    for id1 = 1:1:problem.nUsers
+    for id1 = 1:1:nUsers
         if id1~=id
             DirNOK(id,id1) = patternAzimuth(handle_Conf_Array_USER,problem.freq,problem.thetaUsers(id1),'Azimuth',problem.phiUsers(id1),'Type','powerdb');
         end
@@ -81,16 +84,16 @@ if plotFLAG
     % Plot assignation
     px = possible_locations(3,:);  % Antenna allocation on x-axis
     py = possible_locations(2,:);  % Antenna allocation on y-axis
-    pz = possible_locations(1,:);  % Antenna allocation on z-axispatch = o_getPatch(problem.NxPatch,problem.NyPatch,px,py);
+    pz = possible_locations(1,:);  % Antenna allocation on z-axis
     patch = o_getPatch(problem.NxPatch,problem.NyPatch,px,py);
-    arrays = o_getArrays(problem.nUsers,W,px,py,pz);
+    arrays = o_getArrays(nUsers,W,px,py,pz);
     o_plot_feasible_comb(problem,conf,patch,arrays);
 end
 
 % Compute basic parameters for SINR and Capacity computations
-chLoss_lin = ((problem.lambda ./ (4*pi*problem.dUsers(1:problem.nUsers))).^2).';  % Losses
+chLoss_lin = ((problem.lambda ./ (4*pi*problem.dUsers(1:nUsers))).^2).';  % Losses
 Noise_lin = db2pow(problem.Noise);  % Noise power
-Noise_lin = repmat(Noise_lin,problem.nUsers,1);
+Noise_lin = repmat(Noise_lin,nUsers,1);
 % Parse results for specific case
 DirOK_lin = db2pow(DirOK);
 DirNOK_lin = db2pow(DirNOK);
@@ -100,14 +103,16 @@ SINR_PB_lin = (DirOK_lin.*chLoss_lin) ./(DirNOK_pcvd_lin.*chLoss_lin + Noise_lin
 SINR_PB = pow2db(SINR_PB_lin);  % Compute SINR Pass-Band (BB)
 Cap_lin = log2(1 + SINR_PB_lin);  % Compute final Capacity (bits/Hz/s)
 
-if conf.verbosity >= 1
-    for id = 1:problem.nUsers
-        fprintf('* Capacity(%d): %.2f (bits/Hz/s)\n',id,Cap_lin(id));
-        fprintf('* SINR(%d): %.2f (dB)\n',id,SINR_PB(id));
-        fprintf('* Directivity IDmax: %.2f (dB)\n',DirOK(id));
-        for id1 = 1:1:problem.nUsers
-            if id1~=id
-                fprintf('  Directivity IDmin(%d): %.2f (dB)\n',id1,DirNOK(id,id1));
+if conf.verbosity > 1
+    for idx = 1:nUsers
+        id = candSet(idx);
+        fprintf('* Capacity(%d): %.2f (bits/Hz/s)\n',id,Cap_lin(idx));
+        fprintf('* SINR(%d): %.2f (dB)\n',id,SINR_PB(idx));
+        fprintf('* Directivity IDmax: %.2f (dB)\n',DirOK(idx));
+        for idx1 = 1:1:nUsers
+            id1 = candSet(idx1);
+            if idx1~=idx
+                fprintf('  Directivity IDmin(%d): %.2f (dB)\n',id1,DirNOK(idx,idx1));
             end
         end
     end

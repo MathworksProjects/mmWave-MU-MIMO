@@ -1,23 +1,20 @@
-/*********************************************
- * Author: santirodrigo
- * Creation Date: 29/03/2018 at 13:12:55
- *********************************************/
 % ---------------- SIMULATION PARAMETERS ---------------- %
 realizations     = 100;
-N_Antennas       = 256;
+N_Antennas       = 16;
 NxSubarrays      = 2;
 NySubarrays      = 2;
 NmaxArray        = 0.2:0.2:1;
 thetaUsers      = [ +15 -15 -15 +15 +30 -30 -30 +30 +15 +15 -30 -30 -15 +30 +30 -15];  % Assign Theta (elevation) values (only if detLocation=true)
 phiUsers        = [ +15 -15 +15 -15 +30 -30 +30 -30 +30 -30 -15 +15 +30 +15 -15 -30];  % Assign Phi (athymut) values (only if detLocation=true)
 anglesInRadians = false;  % To deterministically specify locations (radians or degrees)
-dUsers          = [  15  15  15  15  15  15  15  15  15  15  15  15  15  15  15  15];  % Assign distances (in m) (only if detLocation=true)
+% dUsers          = [  15  15  15  15  15  15  15  15  15  15  15  15  15  15  15  15];  % Assign distances (in m) (only if detLocation=true)
+dUsers          = [  1 1 1 1 1 1 1 20 20 50 50 50 50 50 50 50 50 50 50 50 50 50 ];  % Assign distances (in m) (only if detLocation=true)
 mindUsers        = 5;
 maxdUsers        = 5;
 MaxObjF          = Inf;
 maxMinObjF       = 2;
 minMinObjF       = 0.01;
-nUsers           = 2;  % Number of users in the coverage area receiving traffic
+nUsers           = 4;  % Number of users in the coverage area receiving traffic
 maxnUsers        = 20;  % Maximum number of users allowed in sim (memory preallocation)
 Tslot            = 10;  % Time slot in milliseconds
 Tsym             = 3e2;  % Total simulation time in milliseconds
@@ -32,6 +29,7 @@ Noise            = -104.5; % Noise figure in dBs
 Ptx              = 10;  % Transmit power in dBm
 Bw               = 2e9;  % Available Bandwidth in Hz
 c                = 299792458;  % Light speed constant
+mcsPolicy        = 'aggressive'; % Possibilities are 'aggressive', 'conservative', 'middle' and 'random
 % ----------------------------------------------------- %
 
 % ---------------- HEURISTICS PARAMETERS ---------------- %
@@ -48,9 +46,9 @@ maxnChannelPaths = 6;
 FLAGagg           = true;  % Aggregate traffic
 trafficType       = 'synthetic';  % 'synthetic' (deterministic) or 'dataSet' (extracted from DataSet-UPC)
 manuallyAssignApp = true;  % Manually distribute applications across users. Only one application
-numPkts           = 4;  % Number of (upper layer) packets incoming to every user (only used when trafficType is set to 'synthetic')
-iat               = 60;  % Deterministic (constant) inter-arrival times (iat)
-payload           = 1500*8;  % Default payload in bits
+numPkts           = 100;  % Number of (upper layer) packets incoming to every user (only used when trafficType is set to 'synthetic')
+iat               = 100;  % Deterministic (constant) inter-arrival times (iat)
+payload           = 120000000000;  % (12000 bits = 1500 bytes) Default payload in bits
  % appNameInteretList={'Youtube','Justin TV','Facebook','Web Browsing','Twitter'};  % Applications to be considered in the simulations
  % appPresence=[0.3,0.3,0.05,0.3,0.05];  % Presence of the application types specified in 'appNameInteretList' across users
 % ----------------------------------------------------- %

@@ -3,7 +3,7 @@ clear; clc; close all;
 addpath('utilities','-end');  % Add utilities folder at the end of search path
 
 %% Define several experiments here and override variable values accordingly
-experimentList = [61];
+experimentList = [6 61];
 
 %% Experiment selection
 
@@ -128,10 +128,12 @@ end
 
 %% EXPERIMENT 6
 if any(experimentList(:)==6)
-    nUsersList = [2 3 4 5 6 7 8];
+%     nUsersList = [2 3 4 5 6 7 8];
+%     nUsersList = [2 4 6 8];
+    nUsersList = [6 8 10 12];
     % Input parameters
     input.nIter                = 1;
-    input.nAntennas            = 8.^2;
+    input.nAntennas            = 12.^2;
     input.arrayRestriction     = 'None';
     input.algorithm            = 'GA';
     input.detLocation          = true;
@@ -146,8 +148,8 @@ end
 
 %% EXPERIMENT 6 - PLOTTING
 if any(experimentList(:)==61)
-    nUsersList = [2 4 6 8];
-    input.nAntennas            = 8.^2;
+    nUsersList = [6 8 10 12];
+    input.nAntennas            = 12.^2;
     input.arrRestct            = 'None';
     input.algorithm            = 'GA';
     input.detLocation          = true;
@@ -1315,35 +1317,38 @@ function experiment6(input,plotFLAG)
             % Compute directivity for LCMV
             [DirOKLCMVTot(:,idxLoc,idxIter),DirNOKLCMVTot(:,:,idxLoc,idxIter), ...
              CapLCMVTot(:,idxLoc,idxIter),SINRLCMVTot(:,idxLoc,idxIter)]     = ...
-               f_BF_results(W_LCMV,handle_ConformalArray,problem,conf,plotFLAG);
+               f_BF_results(W_LCMV,handle_ConformalArray,candSet,problem,conf,plotFLAG);
             % Compute directivity for Conventional
             fprintf('SOLVING CBF\n');
             [DirOKCBFTot(:,idxLoc,idxIter),DirNOKCBFTot(:,:,idxLoc,idxIter), ...
              CapCBFTot(:,idxLoc,idxIter),SINRCBFTot(:,idxLoc,idxIter)]     = ...
-               f_BF_results(W_CBF,handle_ConformalArray,problem,conf,plotFLAG);
+               f_BF_results(W_CBF,handle_ConformalArray,candSet,problem,conf,plotFLAG);
             % Call heuristics - No bootstrapping
             fprintf('SOLVING HEURISTICS\n');
-            [~,W,handle_ConformalArray,~] = f_heuristics(problem,conf,candSet);
+%             [~,W,handle_ConformalArray,~] = f_heuristics(problem,conf,candSet);
+            [~,W,handle_ConformalArray,~] = CBG_solveit(problem,conf,candSet);
             % Compute directivity for Heuristics
             [DirOKHEUTot(:,idxLoc,idxIter),DirNOKHEUTot(:,:,idxLoc,idxIter), ...
              CapHEUTot(:,idxLoc,idxIter),SINRHEUTot(:,idxLoc,idxIter)]     = ...
-               f_BF_results(W,handle_ConformalArray,problem,conf,plotFLAG);
+               f_BF_results(W,handle_ConformalArray,candSet,problem,conf,plotFLAG);
            % Call heuristics - bootstrapping from LCMV
             fprintf('SOLVING HEURISTICS - BOOTSTRAPPING LCMV\n');
             problem.initialW = W_LCMV;
-            [~,W,handle_ConformalArray,~] = f_heuristics(problem,conf,candSet);
+%             [~,W,handle_ConformalArray,~] = f_heuristics(problem,conf,candSet);
+            [~,W,handle_ConformalArray,~] = CBG_solveit(problem,conf,candSet);
             % Compute directivity for Heuristics + bootstrapped LCMV
             [DirOKHEU_LCMVTot(:,idxLoc,idxIter),DirNOKHEU_LCMVTot(:,:,idxLoc,idxIter), ...
              CapHEU_LCMVTot(:,idxLoc,idxIter),SINRHEU_LCMVTot(:,idxLoc,idxIter)]     = ...
-               f_BF_results(W,handle_ConformalArray,problem,conf,plotFLAG);
+               f_BF_results(W,handle_ConformalArray,candSet,problem,conf,plotFLAG);
            % Call heuristics - bootstrapping from CBF
             fprintf('SOLVING HEURISTICS - BOOTSTRAPPING CBF\n');
             problem.initialW = W_CBF;
-            [~,W,handle_ConformalArray,~] = f_heuristics(problem,conf,candSet);
+%             [~,W,handle_ConformalArray,~] = f_heuristics(problem,conf,candSet);
+            [~,W,handle_ConformalArray,~,~,~] = CBG_solveit(problem,conf,candSet);
             % Compute directivity for Heuristics + bootstrapped CBF
             [DirOKHEU_CBFTot(:,idxLoc,idxIter),DirNOKHEU_CBFTot(:,:,idxLoc,idxIter), ...
              CapHEU_CBFTot(:,idxLoc,idxIter),SINRHEU_CBFTot(:,idxLoc,idxIter)]     = ...
-               f_BF_results(W,handle_ConformalArray,problem,conf,plotFLAG);
+               f_BF_results(W,handle_ConformalArray,candSet,problem,conf,plotFLAG);
         end
         
         % Parse results for specific case - Heuristics
@@ -1485,7 +1490,7 @@ function experiment6_plot(nUsersList,input)
         plot(nUsersList,CapHEU_LCMV_final,'Color','k','Marker',MarkerList{4},'LineStyle',':');
         plot(nUsersList,CapHEU_CBF_final,'Color','k','Marker',MarkerList{4},'LineStyle','--');
         plot(nUsersList,CapLCMV_final,'Color','k','Marker',MarkerList{2},'LineStyle','-.');
-        plot(nUsersList,CapCBF_final,'Color','k','Marker',MarkerList{3},'LineStyle','-.');
+%         plot(nUsersList,CapCBF_final,'Color','k','Marker',MarkerList{3},'LineStyle','-.');
         xlabel('Number of users','FontSize',12);
         ylabel('Capacity (bits/Hz/s)','FontSize',12);
         title('Average Capacity achieved','FontSize',12);
@@ -1496,7 +1501,7 @@ function experiment6_plot(nUsersList,input)
         plot(nUsersList,CapSumHEU_LCMV_final,'Color','k','Marker',MarkerList{4},'LineStyle',':');
         plot(nUsersList,CapSumHEU_CBF_final,'Color','k','Marker',MarkerList{4},'LineStyle','--');
         plot(nUsersList,CapSumLCMV_final,'Color','k','Marker',MarkerList{2},'LineStyle','-.');
-        plot(nUsersList,CapSumCBF_final,'Color','k','Marker',MarkerList{3},'LineStyle','-.');
+%         plot(nUsersList,CapSumCBF_final,'Color','k','Marker',MarkerList{3},'LineStyle','-.');
         xlabel('Number of users','FontSize',12);
         ylabel('Capacity (bits/Hz/s)','FontSize',12);
         title('Total Capacity achieved','FontSize',12);
@@ -1507,7 +1512,7 @@ function experiment6_plot(nUsersList,input)
         plot(nUsersList,SINRHEU_LCMV_PB_final,'Color','k','Marker',MarkerList{4},'LineStyle',':');
         plot(nUsersList,SINRHEU_CBF_PB_final,'Color','k','Marker',MarkerList{4},'LineStyle','--');
         plot(nUsersList,SINRLCMV_PB_final,'Color','k','Marker',MarkerList{2},'LineStyle','-.');
-        plot(nUsersList,SINRCBF_PB_final,'Color','k','Marker',MarkerList{3},'LineStyle','-.');
+%         plot(nUsersList,SINRCBF_PB_final,'Color','k','Marker',MarkerList{3},'LineStyle','-.');
         xlabel('Number of users','FontSize',12);
         ylabel('SINR (dB)','FontSize',12);
         title('Average SINR achieved','FontSize',12);
@@ -1750,12 +1755,16 @@ function experiment9(input,plotFLAG)
 	% Create output variables
     CapLCMVTot = zeros(problem.nUsers,length(nAntennasList),nIter);  % Capacity (LCMV)
     SINRLCMVTot = zeros(problem.nUsers,length(nAntennasList),nIter);  % SINR (LCMV)
-    CapCBFTot = zeros(problem.nUsers,length(nAntennasList),nIter);  % Capacity (Conventional)
-    SINRCBFTot = zeros(problem.nUsers,length(nAntennasList),nIter);  % SINR (Conventional)
     DirOKLCMVTot = -Inf(problem.nUsers,length(nAntennasList),nIter);  % Directivity target (LCMV)
     DirNOKLCMVTot = -Inf(problem.nUsers,problem.nUsers,length(nAntennasList),nIter);  % Directivity others (LCMV)
+    CapCBFTot = zeros(problem.nUsers,length(nAntennasList),nIter);  % Capacity (Conventional)
+    SINRCBFTot = zeros(problem.nUsers,length(nAntennasList),nIter);  % SINR (Conventional)
     DirOKCBFTot = -Inf(problem.nUsers,length(nAntennasList),nIter);  % Directivity target (Conventional)
     DirNOKCBFTot = -Inf(problem.nUsers,problem.nUsers,length(nAntennasList),nIter);  % Directivity others (Conventional)
+    CapHEUTot = zeros(problem.nUsers,length(nAntennasList),nIter);  % Capacity (Conventional)
+    SINRHEUTot = zeros(problem.nUsers,length(nAntennasList),nIter);  % SINR (Conventional)
+    DirOKHEUTot = -Inf(problem.nUsers,length(nAntennasList),nIter);  % Directivity target (Conventional)
+    DirNOKHEUTot = -Inf(problem.nUsers,problem.nUsers,length(nAntennasList),nIter);  % Directivity others (Conventional)
     % Linearize combinations and asign Population size (To be replaced with
     % convergency analysis values)
 %     totComb = log10(problem.nUsers.*factorial(ceil(nAntennasList/problem.nUsers)));
@@ -1786,16 +1795,26 @@ function experiment9(input,plotFLAG)
             problem.N_Antennas = problem.NxPatch.*problem.NyPatch;
             % Conventional Beamforming + LCMV
             [W_LCMV,W_CBF,handle_ConformalArray,~,~] = f_conventionalBF(problem,conf,candSet);
+            % Heuristics
+            problem.initialW = W_LCMV;
+            [~,W_HEU,~,~,~,~] = CBG_solveit(problem,conf,candSet);
+            % Normalize weights
+            for id = 1:problem.nUsers; W_HEU(id,:) = (1/sqrt(W_HEU(id,:)*W_HEU(id,:)'))*W_HEU(id,:); end
             fprintf('SOLVING LCMV\n');
             % Compute directivity for LCMV
             [DirOKLCMVTot(:,idxAnt,idxIter),DirNOKLCMVTot(:,:,idxAnt,idxIter), ...
              CapLCMVTot(:,idxAnt,idxIter),SINRLCMVTot(:,idxAnt,idxIter)]     = ...
-               f_BF_results(W_LCMV,handle_ConformalArray,problem,conf,plotFLAG);
+               f_BF_results(W_LCMV,handle_ConformalArray,candSet,problem,conf,plotFLAG);
             % Compute directivity for Conventional
             fprintf('SOLVING CBF\n');
             [DirOKCBFTot(:,idxAnt,idxIter),DirNOKCBFTot(:,:,idxAnt,idxIter), ...
              CapCBFTot(:,idxAnt,idxIter),SINRCBFTot(:,idxAnt,idxIter)]     = ...
-               f_BF_results(W_CBF,handle_ConformalArray,problem,conf,plotFLAG);
+               f_BF_results(W_CBF,handle_ConformalArray,candSet,problem,conf,plotFLAG);
+           % Compute directivity for Conventional
+            fprintf('SOLVING CBF\n');
+            [DirOKHEUTot(:,idxAnt,idxIter),DirNOKHEUTot(:,:,idxAnt,idxIter), ...
+             CapHEUTot(:,idxAnt,idxIter),SINRHEUTot(:,idxAnt,idxIter)]     = ...
+               f_BF_results(W_HEU,handle_ConformalArray,candSet,problem,conf,plotFLAG);
         end
 
         % Parse results for specific case - LCMV
@@ -1816,20 +1835,35 @@ function experiment9(input,plotFLAG)
         DirOKCBF = pow2db(DirOKCBF_lin);  %#ok  % Directivity generated to intended user (Conventional)
         DirNOKCBF_gntd = pow2db(DirNOKCBF_gntd_lin);  %#ok  % Directivity being generated by intended user (Conventional)
         DirNOKCBF_pcvd = pow2db(DirNOKCBF_pcvd_lin);  %#ok  % Directivity inflicted to intended user (Conventional)
+        % Parse results for specific case - HEU
+        DirOKHEUTot_lin = db2pow(DirOKHEUTot);
+        DirNOKHEUTot_lin = db2pow(DirNOKHEUTot);
+        DirOKHEU_lin = mean(DirOKHEUTot_lin(:,idxAnt,:),3);
+        DirNOKHEU_gntd_lin = sum(mean(DirNOKHEUTot_lin(:,:,idxAnt,:),4),1).'; % Generated interference 
+        DirNOKHEU_pcvd_lin = sum(mean(DirNOKHEUTot_lin(:,:,idxAnt,:),4),2); % Perceived interference
+        DirOKHEU = pow2db(DirOKHEU_lin);  %#ok  % Directivity generated to intended user (Conventional)
+        DirNOKHEU_gntd = pow2db(DirNOKHEU_gntd_lin);  %#ok  % Directivity being generated by intended user (Conventional)
+        DirNOKHEU_pcvd = pow2db(DirNOKHEU_pcvd_lin);  %#ok  % Directivity inflicted to intended user (Conventional)
         % Compute SINR and Capacities - LCMV
         SINRLCMV_PB_lin = mean(SINRLCMVTot(:,idxAnt,:),3);  % Compute SINR Pass-Band (Linear)
         SINRLCMV_PB = pow2db(SINRLCMV_PB_lin);  %#ok  % Compute SINR Pass-Band (dB)
         CapLCMV = log2(1 + SINRLCMV_PB_lin);  % Compute final Average Capacity (bits/Hz/s)
         CapLCMVSum = sum(CapLCMV);  %#ok  % Compute final Total Capacity (bits/Hz/s)
-        % Compute SINR and Capacities - LCMV
+        % Compute SINR and Capacities - CBF (Conventional)
         SINRCBF_PB_lin = mean(SINRCBFTot(:,idxAnt,:),3);  % Compute SINR Pass-Band (Linear)
         SINRCBF_PB = pow2db(SINRCBF_PB_lin);  %#ok  % Compute SINR Pass-Band (dB)
         CapCBF = log2(1 + SINRCBF_PB_lin);  % Compute final Average Capacity (bits/Hz/s)
         CapCBFSum = sum(CapCBF);  %#ok  % Compute final Total Capacity (bits/Hz/s)
+        % Compute SINR and Capacities - HEU
+        SINRHEU_PB_lin = mean(SINRHEUTot(:,idxAnt,:),3);  % Compute SINR Pass-Band (Linear)
+        SINRHEU_PB = pow2db(SINRHEU_PB_lin);  %#ok  % Compute SINR Pass-Band (dB)
+        CapHEU = log2(1 + SINRHEU_PB_lin);  % Compute final Average Capacity (bits/Hz/s)
+        CapHEUSum = sum(CapHEU);  %#ok  % Compute final Total Capacity (bits/Hz/s)
         % Store results in mat file
         fileName = strcat('temp/exp9_',conf.algorithm,'_',problem.arrayRestriction,'_',mat2str(nUsers),'_',mat2str(nAntennasList(idxAnt)),'_',mat2str(conf.detLocation),'_',mat2str(conf.useCasesLocation),'_',mat2str(conf.useCaseLocation));
         save(fileName,'DirOKLCMV','DirNOKLCMV_gntd','DirNOKLCMV_pcvd','SINRLCMV_PB','CapLCMV','CapLCMVSum',...
                       'DirOKCBF','DirNOKCBF_gntd','DirNOKCBF_pcvd','SINRCBF_PB','CapCBF','CapCBFSum',...
+                      'DirOKHEU','DirNOKHEU_gntd','DirNOKHEU_pcvd','SINRHEU_PB','CapHEU','CapHEUSum',...
                       'nUsers','nAntennasList','arrayRestriction','useCaseLocation');
     end
 end
@@ -1851,6 +1885,9 @@ function experiment9_plot(nUsersList,input)
         CapCBF_final = zeros(length(nUsersList),1);
         CapSumCBF_final = zeros(length(nUsersList),1);
         SINRCBF_PB_final = zeros(length(nUsersList),1);
+        CapHEU_final = zeros(length(nUsersList),1);
+        CapSumHEU_final = zeros(length(nUsersList),1);
+        SINRHEU_PB_final = zeros(length(nUsersList),1);
         for idxUsers = 1:length(nUsersList)
             nUsers = nUsersList(idxUsers);
             nAntennas = nAntennasList(idxAnt);
@@ -1858,6 +1895,7 @@ function experiment9_plot(nUsersList,input)
                 mat2str(useCasesLocation),'_',mat2str(useCaseLocation));
             load(fileName,'SINRLCMV_PB','CapLCMV','CapLCMVSum',...
                           'SINRCBF_PB','CapCBF','CapCBFSum',...
+                          'SINRHEU_PB','CapHEU','CapHEUSum',...
                           'nUsers','nAntennas','arrayRestriction');
             CapLCMV_final(idxUsers) = pow2db(mean(db2pow(CapLCMV)));
             CapSumLCMV_final(idxUsers) = pow2db(mean(db2pow(CapLCMVSum)));
@@ -1865,18 +1903,21 @@ function experiment9_plot(nUsersList,input)
             CapCBF_final(idxUsers) = pow2db(mean(db2pow(CapCBF)));
             CapSumCBF_final(idxUsers) = pow2db(mean(db2pow(CapCBFSum)));
             SINRCBF_PB_final(idxUsers) = pow2db(mean(db2pow(SINRCBF_PB)));
+            CapHEU_final(idxUsers) = pow2db(mean(db2pow(CapHEU)));
+            CapSumHEU_final(idxUsers) = pow2db(mean(db2pow(CapHEUSum)));
+            SINRHEU_PB_final(idxUsers) = pow2db(mean(db2pow(SINRHEU_PB)));
         end
         figure(1); hold on; grid minor;
-        p1(2*idxAnt - 1) = plot(nUsersList,CapLCMV_final,'Color','k','Marker',MarkerList{idxAnt},'LineStyle','-');
-        p1(2*idxAnt) = plot(nUsersList,CapCBF_final,'Color','k','Marker',MarkerList{idxAnt},'LineStyle','--');
+        p1(2*idxAnt - 1) = plot(nUsersList,CapHEU_final,'Color','k','Marker',MarkerList{idxAnt},'LineStyle','-');
+        p1(2*idxAnt) = plot(nUsersList,CapLCMV_final,'Color','k','Marker',MarkerList{idxAnt},'LineStyle',':');
         figure(2); hold on; grid minor;
-        p2(2*idxAnt - 1) = plot(nUsersList,CapSumLCMV_final,'Color','k','Marker',MarkerList{idxAnt},'LineStyle','-');
-        p2(2*idxAnt) = plot(nUsersList,CapSumCBF_final,'Color','k','Marker',MarkerList{idxAnt},'LineStyle','--');
+        p2(2*idxAnt - 1) = plot(nUsersList,CapSumHEU_final,'Color','k','Marker',MarkerList{idxAnt},'LineStyle','-');
+        p2(2*idxAnt) = plot(nUsersList,CapSumLCMV_final,'Color','k','Marker',MarkerList{idxAnt},'LineStyle',':');
         figure(3); hold on; grid minor;
-        p3(2*idxAnt - 1) = plot(nUsersList,SINRLCMV_PB_final,'Color','k','Marker',MarkerList{idxAnt},'LineStyle','-');
-        p3(2*idxAnt) = plot(nUsersList,SINRCBF_PB_final,'Color','k','Marker',MarkerList{idxAnt},'LineStyle','--');
-%         legList(2*idxAnt - 1) = strcat('Proposed -',{' '},mat2str(nAntennas));
-%         legList(2*idxAnt) = strcat('Traditional -',{' '},mat2str(nAntennas));
+        p3(2*idxAnt - 1) = plot(nUsersList,SINRHEU_PB_final,'Color','k','Marker',MarkerList{idxAnt},'LineStyle','-');
+        p3(2*idxAnt) = plot(nUsersList,SINRLCMV_PB_final,'Color','k','Marker',MarkerList{idxAnt},'LineStyle',':');
+        legList(2*idxAnt - 1) = strcat('HEU -',{' '},mat2str(nAntennas));        
+        legList(2*idxAnt) = strcat('LCMV -',{' '},mat2str(nAntennas));
         legList(idxAnt) = strcat(mat2str(nAntennas),{' '},'antennas');
     end
     list = 1:length(p1);

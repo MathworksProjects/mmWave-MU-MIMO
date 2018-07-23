@@ -3,6 +3,7 @@ function [thetaPos, phiPos, dPos] = o_generate_positions(conf,problem)
     pd = makedist('Normal');
     pd.sigma = 45;
     t = truncate(pd,-45,45);
+    dUser = problem.dUsers(1:problem.nUsers);
 %     % Generate Angles for usee case (uc) distribution (deprecated)
 %     % UC 1
 %     uc_el(1,:) = [0 0];      uc_az(1,:) = [+15 -15];  uc_dist(1,:) = [5 5];
@@ -30,27 +31,27 @@ function [thetaPos, phiPos, dPos] = o_generate_positions(conf,problem)
     % UC 1 - Located horizontally (no elevation)
     uc_el(1,:) = zeros(1,problem.nUsers);
     uc_az(1,:) = vect;
-    uc_dist(1,:) = 5.*ones(1,problem.nUsers);
+    uc_dist(1,:) = dUser.*ones(1,problem.nUsers);
     % UC 2 - Located horizontally (no elevation - a bit more separation)
     uc_el(2,:) = zeros(1,problem.nUsers);
     uc_az(2,:) = 1.5.*vect;
-    uc_dist(2,:) = 5.*ones(1,problem.nUsers);
+    uc_dist(2,:) = dUser.*ones(1,problem.nUsers);
     % UC 3 - Located vertically (no azymuth)
     uc_el(3,:) = vect;
     uc_az(3,:) = zeros(1,problem.nUsers);
-    uc_dist(3,:) = 5.*ones(1,problem.nUsers);
+    uc_dist(3,:) = dUser.*ones(1,problem.nUsers);
     % UC 4 - Located diagonaly
     uc_el(4,:) = vect;
     uc_az(4,:) = vect;
-    uc_dist(4,:) = 5.*ones(1,problem.nUsers);
+    uc_dist(4,:) = dUser.*ones(1,problem.nUsers);
     % UC 5 - Located vertically (15 deg azymuth)
     uc_el(5,:) = vect;
     uc_az(5,:) = 15.*ones(1,problem.nUsers);
-    uc_dist(5,:) = 5.*ones(1,problem.nUsers);
+    uc_dist(5,:) = dUser.*ones(1,problem.nUsers);
     % UC 6 - Located horizontally (15 deg elevation)
     uc_el(6,:) = 15.*ones(1,problem.nUsers);
     uc_az(6,:) = vect;
-    uc_dist(6,:) = 5.*ones(1,problem.nUsers);
+    uc_dist(6,:) = dUser.*ones(1,problem.nUsers);
 
     % Check if users were assigned Theta angles (deterministic)
     if ~conf.detLocation || ~isfield(problem,'thetaUsers')

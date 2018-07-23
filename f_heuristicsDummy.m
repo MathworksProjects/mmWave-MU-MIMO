@@ -1,4 +1,4 @@
-function [Cap,SINR,estObj] = f_heuristicsDummy(MinObjF,MinObjFIsSNR,snrRange)
+function [Cap,SINR_lin,estObj] = f_heuristicsDummy(MinObjF,MinObjFIsSNR,snrRange)
 % F_HEURISICSDUMMY - Dummy function that emulates real heuristics.
 %
 % Syntax:  [Cap,SINR,estObj] = ...
@@ -11,7 +11,7 @@ function [Cap,SINR,estObj] = f_heuristicsDummy(MinObjF,MinObjFIsSNR,snrRange)
 %
 % Outputs:
 %    Cap - Vector [nUsers x 1] containing the capacity values (Linear)
-%    SINR - Vector [nUsers x 1] containing the SINR values (Linear)
+%    SINR_lin - Vector [nUsers x 1] containing the SINR values (Linear)
 %    estObj - Vector [nUsers x 1] containing either the Capacity or SINR 
 %             values (Linear), dpending upon MinObjFIsSNR
 %
@@ -34,20 +34,21 @@ function [Cap,SINR,estObj] = f_heuristicsDummy(MinObjF,MinObjFIsSNR,snrRange)
 %------------- BEGIN CODE --------------
     
 if MinObjFIsSNR
-%         MinObjFdB = max(10*log10(MinObjF),min(snrRange));  % in dB
-%         MaxObjFdB = 30;  % in dB
-%         estObjdB  = rand(1,length(MinObjFdB))*range([MinObjFdB MaxObjFdB]) + MinObjFdB;  % SNR (dB)
-%         estObj    = 10.^(estObjdB/10);  % SNR (linear)
-    % Uncomment line below for nice plotting of transmission bits
-    estObj = MinObjF;  % SINR (linear) 
+%     % SINR achieved between the demanded and the maximum offerable
+%     MinObjFdB = max(10*log10(MinObjF),min(snrRange));  % in dB
+%     MaxObjFdB = 20;  % in dB
+%     estObjdB  = rand(1,length(MinObjFdB))*range([MinObjFdB MaxObjFdB]) + MinObjFdB;  % SNR (dB)
+%     estObj    = 10.^(estObjdB/10);  % SNR (linear)
+    % For nice plotting of transmission bits
+    estObj = MinObjF;  % SINR (linear)
 
-    SINR = estObj;  % SINR (Linear)
+    SINR_lin = estObj;  % SINR (Linear)
     Cap = log2(estObj + 1);  % Capacity (Linear)
 else
     estObj = MinObjF;  % Capacity in bps/s/Hz
 
     Cap = estObj;  % Capacity (Linear)
-    SINR = 2^estObj - 1;  % SINR (Linear)
+    SINR_lin = 2^estObj - 1;  % SINR (Linear)
 end
 
 

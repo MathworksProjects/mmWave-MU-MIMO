@@ -1,9 +1,9 @@
 function finalSet = f_PERtentative(candSet,threshold)
-%F_PERTENTATIVE - The function evaluates the chances the packets transmited
-%to the users in 'candSet' have to be succesfully received. The quality of
-%the link is controlled by 'threshold', which represents the PER. The
-%function return the subset of 'candSet' that statistically see their
-%packets get through the channel in the current transmission.
+% F_PERTENTATIVE - The function evaluates the chances the packets transmited
+% to the users in 'candSet' have to be succesfully received. The quality of
+% the link is controlled by 'threshold', which represents the PER. The
+% function return the subset of 'candSet' that statistically see their
+% packets get through the channel in the current transmission.
 %
 % Syntax:  finalSet = f_PERtentative(candSet,threshold)
 %

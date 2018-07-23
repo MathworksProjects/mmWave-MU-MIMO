@@ -40,6 +40,10 @@ if isfield(problem,'initialW') && ~strcmp(problem.arrayRestriction, 'None')
     error('When inheriting Beamforming weights from LCMV or conventional beamforming, ' + ...
           'we need to set the subarray geometry to None. Please, try again.\n');
 end
+
+% Correct number of users to just focus on the ones scheduled in this slot
+nUsers = length(usersToBeAssigned);
+
 % We will paralelize the solution computations: we need (if not already
 % created) a parallelization processes pool
 gcp;
@@ -77,13 +81,13 @@ RoomForImprovement = true;
 while RoomForImprovement
     % Restore the initial values
     % Complex antenna weights matrix
-    W = zeros(problem.nUsers, problem.NxPatch*problem.NyPatch);
+    W = zeros(nUsers, problem.NxPatch*problem.NyPatch);
     % Received power matrix
-    PRx = ones(1,problem.nUsers)*-Inf;
+    PRx = ones(1,nUsers)*-Inf;
     % Interferences matrix
-    I = ones(problem.nUsers, problem.nUsers)*-Inf;
+    I = ones(nUsers, nUsers)*-Inf;
     % structs cell containing every parameter in the solution files
-    sol = cell(1,problem.nUsers);
+    sol = cell(1,nUsers);
     problem.Partition = initial_partition;
     problem.N_Subarrays = initial_N_Subarrays;
     % We will accumulate in the assignments_status var the
@@ -135,14 +139,14 @@ while RoomForImprovement
     end
 
     % Normalize weigths
-    for id = 1:problem.nUsers
+    for id = 1:nUsers
         idx = find(W(id,:)~=0.0);
         W(id,idx) = (1/sqrt(W(id,idx)*W(id,idx)')) * W(id,idx);
     end
 
     % Compute Capacities and SINR
     oldVerbosity = conf.verbosity;  conf.verbosity = 0;
-    [~,~,Cap,SINR] = f_BF_results(W,handle_ConformalArray,problem,conf,false);
+    [~,~,Cap,SINR] = f_BF_results(W,handle_ConformalArray,usersToBeAssigned,problem,conf,false);
     conf.verbosity = oldVerbosity;
 
     % Parse Results properly
@@ -169,7 +173,7 @@ while RoomForImprovement
         capPerAnt = estObj./problem.NmaxArray;
         DeltaCap = estObj-problem.MinObjF;
         % The DeltaCap of the users that are not to be assigned should be 0
-        DeltaCap(setdiff(1:problem.nUsers,usersToBeAssigned)) = 0;
+        DeltaCap(setdiff(1:nUsers,usersToBeAssigned)) = 0;
         AvailableAnt = floor(DeltaCap./capPerAnt);
         usersNotInNeed = find(AvailableAnt > 0);
         SpareAntennas = AvailableAnt(usersNotInNeed);
@@ -235,13 +239,13 @@ if conf.verbosity > 1
     % Group array assignments: 3 rows (x, y, z coordinates), problem.Nmax
     % columns (antennas selected from the patch), and N layers (number of users
     % i.e. number of different assignations from the same patch and Nmax)
-    arrays = o_getArrays(problem.nUsers,W,px,py,pz);
+    arrays = o_getArrays(nUsers,W,px,py,pz);
     o_plot_feasible_comb(problem,conf,patch,arrays);
 end
 
 if problem.DEBUG
     nAntennasTot = 0;
-    for id =1:problem.nUsers
+    for id =1:nUsers
         nAntennas = length(W(id,W(id,:)~=0));
         fprintf("\t\t\tID=%d\t#Ant=%d\n",id,nAntennas);
         nAntennasTot = nAntennasTot + nAntennas;

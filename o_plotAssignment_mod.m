@@ -25,11 +25,11 @@ function o_plotAssignment_mod(problem, handle_Conf_Array)
 %         end
 %         text(x_u(i)+dx, y_u(i)+dy, z_u(i)+dz, ['User ',num2str(i)]);
 %     end
-    fprintf('Plotting selected pattern for user %d\n',IDmax);
-    fprintf('* %d [Theta: %.1f - Phi: %.1f]\n',IDmax,problem.thetaUsers(IDmax),problem.phiUsers(IDmax));
-    for idx = 1:length(IDmin)
-        fprintf('  %d [Theta: %.1f - Phi: %.1f]\n',IDmin(idx),problem.thetaUsers(IDmin(idx)),problem.phiUsers(IDmin(idx)));
-    end
+%     fprintf('Plotting selected pattern for user %d\n',IDmax);
+%     fprintf('* %d [Theta: %.1f - Phi: %.1f]\n',IDmax,problem.thetaUsers(IDmax),problem.phiUsers(IDmax));
+%     for idx = 1:length(IDmin)
+%         fprintf('  %d [Theta: %.1f - Phi: %.1f]\n',IDmin(idx),problem.thetaUsers(IDmin(idx)),problem.phiUsers(IDmin(idx)));
+%     end
     
     figure;
     % Plot Theta cuts - specify Phi

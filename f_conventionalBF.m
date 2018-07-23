@@ -22,7 +22,7 @@ function [W_LCMV,W_CBF,handle_ConformalArray,estObj_LCMV,estObj_CBF] = f_convent
 %   problem = o_read_input_problem('data/metaproblem_test.dat');
 %   conf = o_read_config('data/config_test.dat');
 %   conf.verbosity = 1;  % To visualize metrics on command line
-%   problem.nUsers = 5;  % Fix number of users manually for example
+%   nUsers = 5;  % Fix number of users manually for example
 %   [problem,~,~] = f_configuration(conf,problem);
 %   problem.N_Antennas = nAntennas;  % Select number of antennas
 %   problem.NxPatch = floor(sqrt(problem.N_Antennas));  % Adjust
@@ -44,14 +44,16 @@ function [W_LCMV,W_CBF,handle_ConformalArray,estObj_LCMV,estObj_CBF] = f_convent
 
 % Restrict sub-arrays to Localized for LCMV
 problem.arrayRestriction = 'Localized';
+% Restrict the number of users to the candidate Set for current slot
+nUsers = length(candSet);
 % Compute number of sub-arrays to assign per user. We ensure each user
 % receives one array and locate them horizontaly
-if ceil(sqrt(problem.N_Antennas)) > problem.nUsers
-    problem.NySubarrays = problem.nUsers;
+if ceil(sqrt(problem.N_Antennas)) > nUsers
+    problem.NySubarrays = nUsers;
     problem.NxSubarrays = 1;
 else
-    if mod(problem.nUsers,2)~=0;  t = factor(problem.nUsers + 1);  % odd
-    else;                         t = factor(problem.nUsers);  % even
+    if mod(nUsers,2)~=0;  t = factor(nUsers + 1);  % odd
+    else;                 t = factor(nUsers);  % even
     end
     t = [t(1) prod(t(2:end))];
     problem.NxSubarrays = t(1);
@@ -62,9 +64,9 @@ problem = o_compute_antennas_per_user(problem,candSet);
 % Create subarray partition
 problem = o_create_subarray_partition(problem);
 % Distribute partitions amongst users
-totSubArrays_1 = floor((problem.NxSubarrays * problem.NySubarrays) / problem.nUsers);
-remainder = rem((problem.NxSubarrays * problem.NySubarrays),problem.nUsers);
-totSubArrays = totSubArrays_1 .* ones(1,problem.nUsers);
+totSubArrays_1 = floor((problem.NxSubarrays * problem.NySubarrays) / nUsers);
+remainder = rem((problem.NxSubarrays * problem.NySubarrays),nUsers);
+totSubArrays = totSubArrays_1 .* ones(1,nUsers);
 totSubArrays(1:remainder) = totSubArrays(1:remainder) + 1;
 % Recreate the conformal array
 problem.NzPatch = problem.NxPatch;
@@ -79,8 +81,8 @@ problem.possible_locations = handle_ConformalArray.getElementPosition;
 
 % Antennas assigned to each user (fixed)
 mySubArray = (1:1:(problem.NxSubarrays * problem.NySubarrays));
-relevant_positions = cell(problem.nUsers,1);
-for valID = 1:problem.nUsers
+relevant_positions = cell(nUsers,1);
+for valID = 1:nUsers
     partAssignation = mySubArray(1:totSubArrays(valID));
     temp = [];
     for ass = partAssignation
@@ -93,10 +95,10 @@ for valID = 1:problem.nUsers
 end
 
 % Compute weights (beamforming)
-PhiTheta = ([-problem.phiUsers ; -problem.thetaUsers]);
-W_LCMV = zeros(problem.nUsers, problem.NxPatch*problem.NyPatch);
-W_CBF = zeros(problem.nUsers, problem.NxPatch*problem.NyPatch);
-for id = 1:problem.nUsers
+PhiTheta = ([-problem.phiUsers(candSet) ; -problem.thetaUsers(candSet)]);
+W_LCMV = zeros(nUsers, problem.NxPatch*problem.NyPatch);
+W_CBF = zeros(nUsers, problem.NxPatch*problem.NyPatch);
+for id = 1:nUsers
     Nant_user = length(relevant_positions{id});
     % Convert antenna ID's into physical locations
     elementPos = [problem.possible_locations(1,relevant_positions{id});...
@@ -107,7 +109,7 @@ for id = 1:problem.nUsers
     % Apply LCMV Beamformer for selected user
     sv = steervec(elementPosNorm,PhiTheta);
     Sn = eye(Nant_user);
-    resp = zeros(problem.nUsers,1) + eps;
+    resp = zeros(nUsers,1) + eps;
     resp(id) = 1;  % Maximum restricted to limit (33dB)
     w_lcmv = lcmvweights(sv,resp,Sn);  % LCMV Beamformer method
 
@@ -125,8 +127,8 @@ end
 
 % Extract Directivities
 conf.verbosity = 0;
-[~,~,Cap_LCMV,SINRLCMV_PB]  = f_BF_results(W_LCMV,handle_ConformalArray,problem,conf,false);
-[~,~,Cap_CBF,SINRCBF_PB]  = f_BF_results(W_LCMV,handle_ConformalArray,problem,conf,false);
+[~,~,Cap_LCMV,SINRLCMV_PB]  = f_BF_results(W_LCMV,handle_ConformalArray,candSet,problem,conf,false);
+[~,~,Cap_CBF,SINRCBF_PB]  = f_BF_results(W_LCMV,handle_ConformalArray,candSet,problem,conf,false);
 
 if conf.MinObjFIsSNR
     estObj_LCMV = db2pow(SINRLCMV_PB).';

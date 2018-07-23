@@ -31,6 +31,7 @@ function [problem] = o_read_input_problem(problem_file)
                 struct('name','Ptx','type','float');
                 struct('name','Bw','type','float');
                 struct('name','c','type','float');
+                struct('name','mcsPolicy','type','char');
                 struct('name','realizations','type','int');
                 struct('name','trafficType','type','char');
                 struct('name','iat','type','float');

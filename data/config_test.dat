@@ -1,6 +1,6 @@
 % ---------------- BASIC PARAMETERS ------------------------------------- %
-detLocation      = true;  % Determine if location is deterministic
-useCasesLocation = true;  % Determines if the location is useCase based. For further information about use cases, check o_generate_positions.
+detLocation      = false;  % Determine if location is deterministic
+useCasesLocation = false;  % Determines if the location is useCase based. For further information about use cases, check o_generate_positions.
 useCaseLocation   = 1;     % Defines the use case (1,2,3,4,5,6)
 % ----------------------------------------------------------------------- %
 
@@ -25,8 +25,8 @@ mutationImpact           = 0.2;    % Standard deviation of the normal distributi
 PopulationSize_Data      = 30;     % Heuristics
 EliteCount_Data          = 7;      % Heuristics
 CrossoverFraction_Data   = 0.3;    % Heuristics
-Maxgenerations_Data      = 150;    % Maximum number of Generations in the algorithm
-MaxStallgenerations_Data = 50;     % Maximum number of Generations after which, if not outperforming previous generations, stop the algorithm
+Maxgenerations_Data      = 50;    % Maximum number of Generations in the algorithm
+MaxStallgenerations_Data = 20;     % Maximum number of Generations after which, if not outperforming previous generations, stop the algorithm
 FunctionTolerance_Data   = 1e-10;  % Heuristics stops when not improving solution by this much
 GArndImpact              = 0;    % GA-rnd sub-heuristics impact (random modifications introduced) on final GA solution
 GArndmodifyAmpl          = false;  % GA-rnd sub-heuristics: modify also the amplitudes?
@@ -35,7 +35,7 @@ GArndmodifyAmpl          = false;  % GA-rnd sub-heuristics: modify also the ampl
 % ---------------- CHANNEL PARAMETERS ----------------------------------- %
 Use5GChannel   = true;  % Sets whether we use a real 5G 3GPP TR 138 901 complaint channel or a basic one
 multiPath      = false;  % Multi-path channel or LOS channel. The former requires information of the paths in the input file
-DelayProfile   = 'CDL-D';  % Sets the channel delay profile ('CDL-A', 'CDL-B', 'CDL-C', 'CDL-D', 'CDL-E')
+DelayProfile   = 'CDL-C';  % Sets the channel delay profile ('AWGN, 'CDL-A', 'CDL-B', 'CDL-C', 'CDL-D', 'CDL-E')
 % ----------------------------------------------------------------------- %
 
 % ---------------- DEBUGGING PARAMETERS --------------------------------- %

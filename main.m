@@ -1,7 +1,8 @@
 function [flows,CapTot,TXbitsTot,THTot,lastSlotSim,lastSelFlow,varargout] = main(varargin)
-%MAIN - This is the main runnable in the Project. The code is built as a Discrete
-%Event Simulator (DES) that emulates a 5G Base Station (BS) operating in
-%the millimeter wave band. The code iterates over the following steps: 
+% MAIN - This is the main runnable in the Project. The code is built as a
+% Discrete Event Simulator (DES) that emulates a 5G Base Station (BS)
+% operating in the millimeter wave band. The code iterates over the
+% following steps:
 %
 %  1. Generate 5G traffic closely ressembling the real traffic based on
 %     information extracted from Data Bases. 
@@ -81,6 +82,7 @@ elseif (nargin==0)
     conf = o_read_config('data/config_test.dat');
     % Input parameters
     [problem,~,flows] = f_configuration(conf, problem);  % Struct with configuration parameters
+    baseFlows = flows;
     % Copy initial flows for plotting purposes (to see progression of sim)
     varargout{1} = flows;  % baseFlows: for printing purposes at the end of execution
     fprintf('Main: Parameters ovewritten in Main. Running main...\n');
@@ -104,7 +106,7 @@ while(t<Tsym)
     % Distribute Flow accross users. Either we aggregate or disaggregate
     % overlapping flows in the current slot. Select the current flow for
     % each user
-    [flows,selFlow] = f_distFlow(t,flows,Tslot,problem.FLAGagg,problem.DEBUG);
+    [flows,selFlow] = f_distFlow(t,flows,Tslot,problem.FLAGagg);
     % Compute priorities. As of now, priorities are computed as the inverse
     % of the time_to_deadline (for simplicity)
     if any(selFlow)~=0
@@ -115,6 +117,9 @@ while(t<Tsym)
             candSet = combIds(k,:);
             candSet = candSet(candSet~=0);
             candTH = combTH(k,:);
+%             if length(candSet) ~= problem.nUsers
+%                 display('mierda');
+%             end
 %             candTH = candTH(candTH~=0);
             %% SECTION HEURISTICS METHOD
             % Heuristics - Preprocessing
@@ -128,12 +133,14 @@ while(t<Tsym)
                 [Cap,SNRList,~] = f_heuristicsDummy(problem.MinObjF,conf.MinObjFIsSNR,problem.MCSPER.snrRange);
             elseif ~problem.heuristicsDummy && ~isempty(candSet)
                 % Conventional Beamforming (CBF and LCMV)
-                [~,W_CBF,arrayHandle,~,~] = f_conventionalBF(problem,conf,candSet);
-                [~,~,Cap,SNRList]  = f_BF_results(W_CBF,arrayHandle,problem,conf,false);  %#ok
-                problem.initialW = W_CBF;
+                [W_LCMV,W_CBF,arrayHandle,~,~] = f_conventionalBF(problem,conf,candSet);  %#ok
+                [~,~,Cap,SNRList]  = f_BF_results(W_LCMV,arrayHandle,candSet,problem,conf,false);  %#ok
+                problem.initialW = W_LCMV;
                 % Real Heuristics
-                [~,W,arrayHandle,~] = f_heuristics(problem,conf,candSet);
-                [~,~,Cap,SNRList]  = f_BF_results(W,arrayHandle,problem,conf,false);
+%                 [~,W,arrayHandle,~] = f_heuristics(problem,conf,candSet);
+%                 [~,W,~,~,~,~] = CBG_solveit(problem,conf,candSet);
+%                 [~,~,Cap,SNRList]  = f_BF_results(W,arrayHandle,candSet,problem,conf,true);
+%                 W = W_LCMV;
             end
             % Heuristics - Post Processing
             Caps = zeros(1,problem.nUsers);
@@ -147,13 +154,14 @@ while(t<Tsym)
                               % and the tentative achievable TH
             if ~any(estTH./candTH)<threshold
                 % Select MCS for estimated SNR
-                [MCS,~] = f_selectMCS(candSet,SNRList,problem.targetPER,problem.MCSPER,problem.DEBUG);
+                [MCS,PER,RATE] = f_selectMCS(candSet,SNRList,problem.targetPER,problem.MCSPER,problem.mcsPolicy,problem.DEBUG);  %#ok
                 % Compute bits that can be transmitted and map it with the 
                 % bits remaining to be transmitted
                 TXbits = zeros(1,problem.nUsers);  % Reality - bits
                 THiter = zeros(1,problem.nUsers);  % Reality - throughput
                 for id = candSet
-                    estTXbits = estTH(id==candSet).*Tslot.*1e-3;
+                    rate = max(estTH(id==candSet),RATE(id));  % in bps
+                    estTXbits = rate.*Tslot.*1e-3;  % Achievable transmit bits
                     if estTXbits > flows(id).remaining(selFlow(id))  %#ok  % estTXbits is always scalar
                         % Bits transmitted in slot
                         TXbits(1,id) = flows(id).remaining(selFlow(id));
@@ -171,8 +179,8 @@ while(t<Tsym)
                 % Append throughput achieved in slot
                 THTot = [THTot ; THiter];                       %#ok<AGROW>
                 % Evaluate PER
-%                 finalSet = f_PERtentative(candSet,PER);
-                finalSet = f_PER(candSet, problem, W, TXbits, MCS, problem.fullChannels, arrayHandle);
+                finalSet = f_PERtentative(candSet,PER);
+%                 finalSet = f_PER(candSet, problem, W, TXbits, MCS, problem.fullChannels, arrayHandle);
                 if ~isempty(finalSet); finalTH = THiter(finalSet);
                 else;                  finalTH = [];
                 end
@@ -198,5 +206,6 @@ while(t<Tsym)
 end
 
 lastSlotSim = t - 1;
+main_plotting(problem,TXbitsTot,THTot,baseFlows,lastSelFlow)
 
 %EOF
