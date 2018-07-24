@@ -3,7 +3,7 @@ function [thetaPos, phiPos, dPos] = o_generate_positions(conf,problem)
     pd = makedist('Normal');
     pd.sigma = 45;
     t = truncate(pd,-45,45);
-    dUser = problem.dUsers(1:problem.nUsers);
+    dUser = 5 * ones(1, problem.nUsers);
 %     % Generate Angles for usee case (uc) distribution (deprecated)
 %     % UC 1
 %     uc_el(1,:) = [0 0];      uc_az(1,:) = [+15 -15];  uc_dist(1,:) = [5 5];
