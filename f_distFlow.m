@@ -1,4 +1,4 @@
-function [flows,selectedFlows] = f_distFlow(t,flows,Tslot,aggregate)
+function [flows,selectedFlows] = f_distFlow(t,flows,Tslot,selFlow,aggregate)
 % f_distFlow - It controls the PHY flows of the users, defined as the
 % required bits to be transmitted per application per user. If more than
 % one flow is present in the current time slot 't', then the flows are
@@ -16,6 +16,7 @@ function [flows,selectedFlows] = f_distFlow(t,flows,Tslot,aggregate)
 %            it is intended to transmit, the remaining amount of bits, the
 %            expected throughput at a certain time slot, etcetera.
 %    Tslot - Duration of the time slot.
+%    selFlow - Last selected flow to boost the finding process.
 %    aggregate - Boolean Flag (True or False) that controls the flow
 %                aggregation policy.
 %
@@ -44,24 +45,32 @@ function [flows,selectedFlows] = f_distFlow(t,flows,Tslot,aggregate)
 Nusers = length(flows);  % Total number of users
 selectedFlows = zeros(Nusers,1);
 
-%     if DEBUG
-%         ha = tight_subplot(Nusers,1,[.05 .03],[.05 .01],[.1 .2]);
-%     end
-
 for id = 1:Nusers
     numPkt = length(flows(id).slots);  % Maximum number of packets to iterate over
-    for pkt = 1:numPkt
+    % Last selected packet for reference. If not, set the minimum: 1
+    pktRef = max(1,selFlow(id));
+    % Determine the earliest unserved packet whose slots contain current t
+    for pkt = (pktRef:1:numPkt)
+        idx0 = find(ismember(flows(id).slots{pkt},t)~=0,1);
+        if idx0
+            % Reference packet that lays within current slot
+            pktRef = pkt;
+            % Select this packet for transmission
+            selectedFlows(id) = pktRef;
+            break;
+        end
+    end
+    % Determine if any other packet overlaps in time with the current in t
+    for pkt = (pktRef+1:1:numPkt)
         % Initialize control variables
         idx2 = false;
-        % idx0 controls weather a flow is present in the slot
-        idx0 = find(ismember(flows(id).slots{pkt},t)~=0,1);
         % Only evaluate flow aggregation if we are not the last flow to
         % avoid array indexation out of available range (pkt+1)
-        if pkt<numPkt
+        if pkt<=numPkt
             % idx1 controls overlapping between flows
-            idx1 = find(ismember(flows(id).slots{pkt},flows(id).slots{pkt+1})~=0,1);
+            idx1 = find(ismember(flows(id).slots{pktRef},flows(id).slots{pkt})~=0,1);
             % idx2 controls if the overlapping happens within current slot
-            idx2 = isequal(flows(id).slots{pkt}(idx1),t);
+            idx2 = isequal(flows(id).slots{pktRef}(idx1),t);
         end
         if idx2 && aggregate
             % We DO aggregate traffic. This option increases the efficiency of the
@@ -69,26 +78,25 @@ for id = 1:Nusers
             % policy across the deadlines. Traffic is evenly distributed
             % between two periods:
             % Delta = 2nd deadline - current
-            Delta = flows(id).deadlines(pkt+1) - t + 1;
+            Delta = flows(id).deadlines(pkt) - t + 1;
             % Delta1 = 1nd deadline - current
-            Delta1 = flows(id).deadlines(pkt) - t + 1;
+            Delta1 = flows(id).deadlines(pktRef) - t + 1;
             % Delta2 = 2nd deadline - 1nd deadline
-            Delta2 = flows(id).deadlines(pkt+1) - flows(id).deadlines(pkt);
+            Delta2 = flows(id).deadlines(pkt) - flows(id).deadlines(pktRef);
             % Define proportional variables
-            X = flows(id).remaining(pkt);
-            Y = flows(id).remaining(pkt+1);
+            X = flows(id).remaining(pktRef);
+            Y = flows(id).remaining(pkt);
             alpha = Delta1/Delta;
             beta = Delta2/Delta;
             % Redefine remaining bits to be transmitted in each flow
-            flows(id).remaining(pkt)   = alpha * (X+Y);
-            flows(id).remaining(pkt+1) =  beta * (X+Y);
+            flows(id).remaining(pktRef)   = alpha * (X+Y);
+            flows(id).remaining(pkt) =  beta * (X+Y);
             % Redefine the TH
-            flows(id).TH(pkt) = flows(id).remaining(pkt) / (Delta1*Tslot*1e-3);
-            flows(id).TH(pkt+1) = flows(id).remaining(pkt+1) / (Delta2*Tslot*1e-3);
+            flows(id).TH(pktRef) = flows(id).remaining(pktRef) / (Delta1*Tslot*1e-3);
+            flows(id).TH(pkt) = flows(id).remaining(pkt) / (Delta2*Tslot*1e-3);
             % Cut the number of slots for the second overlapping flow
-            flows(id).slots{pkt+1} = (max(flows(id).slots{pkt}) + 1 ...
-                                      : 1 : max(flows(id).slots{pkt+1}));
-            selectedFlows(id) = pkt;
+            flows(id).slots{pkt} = (max(flows(id).slots{pktRef}) + 1 ...
+                                      : 1 : max(flows(id).slots{pkt}));
         elseif idx2 && ~aggregate
             % (TODO)
             % We DO NOT aggregate traffic, meaning that we disaggregate any
@@ -98,11 +106,6 @@ for id = 1:Nusers
             % side (less throughput) on the first interval (1nd deadline -
             % current), we increase substantially the demanded throughput in
             % the second one (2nd deadline - 1nd deadline).
-        elseif ~isempty(idx0)
-            % There is only one flow within this time slot. Its ID is
-            % determined by the flow (pkt) number
-            selectedFlows(id) = pkt;
-            break;
         end
     end
 

@@ -7,19 +7,19 @@
 % packets that didn't make it to the receiver. For those flows that have
 % failed and it was the last chance to make it (las slot available), give
 % up and increase the counter of failed flows
-function flows = f_updateFlow(t,flows,selFlow,finalSet,finalTH,candSet,Tslot,DEBUG)
+function flows = f_updateFlow(t,flows,selFlow,finalSet,THiter,candSet,Tslot,DEBUG)
     % Packets with PER=0. Update flows of packets that made it
     selFinalFlow = selFlow(finalSet);  % Iterate over the meaningful set
     for id = finalSet
         succFlow = selFinalFlow(id==finalSet);
-        TXbits = finalTH(id==finalSet)*(Tslot*1e-3);
+        TXbits = THiter(id)*(Tslot*1e-3);
         flows(id).remaining(succFlow) = flows(id).remaining(succFlow) - TXbits;
         if DEBUG; fprintf('\tTS=%d\tID=%d\tFLOW=%d\tTX=%.1f(bits)\tremain=%.0f(bits)\n',t,id,succFlow,TXbits,flows(id).remaining(succFlow)); end
         % Check if the flow has no time left to be transmitted
         deadlineSlot = max(flows(id).slots{succFlow});
         nSlotsRem = deadlineSlot - t;
         % Determine if we have met the deadline for the indicated packet
-        if (nSlotsRem==0) && (flows(id).remaining(succFlow)>0)
+        if (nSlotsRem==0) && (flows(id).remaining(succFlow)>1)
             % We succesfully transmitted the packet but there are still
             % bits to be tx and this was the last chance we've got.
             % Increment failed flow count

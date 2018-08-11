@@ -40,18 +40,17 @@ problem.Nclasses = 1;  % Number of classes (applications running)
 deadlineApps = zeros(length(problem.appNameInteretList),1);
 for appType = problem.appNameInteretList
     nUserstoApps = strcmp(appType,problem.appNameInteretList);
+    % Configure delays for the applications. Note that it is needed that
+    % any delay is greater than Tslot.
     if strcmp(appType,'Youtube') || strcmp(appType,'Justin TV') || strcmp(appType,'Vimeo')
         % Application type is video
-%         deadlineApps(nUserstoApps) = 50;  % 50ms deadline time for app type
-        deadlineApps(nUserstoApps) = 5;  % 50ms deadline time for app type
+        deadlineApps(nUserstoApps) = 50;  % 50ms deadline time for app type
     elseif strcmp(appType,'Facebook')
         % Application type is Facebook
-%         deadlineApps(nUserstoApps) = 100;  % 100ms deadline time for app type
-        deadlineApps(nUserstoApps) = 5;  % 100ms deadline time for app type
+        deadlineApps(nUserstoApps) = 100;  % 100ms deadline time for app type
         % Application type is other
     elseif strcmp(appType,'Web Browsing') || strcmp(appType,'Twitter')
-%         deadlineApps(nUserstoApps) = 500;  % 500ms deadline time for app type
-        deadlineApps(nUserstoApps) = 5;  % 500ms deadline time for app type
+        deadlineApps(nUserstoApps) = 500;  % 500ms deadline time for app type
     end
 end
 
@@ -110,7 +109,8 @@ if strcmp(problem.trafficType,'synthetic')
     end
 elseif strcmp(problem.trafficType,'dataSet')
     if ~exist('traffic','var') || ~exist('appNameList','var') || ~exist('appColorList','var')
-        load('data/TrafficDataSetUPC','traffic','appNameList','appColorList');
+%         load('data/TrafficDataSetUPC','traffic','appNameList','appColorList');  % old set
+        load('data/TrafficDataSetUPC2','traffic','appNameList','appColorList'); % new set
     end
     for u = 1:problem.nUsers
         appType = appTypePerUser(u);

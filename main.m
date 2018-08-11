@@ -42,7 +42,7 @@ function [flows,CapTot,TXbitsTot,THTot,lastSlotSim,lastSelFlow,varargout] = main
 % Subfunctions: Calls most of the o_*, s_* and f_* functions
 % MAT-files required: ToDo
 %
-% See also: main_runnable
+% See also: main_runnable , main_plotting
 %
 %------------- BEGIN CODE --------------
 
@@ -82,7 +82,7 @@ elseif (nargin==0)
     conf = o_read_config('data/config_test.dat');
     % Input parameters
     [problem,~,flows] = f_configuration(conf, problem);  % Struct with configuration parameters
-    baseFlows = flows;
+%     baseFlows = flows;
     % Copy initial flows for plotting purposes (to see progression of sim)
     varargout{1} = flows;  % baseFlows: for printing purposes at the end of execution
     fprintf('Main: Parameters ovewritten in Main. Running main...\n');
@@ -101,12 +101,13 @@ TXbitsTot = [];
 THTot = [];
 CapTot = [];
 lastSelFlow = zeros(problem.nUsers,1);  % For printing purposes at the end of execution
+selFlow = zeros(problem.nUsers,1);  % Inizialization
 while(t<Tsym)
 %     fprintf('** SLOT ID: %d\n',t);
     % Distribute Flow accross users. Either we aggregate or disaggregate
     % overlapping flows in the current slot. Select the current flow for
     % each user
-    [flows,selFlow] = f_distFlow(t,flows,Tslot,problem.FLAGagg);
+    [flows,selFlow] = f_distFlow(t,flows,Tslot,selFlow,problem.FLAGagg);
     % Compute priorities. As of now, priorities are computed as the inverse
     % of the time_to_deadline (for simplicity)
     if any(selFlow)~=0
@@ -117,77 +118,72 @@ while(t<Tsym)
             candSet = combIds(k,:);
             candSet = candSet(candSet~=0);
             candTH = combTH(k,:);
-%             if length(candSet) ~= problem.nUsers
-%                 display('mierda');
-%             end
-%             candTH = candTH(candTH~=0);
-            %% SECTION HEURISTICS METHOD
+%             candTH(candTH~=0) = [];
+            %% CONFIGURE BEAMFORMING (LCMV, CBF, HEURISTICS, DUMMY)
             % Heuristics - Preprocessing
             problem.MaxObjF = Inf(1,length(candSet));
             problem.MinObjF = candTH/problem.Bw;
             if conf.MinObjFIsSNR;     problem.MinObjF = 2.^problem.MinObjF - 1;
             end
-            % Heuristics - Call
-            if problem.heuristicsDummy && ~isempty(candSet)
-                % Dummy heuristics
-                [Cap,SNRList,~] = f_heuristicsDummy(problem.MinObjF,conf.MinObjFIsSNR,problem.MCSPER.snrRange);
-            elseif ~problem.heuristicsDummy && ~isempty(candSet)
-                % Conventional Beamforming (CBF and LCMV)
-                [W_LCMV,W_CBF,arrayHandle,~,~] = f_conventionalBF(problem,conf,candSet);  %#ok
-                [~,~,Cap,SNRList]  = f_BF_results(W_LCMV,arrayHandle,candSet,problem,conf,false);  %#ok
-                problem.initialW = W_LCMV;
-                % Real Heuristics
-%                 [~,W,arrayHandle,~] = f_heuristics(problem,conf,candSet);
-%                 [~,W,~,~,~,~] = CBG_solveit(problem,conf,candSet);
-%                 [~,~,Cap,SNRList]  = f_BF_results(W,arrayHandle,candSet,problem,conf,true);
-%                 W = W_LCMV;
+            % Evaluate SINR using BF algorithm
+            if strcmp(problem.BFalgorithm,'CBF') && ~isempty(candSet)
+                % Conventional Beamforming (CBF)
+                [~,W,arrayHandle,~,~] = f_conventionalBF(problem,conf,candSet);
+                [~,~,~,SNRList]  = f_BF_results(W,arrayHandle,candSet,problem,conf,false);
+            elseif strcmp(problem.BFalgorithm,'LCMV') && ~isempty(candSet)
+                % Linearly Constrained Minimum Variance (LCMV)
+                [W,~,arrayHandle,~,~] = f_conventionalBF(problem,conf,candSet);
+                [~,~,~,SNRList]  = f_BF_results(W,arrayHandle,candSet,problem,conf,false);
+            elseif strcmp(problem.BFalgorithm,'HEU') && ~isempty(candSet)
+                % Heuristics with LCMV as main BF
+                [~,W,~,~,~,~] = CBG_solveit(problem,conf,candSet);
+                [~,~,~,SNRList]  = f_BF_results(W,arrayHandle,candSet,problem,conf,false);
+            elseif strcmp(problem.BFalgorithm,'HEU-LCMV') && ~isempty(candSet)
+                % Heuristics with LCMV as main BF and initial ant location
+                [W_init,~,arrayHandle,~,~] = f_conventionalBF(problem,conf,candSet);
+                problem.initialW = W_init;
+                [~,W,~,~,~,~] = CBG_solveit(problem,conf,candSet);
+                [~,~,~,SNRList]  = f_BF_results(W,arrayHandle,candSet,problem,conf,false);
+            elseif strcmp(problem.BFalgorithm,'table-LCMV') && ~isempty(candSet)
+                SNRList = repmat(problem.SINR_LCMV,length(candSet),1);
+            elseif strcmp(problem.BFalgorithm,'table-CBF') && ~isempty(candSet)
+                SNRList = repmat(problem.SINR_CBF,length(candSet),1);
+            elseif strcmp(problem.BFalgorithm,'table-HEU') && ~isempty(candSet)
+                SNRList = repmat(problem.SINR_HEU,length(candSet),1);
+            elseif strcmp(problem.BFalgorithm,'dummy') && ~isempty(candSet)
+                [~,SNRList,~] = f_heuristicsDummy(problem.MinObjF,conf.MinObjFIsSNR,problem.MCSPER.snrRange);
             end
-            % Heuristics - Post Processing
-            Caps = zeros(1,problem.nUsers);
-            Caps(1,candSet) = Cap;
-            CapTot  = [CapTot ; Caps];  %#ok<AGROW> % in bps/Hz
-            estTH   = Cap*problem.Bw;  % in bps
-            %% SECTION POST HEURISTICS
-            % Decide whether to take the tentative TH or give it a
-            % another round (This is Policy PLk)
+            %% EVALUATE PERFORMANCE - MCS, PER AND FLOW UPDATE
+            % Whether to take the tentative TH or give it a another round
             threshold = 0.7;  % Represents the ratio between the demanded 
                               % and the tentative achievable TH
-            if ~any(estTH./candTH)<threshold
-                % Select MCS for estimated SNR
-                [MCS,PER,RATE] = f_selectMCS(candSet,SNRList,problem.targetPER,problem.MCSPER,problem.mcsPolicy,problem.DEBUG);  %#ok
+            % Select MCS for estimated SNR
+            [MCS,PER,RATE] = f_selectMCS(candSet,SNRList,problem.targetPER,problem.MCSPER,problem.mcsPolicy,problem.DEBUG);  %#ok
+            if ~any(RATE./candTH)<threshold
                 % Compute bits that can be transmitted and map it with the 
                 % bits remaining to be transmitted
-                TXbits = zeros(1,problem.nUsers);  % Reality - bits
-                THiter = zeros(1,problem.nUsers);  % Reality - throughput
+                TBitsIter = zeros(1,problem.nUsers);  % Reality - bits
+                THIter = zeros(1,problem.nUsers);  % Reality - throughput
                 for id = candSet
-                    rate = max(estTH(id==candSet),RATE(id));  % in bps
+                    rate = RATE(candSet==id);  % in bps
                     estTXbits = rate.*Tslot.*1e-3;  % Achievable transmit bits
-                    if estTXbits > flows(id).remaining(selFlow(id))  %#ok  % estTXbits is always scalar
-                        % Bits transmitted in slot
-                        TXbits(1,id) = flows(id).remaining(selFlow(id));
-                        % Throughput achieved in slot
-                        THiter(id) = TXbits(1,id)./(Tslot.*1e-3);
-                    else
-                        % Bits transmitted in slot
-                        TXbits(1,id) = estTXbits;
-                        % Throughput achieved in slot
-                        THiter(id) = estTH(id==candSet);
-                    end
+                    % Bits transmitted in slot
+                    TBitsIter(1,id) = min(flows(id).remaining(selFlow(id)) , estTXbits);
+                    % Throughput achieved in slot
+                    THIter(1,id) = min(TBitsIter(1,id)./(Tslot.*1e-3) , rate);
                 end
-                % Append bits transmitted and throughput achieved in slot. 
-                TXbitsTot = [TXbitsTot ; TXbits];               %#ok<AGROW>
-                % Append throughput achieved in slot
-                THTot = [THTot ; THiter];                       %#ok<AGROW>
                 % Evaluate PER
                 finalSet = f_PERtentative(candSet,PER);
 %                 finalSet = f_PER(candSet, problem, W, TXbits, MCS, problem.fullChannels, arrayHandle);
-                if ~isempty(finalSet); finalTH = THiter(finalSet);
-                else;                  finalTH = [];
+                if ~isempty(finalSet)
+                    TBitsIter(setdiff(candSet,finalSet)) = 0;
+                    THIter(setdiff(candSet,finalSet)) = 0;
                 end
-                TXbitsTot(end,setdiff(candSet,finalSet)) = 0;
-                THTot(end,setdiff(candSet,finalSet)) = 0;
+                % Append results to global final variable
+                TXbitsTot = [TXbitsTot ; TBitsIter];               %#ok<AGROW>
+                THTot = [THTot ; THIter];                       %#ok<AGROW>
                 % Update remaining bits to be sent upon tx success
-                flows = f_updateFlow(t,flows,selFlow,finalSet,finalTH,candSet,Tslot,problem.DEBUG);
+                flows = f_updateFlow(t,flows,selFlow,finalSet,THIter,candSet,Tslot,problem.DEBUG);
                 lastSelFlow(selFlow~=0) = selFlow(selFlow~=0);
                 % Exit the for loop - we have served in this time slot,
                 % there's no way back even though some pkts didn't make it
@@ -205,7 +201,17 @@ while(t<Tsym)
     t = t + 1;
 end
 
-lastSlotSim = t - 1;
-main_plotting(problem,TXbitsTot,THTot,baseFlows,lastSelFlow)
+% % Plotting
+% lastSlotSim = t - 1;
+% main_plotting(problem,TXbitsTot,THTot,baseFlows,lastSelFlow)
+
+% Generate report
+for n = 1:problem.nUsers
+    totPcksOK = sum(sum(flows(n).success));
+    totPcksNOK = sum(sum(flows(n).failed));
+    totPcks = totPcksOK + totPcksNOK;
+    fprintf('ID %d\tSuccess rate: %.1f (%%)\n',n,100*totPcksOK/totPcks);
+end
+
 
 %EOF

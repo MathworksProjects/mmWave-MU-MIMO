@@ -9,7 +9,7 @@ function [MCS,PER, RATE] = f_selectMCS(candSet,SNRList_lin,PERtarget,MCSPER,mcsP
 %
 % Inputs:
 %    candSet -  User ID being considered in the current slot.
-%    SNRList_lin - SNR estimated by the heuristics (dB).
+%    SNRList_lin - SNR estimated by the heuristics (dB) [length(candSet) x 1]
 %    PERtarget - The maximum tolerable PER.
 %    mcsPolicy - Policy as to how the MCS is selected.
 %    DEBUG -  If True, it plots the results.
@@ -71,7 +71,7 @@ for k =1:Nusers
 
     if DEBUG==1 * risky==0
         fprintf('\t\t\tID=%d\tMCS=%d\tPER=%.1f(%%)\tSNR=%.2f(dB)\n',candSet(k),MCS(k),PER(k).*1e2,pow2db(SNRList_lin(k)));
-    elseif DEBUG==1 && risky==1
+    elseif DEBUG==1 * risky==1
         fprintf('\t\t\tID=%d\tMCS=%d\tPER=%.1f(%%)\tSNR=%.2f(dB)  (Failed to meet PER required)\n',candSet(k),MCS(k),PER(k).*1e2,pow2db(SNRList_lin(k)));
     end
 end

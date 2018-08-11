@@ -1,7 +1,8 @@
 function [problem] = o_compute_antennas_per_user(problem,usersToBeAssigned)
-%O_COMPUTE_ANTENNAS_PER_USER - The function computes the number of antennas
-%to be allocated to each user based on either inheritted beamforming
-%methods (CBF or LCMV) or the traffic demands (proposed mechanism)
+% O_COMPUTE_ANTENNAS_PER_USER - The function computes the number of
+% antennas to be allocated to each user based on either inheritted
+% beamforming methods (CBF or LCMV) or the traffic demands (proposed
+% mechanism)
 %
 % Syntax:  [problem] = o_compute_antennas_per_user(problem,usersToBeAssigned)
 %
@@ -28,7 +29,11 @@ function [problem] = o_compute_antennas_per_user(problem,usersToBeAssigned)
 % Variable to store the total number of antennas to assign to each user
 problem.NmaxArray = zeros(1,problem.nUsers);
 
-if isfield(problem,'initialW')
+% Get information from the previous caller on the stack. We only inherit
+% the antenna configuration if we are running heuristics
+stack = dbstack;
+prevCaller = stack(2).name;
+if isfield(problem,'initialW') && strcmp(prevCaller,'CBG_solveit')
     % Heuristics first assign antennas based onnthe configuration mandated
     % by conventional beamforming methods (either CBF or LCMV)
     for u = usersToBeAssigned

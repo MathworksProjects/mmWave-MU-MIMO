@@ -8,28 +8,28 @@ function o_plotAssignment_mod(problem, handle_Conf_Array)
     elevation = -90:1:90;  % Elevation angle range
     
     % Array geometry and pattern for optimized values.
-%     figure;
-%     handle_Conf_Array.viewArray;
-%     figure;
-%     handle_Conf_Array.pattern(problem.freq,'Type','powerdb');
-%     hold on
-%     dx = 0.1;   dy = 0.1;   dz = 0.3;
-%     [x_u,y_u,z_u] = sph2cart(problem.phiUsers/360*2*pi,...
-%         problem.thetaUsers/360*2*pi,...
-%         3+50*ones(size(problem.phiUsers)));%3*10^(max(max(p))/10)*
-%     % Visualize user location/channels
-%     for i = 1:problem.nUsers
-%         line([0,x_u(i)],[0,y_u(i)],[0,z_u(i)]);
-%         if i == IDmax;   scatter3(x_u(i),y_u(i),z_u(i),'r');
-%         else;            scatter3(x_u(i),y_u(i),z_u(i),'g');
-%         end
-%         text(x_u(i)+dx, y_u(i)+dy, z_u(i)+dz, ['User ',num2str(i)]);
-%     end
-%     fprintf('Plotting selected pattern for user %d\n',IDmax);
-%     fprintf('* %d [Theta: %.1f - Phi: %.1f]\n',IDmax,problem.thetaUsers(IDmax),problem.phiUsers(IDmax));
-%     for idx = 1:length(IDmin)
-%         fprintf('  %d [Theta: %.1f - Phi: %.1f]\n',IDmin(idx),problem.thetaUsers(IDmin(idx)),problem.phiUsers(IDmin(idx)));
-%     end
+    figure;
+    handle_Conf_Array.viewArray;
+    figure;
+    handle_Conf_Array.pattern(problem.freq,'Type','powerdb');
+    hold on
+    dx = 0.1;   dy = 0.1;   dz = 0.3;
+    [x_u,y_u,z_u] = sph2cart(problem.phiUsers/360*2*pi,...
+        problem.thetaUsers/360*2*pi,...
+        3+50*ones(size(problem.phiUsers)));%3*10^(max(max(p))/10)*
+    % Visualize user location/channels
+    for i = 1:problem.nUsers
+        line([0,x_u(i)],[0,y_u(i)],[0,z_u(i)]);
+        if i == IDmax;   scatter3(x_u(i),y_u(i),z_u(i),'r');
+        else;            scatter3(x_u(i),y_u(i),z_u(i),'g');
+        end
+        text(x_u(i)+dx, y_u(i)+dy, z_u(i)+dz, ['User ',num2str(i)]);
+    end
+    fprintf('Plotting selected pattern for user %d\n',IDmax);
+    fprintf('* %d [Theta: %.1f - Phi: %.1f]\n',IDmax,problem.thetaUsers(IDmax),problem.phiUsers(IDmax));
+    for idx = 1:length(IDmin)
+        fprintf('  %d [Theta: %.1f - Phi: %.1f]\n',IDmin(idx),problem.thetaUsers(IDmin(idx)),problem.phiUsers(IDmin(idx)));
+    end
     
     figure;
     % Plot Theta cuts - specify Phi

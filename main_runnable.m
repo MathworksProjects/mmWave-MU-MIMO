@@ -3,7 +3,7 @@ clear; clc; close all;
 addpath('utilities','-end');  % Add utilities folder at the end of search path
 
 %% Define several experiments here and override variable values accordingly
-experimentList = [6 61];
+experimentList = [91];
 
 %% Experiment selection
 
@@ -128,9 +128,7 @@ end
 
 %% EXPERIMENT 6
 if any(experimentList(:)==6)
-%     nUsersList = [2 3 4 5 6 7 8];
-%     nUsersList = [2 4 6 8];
-    nUsersList = [6 8 10 12];
+    nUsersList = [2 4 6];
     % Input parameters
     input.nIter                = 1;
     input.nAntennas            = 12.^2;
@@ -138,7 +136,7 @@ if any(experimentList(:)==6)
     input.algorithm            = 'GA';
     input.detLocation          = true;
     input.useCasesLocation     = true;
-    input.useCaseLocationList  = 1;  % List of locations to plot over;
+    input.useCaseLocationList  = 4;  % List of locations to plot over;
     plotFLAG                   = false;  % Plotting flag
     for nUsers = nUsersList
         input.nUsers = nUsers;
@@ -148,13 +146,13 @@ end
 
 %% EXPERIMENT 6 - PLOTTING
 if any(experimentList(:)==61)
-    nUsersList = [6 8 10 12];
+    nUsersList = [2 4 6];
     input.nAntennas            = 12.^2;
     input.arrRestct            = 'None';
     input.algorithm            = 'GA';
     input.detLocation          = true;
     input.useCasesLocation     = true;
-    input.useCaseLocationList  = 1;  % List of locations to plot over;
+    input.useCaseLocationList  = 4;  % List of locations to plot over;
     % Call plot
     experiment6_plot(nUsersList,input);
 end
@@ -181,10 +179,12 @@ end
 
 %% EXPERIMENT 9
 if any(experimentList(:)==9)
-    nUsersList = [2 4 6 8 10 12];
+%     nUsersList = [2 4 6 8 10 12];
+    nUsersList = [2 4 6];
     % Input parameters
     input.nIter                = 1;
-    input.nAntennasList        = [12 14 16 18 20 22].^2;
+%     input.nAntennasList        = [12 14 16 18 20 22].^2;
+    input.nAntennasList        = [6].^2;
     input.arrayRestriction     = 'None';
     input.algorithm            = 'GA';
     input.detLocation          = true;
@@ -199,8 +199,12 @@ end
 
 %% EXPERIMENT 9 - PLOTTING
 if any(experimentList(:)==91)
-    nUsersList = [2 4 6 8 10 12];
-    input.nAntennasList        = [12 14 16 18 20 22].^2;
+%     nUsersList = [2 4 6 8 10 12];
+%     nUsersList = [2 4 6 8];
+    nUsersList = [2 4 6];
+%     input.nAntennasList        = [12 14 16 18 20 22].^2;
+%     input.nAntennasList        = [8 10].^2;
+    input.nAntennasList        = [6].^2;
     input.arrRestct            = 'None';
     input.algorithm            = 'GA';
     input.detLocation          = true;
@@ -1291,9 +1295,11 @@ function experiment6(input,plotFLAG)
     % Main execution
     for idxLoc = 1:length(useCaseLocationList)
         conf.PopulationSize_Data = PopSizeList(idxLoc);
-        conf.Maxgenerations_Data = 150;
         conf.EliteCount_Data = ceil(conf.PopulationSize_Data/5);
-        conf.MaxStallgenerations_Data = ceil(conf.Maxgenerations_Data/4);
+%         conf.Maxgenerations_Data = 150;
+%         conf.MaxStallgenerations_Data = ceil(conf.Maxgenerations_Data/4);
+        conf.Maxgenerations_Data = 30;
+        conf.MaxStallgenerations_Data = 10;
         % Select the localization
         conf.detLocation = detLocation;
         conf.useCasesLocation = useCasesLocation;
@@ -1878,16 +1884,16 @@ function experiment9_plot(nUsersList,input)
     useCaseLocation = input.useCaseLocation;
     MarkerList = {'s','*','o','x','d','p','h','^','v','>','<'};
     legList = cell(length(nAntennasList),1);
+    CapLCMV_final = zeros(length(nUsersList),length(nAntennasList));
+    CapSumLCMV_final = zeros(length(nUsersList),length(nAntennasList));
+    SINRLCMV_PB_final = zeros(length(nUsersList),length(nAntennasList));
+    CapCBF_final = zeros(length(nUsersList),length(nAntennasList));
+    CapSumCBF_final = zeros(length(nUsersList),length(nAntennasList));
+    SINRCBF_PB_final = zeros(length(nUsersList),length(nAntennasList));
+    CapHEU_final = zeros(length(nUsersList),length(nAntennasList));
+    CapSumHEU_final = zeros(length(nUsersList),length(nAntennasList));
+    SINRHEU_PB_final = zeros(length(nUsersList),length(nAntennasList));
     for idxAnt = 1:length(nAntennasList)
-        CapLCMV_final = zeros(length(nUsersList),1);
-        CapSumLCMV_final = zeros(length(nUsersList),1);
-        SINRLCMV_PB_final = zeros(length(nUsersList),1);
-        CapCBF_final = zeros(length(nUsersList),1);
-        CapSumCBF_final = zeros(length(nUsersList),1);
-        SINRCBF_PB_final = zeros(length(nUsersList),1);
-        CapHEU_final = zeros(length(nUsersList),1);
-        CapSumHEU_final = zeros(length(nUsersList),1);
-        SINRHEU_PB_final = zeros(length(nUsersList),1);
         for idxUsers = 1:length(nUsersList)
             nUsers = nUsersList(idxUsers);
             nAntennas = nAntennasList(idxAnt);
@@ -1897,25 +1903,25 @@ function experiment9_plot(nUsersList,input)
                           'SINRCBF_PB','CapCBF','CapCBFSum',...
                           'SINRHEU_PB','CapHEU','CapHEUSum',...
                           'nUsers','nAntennas','arrayRestriction');
-            CapLCMV_final(idxUsers) = pow2db(mean(db2pow(CapLCMV)));
-            CapSumLCMV_final(idxUsers) = pow2db(mean(db2pow(CapLCMVSum)));
-            SINRLCMV_PB_final(idxUsers) = pow2db(mean(db2pow(SINRLCMV_PB)));
-            CapCBF_final(idxUsers) = pow2db(mean(db2pow(CapCBF)));
-            CapSumCBF_final(idxUsers) = pow2db(mean(db2pow(CapCBFSum)));
-            SINRCBF_PB_final(idxUsers) = pow2db(mean(db2pow(SINRCBF_PB)));
-            CapHEU_final(idxUsers) = pow2db(mean(db2pow(CapHEU)));
-            CapSumHEU_final(idxUsers) = pow2db(mean(db2pow(CapHEUSum)));
-            SINRHEU_PB_final(idxUsers) = pow2db(mean(db2pow(SINRHEU_PB)));
+            CapLCMV_final(idxUsers,idxAnt) = pow2db(mean(db2pow(CapLCMV)));
+            CapSumLCMV_final(idxUsers,idxAnt) = pow2db(mean(db2pow(CapLCMVSum)));
+            SINRLCMV_PB_final(idxUsers,idxAnt) = pow2db(mean(db2pow(SINRLCMV_PB)));
+            CapCBF_final(idxUsers,idxAnt) = pow2db(mean(db2pow(CapCBF)));
+            CapSumCBF_final(idxUsers,idxAnt) = pow2db(mean(db2pow(CapCBFSum)));
+            SINRCBF_PB_final(idxUsers,idxAnt) = pow2db(mean(db2pow(SINRCBF_PB)));
+            CapHEU_final(idxUsers,idxAnt) = pow2db(mean(db2pow(CapHEU)));
+            CapSumHEU_final(idxUsers,idxAnt) = pow2db(mean(db2pow(CapHEUSum)));
+            SINRHEU_PB_final(idxUsers,idxAnt) = pow2db(mean(db2pow(SINRHEU_PB)));
         end
         figure(1); hold on; grid minor;
-        p1(2*idxAnt - 1) = plot(nUsersList,CapHEU_final,'Color','k','Marker',MarkerList{idxAnt},'LineStyle','-');
-        p1(2*idxAnt) = plot(nUsersList,CapLCMV_final,'Color','k','Marker',MarkerList{idxAnt},'LineStyle',':');
+        p1(2*idxAnt - 1) = plot(nUsersList,CapHEU_final(:,idxAnt),'Color','k','Marker',MarkerList{idxAnt},'LineStyle','-');
+        p1(2*idxAnt) = plot(nUsersList,CapLCMV_final(:,idxAnt),'Color','k','Marker',MarkerList{idxAnt},'LineStyle',':');
         figure(2); hold on; grid minor;
-        p2(2*idxAnt - 1) = plot(nUsersList,CapSumHEU_final,'Color','k','Marker',MarkerList{idxAnt},'LineStyle','-');
-        p2(2*idxAnt) = plot(nUsersList,CapSumLCMV_final,'Color','k','Marker',MarkerList{idxAnt},'LineStyle',':');
+        p2(2*idxAnt - 1) = plot(nUsersList,CapSumHEU_final(:,idxAnt),'Color','k','Marker',MarkerList{idxAnt},'LineStyle','-');
+        p2(2*idxAnt) = plot(nUsersList,CapSumLCMV_final(:,idxAnt),'Color','k','Marker',MarkerList{idxAnt},'LineStyle',':');
         figure(3); hold on; grid minor;
-        p3(2*idxAnt - 1) = plot(nUsersList,SINRHEU_PB_final,'Color','k','Marker',MarkerList{idxAnt},'LineStyle','-');
-        p3(2*idxAnt) = plot(nUsersList,SINRLCMV_PB_final,'Color','k','Marker',MarkerList{idxAnt},'LineStyle',':');
+        p3(2*idxAnt - 1) = plot(nUsersList,SINRHEU_PB_final(:,idxAnt),'Color','k','Marker',MarkerList{idxAnt},'LineStyle','-');
+        p3(2*idxAnt) = plot(nUsersList,SINRLCMV_PB_final(:,idxAnt),'Color','k','Marker',MarkerList{idxAnt},'LineStyle',':');
         legList(2*idxAnt - 1) = strcat('HEU -',{' '},mat2str(nAntennas));        
         legList(2*idxAnt) = strcat('LCMV -',{' '},mat2str(nAntennas));
         legList(idxAnt) = strcat(mat2str(nAntennas),{' '},'antennas');

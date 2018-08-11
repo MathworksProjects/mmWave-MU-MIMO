@@ -22,14 +22,21 @@ function [problem,traffic,flows] = f_configuration(conf,problem)
     end
 %     load('data/MCSPERTable.mat','mcsTable');  % Simplistic channel model
     problem.MCSPER = mcsTable;
+    % Load the SNR table for faster execution
+    load('data\TABLE-SNR-loc4.mat','SINRLCMV','SINRCBF','SINRHEU','nAntennasList','nUsersList');
+    [~,idxUsr] = min(abs(problem.nUsers - nUsersList));
+    [~,idxAnt] = min(abs(problem.N_Antennas - nAntennasList));
+    problem.SINR_CBF  = db2pow(SINRCBF(idxUsr,idxAnt));  % in linear scale
+    problem.SINR_LCMV = db2pow(SINRLCMV(idxUsr,idxAnt));  % in linear scale
+    problem.SINR_HEU  = db2pow(SINRHEU(idxUsr,idxAnt));  % in linear scale
     % Configure Traffic
     problem = f_configureTraffic(problem);  % Struct with configuration parameters
     % Generate upper layer traffic
-    [traffic,maxTime] = f_genDetTraffic(problem.class,problem.trafficType,problem.DEBUG);
+    [traffic,maxTime] = f_genDetTraffic(problem.class,problem.trafficType,problem.PLOT_DEBUG);
     % Adequate Simulation time to the last packet arrival
     if maxTime~=0; problem.Tsym = ceil(maxTime/problem.Tslot); end
     % Generate PHY-flows: Convert traffic (arrivals) into individual Flow for
     % each user. Flows may overlap in time as the inter-arrival time may be
     % less than Tslot
-    [flows] = f_arrivalToFlow(problem.Tslot,traffic);
+    [flows] = f_arrivalToFlow(problem.Tslot,traffic,problem.class);
 end

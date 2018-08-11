@@ -39,12 +39,12 @@ function [problem] = o_read_input_problem(problem_file)
                 struct('name','manuallyAssignApp','type','bool');
                 struct('name','FLAGagg','type','bool');
                 struct('name','DEBUG','type','bool');
-                struct('name','DEBUG','type','bool');
+                struct('name','PLOT_DEBUG','type','bool');
                 struct('name','numPkts','type','float');
                 struct('name','Tslot','type','float');
                 struct('name','Tsym','type','float');
                 struct('name','targetPER','type','float');
-                struct('name','heuristicsDummy','type','bool');
+                struct('name','BFalgorithm','type','char');
                 };
     problem = o_readDATInputData(problem_file,inputArgList);
     
