@@ -65,11 +65,11 @@ for id = 1:nUsers
                           'Taper',Taper_user);
 
     % Extract Rx Power (in dB)
-    DirOK(id) = patternAzimuth(handle_Conf_Array_USER,problem.freq,problem.thetaUsers(id),'Azimuth',problem.phiUsers(id),'Type','powerdb');
+    DirOK(id) = patternAzimuth(handle_Conf_Array_USER,problem.freq,problem.thetaUsers(candSet(id)),'Azimuth',problem.phiUsers(candSet(id)),'Type','powerdb');
     % Extract interference generated to others (in dB)
     for id1 = 1:1:nUsers
         if id1~=id
-            DirNOK(id,id1) = patternAzimuth(handle_Conf_Array_USER,problem.freq,problem.thetaUsers(id1),'Azimuth',problem.phiUsers(id1),'Type','powerdb');
+            DirNOK(id,id1) = patternAzimuth(handle_Conf_Array_USER,problem.freq,problem.thetaUsers(candSet(id1)),'Azimuth',problem.phiUsers(candSet(id1)),'Type','powerdb');
         end
     end
 
