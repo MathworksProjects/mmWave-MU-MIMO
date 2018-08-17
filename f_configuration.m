@@ -32,11 +32,11 @@ function [problem,traffic,flows] = f_configuration(conf,problem)
     % Configure Traffic
     problem = f_configureTraffic(problem);  % Struct with configuration parameters
     % Generate upper layer traffic
-    [traffic,maxTime] = f_genDetTraffic(problem.class,problem.trafficType,problem.PLOT_DEBUG);
-    % Adequate Simulation time to the last packet arrival
-    if maxTime~=0; problem.Tsym = ceil(maxTime/problem.Tslot); end
+    [traffic] = f_genDetTraffic(problem.class,problem.trafficType,problem.loadTraffic,problem.PLOT_DEBUG);
     % Generate PHY-flows: Convert traffic (arrivals) into individual Flow for
     % each user. Flows may overlap in time as the inter-arrival time may be
     % less than Tslot
-    [flows] = f_arrivalToFlow(problem.Tslot,traffic,problem.class);
+    [flows,maxSlot] = f_arrivalToFlow(problem.Tslot,traffic,problem.class);
+    % Adequate Simulation time to the last packet arrival
+    if maxSlot~=0; problem.Tsym = maxSlot; end
 end

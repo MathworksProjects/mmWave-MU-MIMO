@@ -44,7 +44,7 @@ for appType = problem.appNameInteretList
     % any delay is greater than Tslot.
     if strcmp(appType,'Youtube') || strcmp(appType,'Justin TV') || strcmp(appType,'Vimeo')
         % Application type is video
-        deadlineApps(nUserstoApps) = 50;  % 50ms deadline time for app type
+        deadlineApps(nUserstoApps) = problem.deadline;  % 50ms deadline time for app type
     elseif strcmp(appType,'Facebook')
         % Application type is Facebook
         deadlineApps(nUserstoApps) = 100;  % 100ms deadline time for app type
@@ -84,15 +84,11 @@ else
 end
 
 % Assign traffic type to users
-if problem.DEBUG
-    % Select one application type across users - Manually assign here
-%         appTypePerUser = [1 2 3 4].';
-    appTypePerUser = 1.*ones(problem.nUsers);
-else
-    % Distribute application proportionaly to the presence selected
-    % and configured in 'problem.appPresence'
-    appTypePerUser = gendist(problem.appPresence,problem.nUsers,1);
-end
+% Select one application type across users - Manually assign here
+appTypePerUser = 1.*ones(problem.nUsers,1);
+% % Distribute application proportionaly to the presence selected
+% % and configured in 'problem.appPresence'
+% appTypePerUser = gendist(problem.appPresence,problem.nUsers,1);
 
 % Allocate flows of traffic to users assuming only one application type
 % is running at each device
@@ -105,7 +101,7 @@ if strcmp(problem.trafficType,'synthetic')
         problem.class(u).numPkts = problem.numPkts;  % Number of packets for the class
         problem.class(u).iat = problem.iat;  % Deterministic (constant) inter-arrival times (iat)
         problem.class(u).appColor = problem.appColor;
-        problem.class(u).payload = problem.payload;  % Default payload in bits
+        problem.class(u).payload = problem.payload*8;  % Default payload in bytes
     end
 elseif strcmp(problem.trafficType,'dataSet')
     if ~exist('traffic','var') || ~exist('appNameList','var') || ~exist('appColorList','var')

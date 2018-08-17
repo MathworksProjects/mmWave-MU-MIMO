@@ -16,19 +16,19 @@ function flows = f_updateFlow(t,flows,selFlow,finalSet,THiter,candSet,Tslot,DEBU
         flows(id).remaining(succFlow) = flows(id).remaining(succFlow) - TXbits;
         if DEBUG; fprintf('\tTS=%d\tID=%d\tFLOW=%d\tTX=%.1f(bits)\tremain=%.0f(bits)\n',t,id,succFlow,TXbits,flows(id).remaining(succFlow)); end
         % Check if the flow has no time left to be transmitted
-        deadlineSlot = max(flows(id).slots{succFlow});
+        deadlineSlot = flows(id).deadlines(succFlow);
         nSlotsRem = deadlineSlot - t;
         % Determine if we have met the deadline for the indicated packet
         if (nSlotsRem==0) && (flows(id).remaining(succFlow)>1)
             % We succesfully transmitted the packet but there are still
             % bits to be tx and this was the last chance we've got.
             % Increment failed flow count
-            flows(id).failed(succFlow) =  1;
             if DEBUG; fprintf('NOK\tTS=%d\tID=%d\tFLOW=%d\n',t,id,succFlow); end
-        elseif flows(id).remaining(succFlow)<=0
+        elseif (flows(id).remaining(succFlow)<1)
             % We increment the number of flows that we served succesfully.
             % (It can happen that we serve them way before the deadline)
             flows(id).success(succFlow) = 1;
+            flows(id).failed(succFlow)  = 0;
             if DEBUG; fprintf('OK\tTS=%d\tID=%d\tFLOW=%d\n',t,id,succFlow); end
         end
         % Update slots in the flow. If we have served all the bits before
@@ -45,13 +45,11 @@ function flows = f_updateFlow(t,flows,selFlow,finalSet,THiter,candSet,Tslot,DEBU
     for id = failSet
         failFlow = selFailFlow(id==failSet);
         rem = flows(id).remaining(failFlow);
-        % DeadlineSlot is the last slot available for transmission
-        deadlineSlot = max(flows(id).slots{failFlow});
-        nSlotsRem = deadlineSlot - t;
         % Check if the flow has no time left to be transmitted
+        deadlineSlot = flows(id).deadlines(failFlow);
+        nSlotsRem = deadlineSlot - t;
         if nSlotsRem==0
             % The flow was not served succesfully
-            flows(id).failed(failFlow) = 1;
             if DEBUG; fprintf('NOK\tTS=%d\tID=%d\tFLOW=%d\n',t,id,failFlow); end
         else
             % Redistribute flow across slots

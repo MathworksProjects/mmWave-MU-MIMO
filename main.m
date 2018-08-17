@@ -49,7 +49,6 @@ function [flows,CapTot,TXbitsTot,THTot,lastSlotSim,lastSelFlow,varargout] = main
 %% Check correct number of input arguments. If none, then set-up default
 % parameters from configuration functions
 if (nargin==3)
-    fprintf('Main: Parameters extracted from runnable. Running main...\n');
     % Check inputted parameters have the correct format and assign values
     % in current function if every requirement is met
     if ~isstruct(varargin{1}) || any( structfun(@isempty, varargin{1}) )
@@ -72,6 +71,9 @@ if (nargin==3)
     conf = varargin{1};
     problem = varargin{2};
     flows = varargin{3};
+    if problem.DEBUG
+        fprintf('Main: Parameters extracted from runnable. Running main...\n');
+    end
 elseif (nargin==0)
     % No parameters were inputted to the main
     % Clear workspace
@@ -120,24 +122,23 @@ while(t<Tsym)
             candTH = combTH(k,:);
 %             candTH(candTH~=0) = [];
             %% CONFIGURE BEAMFORMING (LCMV, CBF, HEURISTICS, DUMMY)
-            % Heuristics - Preprocessing
-            problem.MaxObjF = Inf(1,length(candSet));
             problem.MinObjF = candTH/problem.Bw;
+            problem.MaxObjF = Inf(1,length(candSet));
             if conf.MinObjFIsSNR;     problem.MinObjF = 2.^problem.MinObjF - 1;
             end
             % Evaluate SINR using BF algorithm
             if strcmp(problem.BFalgorithm,'CBF') && ~isempty(candSet)
                 % Conventional Beamforming (CBF)
-                [~,W,arrayHandle,~,~] = f_conventionalBF(problem,conf,candSet);
-                [~,~,~,SNRList]  = f_BF_results(W,arrayHandle,candSet,problem,conf,false);
+                [~,W,arrayHandle,~,~,candSetUpd] = f_conventionalBF(problem,conf,candSet);
+                [~,~,~,SNRList]  = f_BF_results(W,arrayHandle,candSetUpd,problem,conf,true);
             elseif strcmp(problem.BFalgorithm,'LCMV') && ~isempty(candSet)
                 % Linearly Constrained Minimum Variance (LCMV)
-                [W,~,arrayHandle,~,~] = f_conventionalBF(problem,conf,candSet);
-                [~,~,~,SNRList]  = f_BF_results(W,arrayHandle,candSet,problem,conf,false);
+                [W,~,arrayHandle,~,~,candSetUpd] = f_conventionalBF(problem,conf,candSet);
+                [~,~,~,SNRList]  = f_BF_results(W,arrayHandle,candSetUpd,problem,conf,true);
             elseif strcmp(problem.BFalgorithm,'HEU') && ~isempty(candSet)
                 % Heuristics with LCMV as main BF
                 [~,W,~,~,~,~] = CBG_solveit(problem,conf,candSet);
-                [~,~,~,SNRList]  = f_BF_results(W,arrayHandle,candSet,problem,conf,false);
+                [~,~,~,SNRList]  = f_BF_results(W,arrayHandle,candSet,problem,conf,true);
             elseif strcmp(problem.BFalgorithm,'HEU-LCMV') && ~isempty(candSet)
                 % Heuristics with LCMV as main BF and initial ant location
                 [W_init,~,arrayHandle,~,~] = f_conventionalBF(problem,conf,candSet);
@@ -153,19 +154,21 @@ while(t<Tsym)
             elseif strcmp(problem.BFalgorithm,'dummy') && ~isempty(candSet)
                 [~,SNRList,~] = f_heuristicsDummy(problem.MinObjF,conf.MinObjFIsSNR,problem.MCSPER.snrRange);
             end
+            % Update Candidate list
+            [~,idx] = intersect(candSet,candSetUpd);
             %% EVALUATE PERFORMANCE - MCS, PER AND FLOW UPDATE
             % Whether to take the tentative TH or give it a another round
             threshold = 0.7;  % Represents the ratio between the demanded 
                               % and the tentative achievable TH
             % Select MCS for estimated SNR
-            [MCS,PER,RATE] = f_selectMCS(candSet,SNRList,problem.targetPER,problem.MCSPER,problem.mcsPolicy,problem.DEBUG);  %#ok
-            if ~any(RATE./candTH)<threshold
+            [MCS,PER,RATE] = f_selectMCS(candSet(idx),SNRList,problem.targetPER,problem.MCSPER,problem.mcsPolicy,problem.DEBUG);  %#ok
+            if ~any(RATE./candTH(idx))<threshold
                 % Compute bits that can be transmitted and map it with the 
                 % bits remaining to be transmitted
                 TBitsIter = zeros(1,problem.nUsers);  % Reality - bits
                 THIter = zeros(1,problem.nUsers);  % Reality - throughput
-                for id = candSet
-                    rate = RATE(candSet==id);  % in bps
+                for id = candSet(idx)
+                    rate = RATE(candSet(idx)==id);  % in bps
                     estTXbits = rate.*Tslot.*1e-3;  % Achievable transmit bits
                     % Bits transmitted in slot
                     TBitsIter(1,id) = min(flows(id).remaining(selFlow(id)) , estTXbits);
@@ -173,7 +176,7 @@ while(t<Tsym)
                     THIter(1,id) = min(TBitsIter(1,id)./(Tslot.*1e-3) , rate);
                 end
                 % Evaluate PER
-                finalSet = f_PERtentative(candSet,PER);
+                finalSet = f_PERtentative(candSet(idx),PER);
 %                 finalSet = f_PER(candSet, problem, W, TXbits, MCS, problem.fullChannels, arrayHandle);
                 if ~isempty(finalSet)
                     TBitsIter(setdiff(candSet,finalSet)) = 0;
@@ -201,16 +204,15 @@ while(t<Tsym)
     t = t + 1;
 end
 
-% % Plotting
-% lastSlotSim = t - 1;
-% main_plotting(problem,TXbitsTot,THTot,baseFlows,lastSelFlow)
+% Extra output parameter
+lastSlotSim = t - 1;
 
 % Generate report
-for n = 1:problem.nUsers
-    totPcksOK = sum(sum(flows(n).success));
-    totPcksNOK = sum(sum(flows(n).failed));
-    totPcks = totPcksOK + totPcksNOK;
-    fprintf('ID %d\tSuccess rate: %.1f (%%)\n',n,100*totPcksOK/totPcks);
+f_generateReport(flows,problem.DEBUG);
+
+% Plotting
+if problem.PLOT_DEBUG
+    main_plotting(problem,TXbitsTot,THTot,baseFlows,lastSelFlow);
 end
 
 

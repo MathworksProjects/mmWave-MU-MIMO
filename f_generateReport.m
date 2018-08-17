@@ -26,7 +26,7 @@ function [ratioOK,ratioNOK] = f_generateReport(flows, DEBUG)
 Nusers = length(flows);
 ratioOK = zeros(Nusers,1);
 ratioNOK = zeros(Nusers,1);
-fprintf('\n***** REPORT *****\n');
+if DEBUG;  fprintf('\n***** REPORT *****\n');  end
 for id = 1:Nusers
     totOK = sum(flows(id).success);
     totNOK = sum(flows(id).failed);
@@ -41,5 +41,6 @@ if DEBUG
     fprintf('Overall Performance: OK=%.2f(%%)\n',mean(ratioOK));
     fprintf('******************\n');
 end
+
 
 %EOF

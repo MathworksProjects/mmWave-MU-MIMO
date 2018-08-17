@@ -36,7 +36,7 @@ function [MCS,PER, RATE] = f_selectMCS(candSet,SNRList_lin,PERtarget,MCSPER,mcsP
 snrRange = MCSPER.snrRange;
 mcsRange = MCSPER.mcsRange;
 table = MCSPER.MCSPERTable;
-risky = 'false';
+risky = false;
 
 SNRList = pow2db(SNRList_lin);  % Convert linear to dB
 Nusers = length(SNRList);  % Number of selected users to be served
@@ -69,9 +69,9 @@ for k =1:Nusers
     PER(k)  = table(snrIdx,mcsIdx);
     RATE(k) = achievableRate(mcsIdx);
 
-    if DEBUG==1 * risky==0
+    if DEBUG && ~risky
         fprintf('\t\t\tID=%d\tMCS=%d\tPER=%.1f(%%)\tSNR=%.2f(dB)\n',candSet(k),MCS(k),PER(k).*1e2,pow2db(SNRList_lin(k)));
-    elseif DEBUG==1 * risky==1
+    elseif DEBUG && risky
         fprintf('\t\t\tID=%d\tMCS=%d\tPER=%.1f(%%)\tSNR=%.2f(dB)  (Failed to meet PER required)\n',candSet(k),MCS(k),PER(k).*1e2,pow2db(SNRList_lin(k)));
     end
 end

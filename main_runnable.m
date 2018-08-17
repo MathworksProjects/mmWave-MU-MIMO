@@ -3,12 +3,44 @@ clear; clc; close all;
 addpath('utilities','-end');  % Add utilities folder at the end of search path
 
 %% Define several experiments here and override variable values accordingly
-experimentList = [91];
+experimentList = [31];
 
 %% Experiment selection
 
 %% EXPERIMENT 1
-if any(experimentList(:)==1);    experiment1();   end
+if any(experimentList(:)==1)
+    input.nUsersList           = [2 4 6 8 10];
+    input.payloadList          = (1/8).*(50/10).*[385e6 962.5e6 1155e6 1540e6 1925e6 2502e6 3080e6 4620e6].*10e-3;
+    % Input parameters
+    input.nIter                = 1;
+    input.nAntennas            = 4.^2;
+    input.arrayRestriction     = 'None';
+    input.algorithm            = 'GA';
+    input.detLocation          = true;
+    input.useCasesLocation     = true;
+    input.useCaseLocation      = 4;
+    plotFLAG                   = false;
+    for payload = input.payloadList
+        input.payload = payload;
+        for nUsers = input.nUsersList
+            input.nUsers = nUsers;
+            experiment1(input);
+        end
+    end
+end
+
+%% EXPERIMENT 1 - PLOTTING
+if any(experimentList(:)==11)
+    input.nUsersList           = [2 4 6 8 10];
+    input.payloadList          = (1/8).*(50/10).*[385e6 962.5e6 1155e6 1540e6 1925e6 2502e6 3080e6 4620e6].*10e-3;
+    input.nAntennas            = 4.^2;
+    input.arrayRestriction     = 'None';
+    input.algorithm            = 'GA';
+    input.detLocation          = true;
+    input.useCasesLocation     = true;
+    input.useCaseLocation	   = 4;
+    experiment1_plot(input);
+end
 
 %% EXPERIMENT 2
 if any(experimentList(:)==2)
@@ -63,7 +95,41 @@ if any(experimentList(:)==21)
 end
 
 %% EXPERIMENT 3
-if any(experimentList(:)==3);    experiment3();   end
+if any(experimentList(:)==3)
+    input.nUsersList           = [2 4 6 8 10];
+    input.deadlineList         = [20 30 40 50 60 70 80 90 100];
+    % Input parameters
+    input.nIter                = 1;
+    input.nAntennas            = 4.^2;
+    input.arrayRestriction     = 'None';
+    input.algorithm            = 'GA';
+    input.detLocation          = true;
+    input.useCasesLocation     = true;
+    input.useCaseLocation      = 4;
+    plotFLAG                   = false;
+    for deadline = input.deadlineList
+        input.deadline = deadline;
+        input.payload = (1/8).*(deadline/10).*1925e6.*10e-3;
+        for nUsers = input.nUsersList
+            input.nUsers = nUsers;
+            experiment3(input);
+        end
+    end
+end
+
+%% EXPERIMENT 3 - PLOTTING
+if any(experimentList(:)==31)
+    input.nUsersList           = [2 4 6 8 10];
+    input.deadlineList         = [20 30 40 50 60 70 80 90 100];
+    input.nAntennas            = 4.^2;
+    input.payload              = (1/8).*(50/10).*1925e6.*10e-3;
+    input.arrayRestriction     = 'None';
+    input.algorithm            = 'GA';
+    input.detLocation          = true;
+    input.useCasesLocation     = true;
+    input.useCaseLocation	   = 4;
+    experiment3_plot(input);
+end
 
 %% EXPERIMENT 4
 if any(experimentList(:)==4)
@@ -136,7 +202,7 @@ if any(experimentList(:)==6)
     input.algorithm            = 'GA';
     input.detLocation          = true;
     input.useCasesLocation     = true;
-    input.useCaseLocationList  = 4;  % List of locations to plot over;
+    input.useCaseLocationList  = 1;  % List of locations to plot over;
     plotFLAG                   = false;  % Plotting flag
     for nUsers = nUsersList
         input.nUsers = nUsers;
@@ -152,7 +218,7 @@ if any(experimentList(:)==61)
     input.algorithm            = 'GA';
     input.detLocation          = true;
     input.useCasesLocation     = true;
-    input.useCaseLocationList  = 4;  % List of locations to plot over;
+    input.useCaseLocationList  = 1;  % List of locations to plot over;
     % Call plot
     experiment6_plot(nUsersList,input);
 end
@@ -230,7 +296,7 @@ end
 
 
 %% EXPERIMENT 1
-function experiment1(varargin)
+function experiment1(input)
     % EXPERIMENT 1 - Capacity offered
     % In this experiment we evaluate the capacity that the heuristics are able
     % to offer to the devices. Heuristics assigns antennas as a function of the
@@ -239,30 +305,107 @@ function experiment1(varargin)
     %
     %------------- BEGIN CODE EXPERIMENT 1 --------------
     %
-    fprintf('Running experiment 1...\n');
-    % Load basic configuration - static and/or default
+%     fprintf('Running experiment 1...\n');
+%     fprintf('Input parameters:\n\tnUsers:\t%d\n\tIter:\t%d\n\tAntennas:\t%d\n\tarrayRestriction:\t%s\n\talgorithm:\t%s\n\tdetLocation:\t%s\n\tuseCasesLocation:\t%s\n\tuseCaseLocation:\t%d\n',input.nUsers,input.nIter,input.nAntennas,input.arrayRestriction,input.algorithm,mat2str(input.detLocation),mat2str(input.useCasesLocation),input.useCaseLocation);
+    % Load basic parameters
     problem = o_read_input_problem('data/metaproblem_test.dat');
     conf = o_read_config('data/config_test.dat');
-    % Override parameters (problem)
-    problem.trafficType = 'synthetic';
-    problem.iat = 60;
-    problem.deadline = 50;
-    problem.payload = 1500*8*5e3;
     % Override parameters (config)
-    conf.verbosity = 0;
-    % Configure the simulation environment
-    [problem,~,flows] = f_configuration(conf,problem);
-    baseFlows = flows;  % For printing purposes at the end of execution
-    % Main function
-    [flows,CapTot,TXbitsTot,THTot,lastSlotSimm,lastSelFlow] = main(conf,problem,flows);
-    % Report of single execution
-    [ratioOK,ratioNOK] = f_generateReport(flows,problem.DEBUG);
-    % Plotting of single execution
-    % main_plotting(problem,TXbitsTot,THTot,baseFlows,lastSelFlow);
+    conf.verbosity            = 0;
+    conf.algorithm            = input.algorithm;
+	conf.detLocation          = input.detLocation;
+    conf.useCasesLocation     = input.useCasesLocation;
+    conf.useCaseLocation      = input.useCaseLocation;
+    % Override parameters (problem)
+    problem.nUsers            = input.nUsers;
+    problem.N_Antennas        = input.nAntennas;
+    problem.payload           = input.payload;
+    problem.arrayRestriction  = input.arrayRestriction;
+    problem.DEBUG             = true;  % no ouput messages (Scheduling)
+    problem.PLOT_DEBUG        = false;  % No plotting
+    problem.numPkts           = 2;
+    % Output variables
+    ratioOKTot = zeros(input.nUsers,input.nIter);
+    ratioNOKTot = zeros(input.nUsers,input.nIter);
+    for iter = 1:input.nIter
+        % Configure the simulation environment
+        [problem,~,flows] = f_configuration(conf,problem);
+        % Main function
+        [flows,~,~,~,~,~] = main(conf,problem,flows);
+        % Report of single execution
+        [ratioOKTot(:,iter),ratioNOKTot(:,iter)] = f_generateReport(flows,problem.DEBUG);
+        fprintf('\tNusers %d -> OK=%.2f(%%)\n',input.nUsers,mean(ratioOKTot(:,iter)));
+    end
+    fprintf('Nusers %d -> OK = %.2f(%%)\n',input.nUsers,mean(mean(ratioOKTot,2)));
+    % Store results in temp file (to be retrieved by plotting function)
+    fileName = strcat('temp/exp1_',conf.algorithm,'_',problem.arrayRestriction,'_',mat2str(problem.nUsers),'_',mat2str(problem.payload),'_',mat2str(problem.N_Antennas),'_',mat2str(conf.detLocation),'_',mat2str(conf.useCasesLocation),'_',mat2str(conf.useCaseLocation));
+    % Store in local to store in file
+    ratioOK          = mean(ratioOKTot,2);  %#ok
+    ratioNOK         = mean(ratioNOKTot,2);  %#ok
+    nUsers           = problem.nUsers;  %#ok
+    nAntennas        = problem.N_Antennas;  %#ok
+    payload          = problem.payload;  %#ok
+    arrayRestriction = problem.arrayRestriction;  %#ok
+    detLocation      = conf.detLocation;  %#ok
+    useCaseLocation  = conf.useCaseLocation;  %#ok
+    useCaseLocation  = conf.useCaseLocation;  %#ok
+    save(fileName,'ratioOK','ratioNOK',...
+         'nUsers','payload','arrayRestriction',...
+         'detLocation','useCaseLocation','useCaseLocation');
 end
 
-% EXPERIMENT 2 - Chances of achieving the demanded throughput
-% To-Do. It uses the whole simulator and takes the real traffic as input.
+
+
+%% EXPERIMENT 1 - PLOTTING
+function experiment1_plot(input)
+    h =  findobj('type','figure');
+    figIdx = length(h) + 1;
+    ratioOK_av = zeros(length(input.nUsersList),1);
+    ratioNOK_av = zeros(length(input.nUsersList),1);
+    leg = cell(length(input.payloadList),1);
+    LineStyleList = {'-.','-','--',':'};
+    MarkerList = {'s','*','d','+'};
+    for payload = input.payloadList
+        for nUsers = input.nUsersList
+            fileName = strcat('temp/exp1_',input.algorithm,'_',...
+                                           input.arrayRestriction,'_',...
+                                           mat2str(nUsers),'_',...
+                                           mat2str(payload),'_',...
+                                           mat2str(input.nAntennas),'_',...
+                                           mat2str(input.detLocation),'_',...
+                                           mat2str(input.useCasesLocation),'_',...
+                                           mat2str(input.useCaseLocation));
+            load(fileName,'ratioOK','ratioNOK');
+            ratioOK_av(nUsers==input.nUsersList) = mean(ratioOK);
+            ratioNOK_av(nUsers==input.nUsersList) = mean(ratioNOK);
+        end
+        idxMarkerStyle= mod(find(payload==input.payloadList),4)+1;
+        idxLineStyle = ceil(find(payload==input.payloadList)/4);
+        % No interpolation
+        figure(figIdx); hold on; grid minor;
+        plot(input.nUsersList,ratioOK_av,'LineWidth',1,'LineStyle',LineStyleList{idxLineStyle},'Marker',MarkerList{idxMarkerStyle},'Color','k');
+        % With interpolation
+        figure(figIdx+1); hold on; grid minor;
+        xq = (1:1:input.nUsersList(end));
+        ratioOK_av_int = interp1(input.nUsersList,ratioOK_av,xq,'pchip');
+        plot(xq,ratioOK_av_int,'LineWidth',1,'LineStyle',LineStyleList{idxLineStyle},'Marker',MarkerList{idxMarkerStyle},'Color','k');
+        % Legend
+        leg(payload==input.payloadList) = strcat('Network sat.',{' '},sprintf('%.2f',payload/max(input.payloadList)),'x');
+    end
+    figure(figIdx); grid minor;
+    xlabel('Number of users','FontSize',12);
+    ylabel('Ratio OK (%)','FontSize',12);
+    title('Ratio of application that meet deadline (%)','FontSize',12);
+    hleg = legend(leg);
+    set(hleg,'FontSize',10);
+    figure(figIdx+1); grid minor;
+    xlabel('Number of users','FontSize',12);
+    ylabel('Ratio OK (%)','FontSize',12);
+    title('Ratio of application that meet deadline (%)','FontSize',12);
+    hleg = legend(leg);
+    set(hleg,'FontSize',10);
+end
+
 
 
 
@@ -270,6 +413,7 @@ end
 
 
 %% EXPERIMENT 2 - Convergency analysis
+% EXPERIMENT 2 - Chances of achieving the demanded throughput
 function fileName = experiment2(input)
     fprintf('Running experiment 2...\n');
     % Store input struct in local
@@ -702,10 +846,113 @@ end
 
 
 
-%% EXPERIMENT 3 - Performance comparisson against null-forcing technique
-% To-Do. The comparisson needs to be agains a more updated technique such
-% as the JSDM. Waiting for reply from Kaushik to write to them and get the
-% code.
+%% EXPERIMENT 3
+function experiment3(input)
+%     fprintf('Running experiment 1...\n');
+%     fprintf('Input parameters:\n\tnUsers:\t%d\n\tIter:\t%d\n\tAntennas:\t%d\n\tarrayRestriction:\t%s\n\talgorithm:\t%s\n\tdetLocation:\t%s\n\tuseCasesLocation:\t%s\n\tuseCaseLocation:\t%d\n',input.nUsers,input.nIter,input.nAntennas,input.arrayRestriction,input.algorithm,mat2str(input.detLocation),mat2str(input.useCasesLocation),input.useCaseLocation);
+    % Load basic parameters
+    problem = o_read_input_problem('data/metaproblem_test.dat');
+    conf = o_read_config('data/config_test.dat');
+    % Override parameters (config)
+    conf.verbosity            = 0;
+    conf.algorithm            = input.algorithm;
+	conf.detLocation          = input.detLocation;
+    conf.useCasesLocation     = input.useCasesLocation;
+    conf.useCaseLocation      = input.useCaseLocation;
+    % Override parameters (problem)
+    problem.nUsers            = input.nUsers;
+    problem.N_Antennas        = input.nAntennas;
+    problem.payload           = input.payload;
+    problem.deadline          = input.deadline;
+    problem.arrayRestriction  = input.arrayRestriction;
+    problem.DEBUG             = true;  % no ouput messages (Scheduling)
+    problem.PLOT_DEBUG        = false;  % No plotting
+    problem.numPkts           = 2;
+    % Output variables
+    ratioOKTot = zeros(input.nUsers,input.nIter);
+    ratioNOKTot = zeros(input.nUsers,input.nIter);
+    for iter = 1:input.nIter
+        % Configure the simulation environment
+        [problem,~,flows] = f_configuration(conf,problem);
+        % Main function
+        [flows,~,~,~,~,~] = main(conf,problem,flows);
+        % Report of single execution
+        [ratioOKTot(:,iter),ratioNOKTot(:,iter)] = f_generateReport(flows,problem.DEBUG);
+        fprintf('\tNusers %d -> OK=%.2f(%%)\n',input.nUsers,mean(ratioOKTot(:,iter)));
+    end
+    % Store results in temp file (to be retrieved by plotting function)
+    fileName = strcat('temp/exp3_',conf.algorithm,'_',problem.arrayRestriction,'_',mat2str(problem.nUsers),'_',mat2str(problem.deadline),'_',mat2str(problem.N_Antennas),'_',mat2str(conf.detLocation),'_',mat2str(conf.useCasesLocation),'_',mat2str(conf.useCaseLocation));
+    % Store in local to store in file
+    ratioOK          = mean(ratioOKTot,2);  %#ok
+    ratioNOK         = mean(ratioNOKTot,2);  %#ok
+    nUsers           = problem.nUsers;  %#ok
+    nAntennas        = problem.N_Antennas;  %#ok
+    deadline         = problem.deadline;  %#ok
+    arrayRestriction = problem.arrayRestriction;  %#ok
+    detLocation      = conf.detLocation;  %#ok
+    useCaseLocation  = conf.useCaseLocation;  %#ok
+    useCaseLocation  = conf.useCaseLocation;  %#ok
+    save(fileName,'ratioOK','ratioNOK',...
+         'nUsers','deadline','arrayRestriction',...
+         'detLocation','useCaseLocation','useCaseLocation');
+end
+
+
+
+%% EXPERIMENT 3 - PLOTTING
+function experiment3_plot(input)
+    h =  findobj('type','figure');
+    figIdx = length(h) + 1;
+    ratioOK_av = zeros(length(input.nUsersList),1);
+    ratioNOK_av = zeros(length(input.nUsersList),1);
+    leg = cell(length(input.deadlineList),1);
+    LineStyleList = {'-.','-','--',':'};
+    MarkerList = {'s','*','d','+'};
+    for deadline = input.deadlineList
+        for nUsers = input.nUsersList
+            fileName = strcat('temp/exp3_',input.algorithm,'_',...
+                                           input.arrayRestriction,'_',...
+                                           mat2str(nUsers),'_',...
+                                           mat2str(deadline),'_',...
+                                           mat2str(input.nAntennas),'_',...
+                                           mat2str(input.detLocation),'_',...
+                                           mat2str(input.useCasesLocation),'_',...
+                                           mat2str(input.useCaseLocation));
+            load(fileName,'ratioOK','ratioNOK');
+            ratioOK_av(nUsers==input.nUsersList) = mean(ratioOK);
+            ratioNOK_av(nUsers==input.nUsersList) = mean(ratioNOK);
+        end
+        idxMarkerStyle= mod(find(deadline==input.deadlineList),4)+1;
+        idxLineStyle = ceil(find(deadline==input.deadlineList)/4);
+        % No interpolation
+        figure(figIdx); hold on; grid minor;
+        plot(input.nUsersList,ratioOK_av,'LineWidth',1,'LineStyle',LineStyleList{idxLineStyle},'Marker',MarkerList{idxMarkerStyle},'Color','k');
+        % With interpolation
+        figure(figIdx+1); hold on; grid minor;
+        xq = (1:1:input.nUsersList(end));
+        ratioOK_av_int = interp1(input.nUsersList,ratioOK_av,xq,'pchip');
+        plot(xq,ratioOK_av_int,'LineWidth',1,'LineStyle',LineStyleList{idxLineStyle},'Marker',MarkerList{idxMarkerStyle},'Color','k');
+        % Legend
+        leg(deadline==input.deadlineList) = strcat('Network sat.',{' '},sprintf('%.2f',deadline/max(input.deadlineList)),'x');
+    end
+    figure(figIdx); grid minor;
+    xlabel('Number of users','FontSize',12);
+    ylabel('Ratio OK (%)','FontSize',12);
+    title('Ratio of application that meet deadline (%)','FontSize',12);
+    hleg = legend(leg);
+    set(hleg,'FontSize',10);
+    figure(figIdx+1); grid minor;
+    xlabel('Number of users','FontSize',12);
+    ylabel('Ratio OK (%)','FontSize',12);
+    title('Ratio of application that meet deadline (%)','FontSize',12);
+    hleg = legend(leg);
+    set(hleg,'FontSize',10);
+end
+
+
+
+
+
 
 % EXPERIMENT 4 - Convergency analysis
 function experiment4(nIter,nUsers,nAntennasList,plotFLAG)

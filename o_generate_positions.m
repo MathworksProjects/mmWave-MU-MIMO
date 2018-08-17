@@ -4,19 +4,6 @@ function [thetaPos, phiPos, dPos] = o_generate_positions(conf,problem)
     pd.sigma = 45;
     t = truncate(pd,-45,45);
     dUser = 5 * ones(1, problem.nUsers);
-%     % Generate Angles for usee case (uc) distribution (deprecated)
-%     % UC 1
-%     uc_el(1,:) = [0 0];      uc_az(1,:) = [+15 -15];  uc_dist(1,:) = [5 5];
-%     % UC 2
-%     uc_el(2,:) = [0 0];      uc_az(2,:) = [+30 -30];  uc_dist(2,:) = [5 5];
-%     % UC 3
-%     uc_el(3,:) = [+15 -15];  uc_az(3,:) = [0 0];      uc_dist(3,:) = [5 5];
-%     % UC 4
-%     uc_el(4,:) = [+15 -15];  uc_az(4,:) = [15 -15];   uc_dist(4,:) = [5 5];
-%     % UC 5
-%     uc_el(5,:) = [+15 -15];  uc_az(5,:) = [15 15];    uc_dist(5,:) = [5 5];
-%     % UC 6
-%     uc_el(6,:) = [+15 +15];  uc_az(6,:) = [15 -15];   uc_dist(6,:) = [5 5];
     
     % Generate Angles for use case (uc) distribution - dynamic
     Delta = 90/problem.nUsers;

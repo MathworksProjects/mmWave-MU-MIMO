@@ -1,4 +1,4 @@
-function [traffic,maxTime] = f_genDetTraffic(trafficClass,trafficType,PLOT_DEBUG)
+function [traffic] = f_genDetTraffic(trafficClass,trafficType,loadTraffic,PLOT_DEBUG)
 % f_genDetTraffic - generates traffic distributed deterministically in
 % time. That is, the inter-arrival times between packets is constant
 % accordingly to its deadline (for synthetic) and parse randomly select
@@ -17,6 +17,9 @@ function [traffic,maxTime] = f_genDetTraffic(trafficClass,trafficType,PLOT_DEBUG
 %            4. Payload: Number of bits in each Network packet
 %    trafficType -  Defines the origin of the data ('synthetic' or
 %                   'dataSet')
+%    loadTraffic -  Boolean that defines whether we generate the traffic
+%                   from scatch based on DataSet or we load pre-stored
+%                   values with same distribution
 %    DEBUG - True for debugging purposes. False otherwise.
 %
 % Outputs:
@@ -26,8 +29,6 @@ function [traffic,maxTime] = f_genDetTraffic(trafficClass,trafficType,PLOT_DEBUG
 %              2. deadlines: A vector of length numPkts containing the 
 %                            deadling that needs to be met for each packet 
 %                            in time.
-%    maxTime -  Maximum deadline time (used as simulation time or Tsym in
-%               the system in case trafficType is 'dataSet').
 %
 % Example: 
 %       problem = o_read_input_problem('data/metaproblem_test.dat');
@@ -64,19 +65,29 @@ if strcmp(trafficType,'synthetic')
             traffic(id).deadlines(pkt,1) = traffic(id).arrivalTimes(pkt) + trafficClass(id).deadline;
         end
     end
-    maxTime = 0;
 elseif strcmp(trafficType,'dataSet')
     % Traffic is generated following the empirical distribution in dataSet
     if PLOT_DEBUG
         ha = tight_subplot(Nclasses,1,[.05 .03],[.05 .01],[.1 .2]);
     end
+    if loadTraffic
+        % Load pre-generated traffic
+        load('data/TrafficPreStored.mat','myIAT_Pre','myPayload_Pre');
+    end
     for id = 1:Nclasses
         traffic(id).name = trafficClass(id).name;
         myTraffic = trafficClass(id).trafficFlows;
-        trim = find(myTraffic.timesTot<var(myTraffic.timesTot));
-        myIAT = emprand(myTraffic.timesTot(trim),trafficClass(id).numPkts,1);  %#ok
+        trim = find(myTraffic.timesTot<var(myTraffic.timesTot)/1e4);
+        if loadTraffic
+            myIAT = myIAT_Pre(:,id);  %#ok
+            myPayload = myPayload_Pre(:,id);  %#ok
+        else
+            % Create IAT and Payloads based on real distribution
+            myIAT = emprand(myTraffic.timesTot(trim),trafficClass(id).numPkts,1);
+            myPayload = emprand(myTraffic.payloadTot(trim)*8,trafficClass(id).numPkts,1);
+        end
         traffic(id).arrivalTimes = ( mean(myIAT)*rand(1,1) + cumsum(myIAT) ).*1e+3;  % in ms
-        traffic(id).payload = emprand(myTraffic.payloadTot*8,trafficClass(id).numPkts,1);  % in bits
+        traffic(id).payload = myPayload*8;  % Conversion to bits (DataSet in Bytes)
         traffic(id).deadlines = traffic(id).arrivalTimes + trafficClass(id).deadline;  % in ms
         traffic(id).appColor = trafficClass(id).appColor;
         traffic(id).numPkts = trafficClass(id).numPkts;
@@ -98,10 +109,6 @@ elseif strcmp(trafficType,'dataSet')
             set(xlab,'Position',p1);
             grid minor;
         end
-    end
-    maxTime = 0;
-    for id = 1:Nclasses
-       maxTime = max(maxTime,max(traffic(id).deadlines));  % in ms
     end
 else
     error('Traffic type incorrect - Ending execution\n');

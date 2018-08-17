@@ -1,4 +1,4 @@
-function [W_LCMV,W_CBF,handle_ConformalArray,estObj_LCMV,estObj_CBF] = f_conventionalBF(problem,conf,candSet)
+function [W_LCMV,W_CBF,handle_ConformalArray,estObj_LCMV,estObj_CBF,candSet] = f_conventionalBF(problem,conf,candSet)
 %
 % Syntax:  [W_LCMV,W_CBF,handle_ConformalArray,estObj_LCMV,estObj_CBF] = ...
 %                                    f_conventionalBF(problem,conf,candSet)
@@ -17,6 +17,10 @@ function [W_LCMV,W_CBF,handle_ConformalArray,estObj_LCMV,estObj_CBF] = f_convent
 %                  or Capacity (controlled by conf.MinObjFIsSNR)
 %    estObj_CBF - Onjective function value for CBF. Could be either SINR
 %                 or Capacity (controlled by conf.MinObjFIsSNR)
+%    candSet - We refine the users allocated given the limitations of the
+%    current beamforming algorithms. For instance, a good solution is found
+%    when the number of allocated antennas is larger than the number of
+%    constraints (angles to maximize and minimize)
 %
 % Example: 
 %   problem = o_read_input_problem('data/metaproblem_test.dat');
@@ -45,29 +49,78 @@ function [W_LCMV,W_CBF,handle_ConformalArray,estObj_LCMV,estObj_CBF] = f_convent
 % Restrict sub-arrays to Localized for LCMV
 problem.arrayRestriction = 'Localized';
 % Restrict the number of users to the candidate Set for current slot
-nUsers = length(candSet);
-% Compute number of sub-arrays to assign per user. We ensure each user
-% receives one array and locate them horizontaly
-if ceil(sqrt(problem.N_Antennas)) > nUsers
-    problem.NySubarrays = nUsers;
-    problem.NxSubarrays = 1;
-else
-    if mod(nUsers,2)~=0;  t = factor(nUsers + 1);  % odd
-    else;                 t = factor(nUsers);  % even
+refine = true;
+Delta1 = 2e-1;  % 20% tolerance = 5x max difference on number of antennas
+Delta2 = 1;     % Number of devices to cut out for next iteration
+Delta3 = 1.5;   % Tolerance of number of antennas
+% Iterate until finding a candSet that allows for good cancellation amongst
+% users. The less number of users scheduled to transmit, the more antennas
+% for each, the more antennas per constraint, the least interference
+% generated, the higher performance.
+while refine
+    nUsers = length(candSet);
+    % Compute number of sub-arrays to assign per user. We ensure each user
+    % receives one array and locate them horizontaly
+    if ceil(sqrt(problem.N_Antennas)) > nUsers
+        problem.NySubarrays = nUsers;
+        problem.NxSubarrays = 1;
+    else
+        if mod(nUsers,2)~=0;  t = factor(nUsers + 1);  % odd
+        else;                 t = factor(nUsers);  % even
+        end
+        t = [t(1) prod(t(2:end))];
+        problem.NxSubarrays = t(1);
+        problem.NySubarrays = t(2);
     end
-    t = [t(1) prod(t(2:end))];
-    problem.NxSubarrays = t(1);
-    problem.NySubarrays = t(2);
+    problem.N_Subarrays = problem.NxSubarrays*problem.NySubarrays;
+    problem = o_compute_antennas_per_user(problem,candSet);
+    % Create subarray partition
+    problem = o_create_subarray_partition(problem);
+    % Distribute partitions amongst users
+    totSubArrays_1 = floor((problem.NxSubarrays * problem.NySubarrays) / nUsers);
+    remainder = rem((problem.NxSubarrays * problem.NySubarrays),nUsers);
+    totSubArrays = totSubArrays_1 .* ones(1,nUsers);
+    totSubArrays(1:remainder) = totSubArrays(1:remainder) + 1;
+    % Antennas assigned to each user (fixed)
+    mySubArray = (1:1:(problem.NxSubarrays * problem.NySubarrays));
+    relevant_positions = cell(nUsers,1);
+    for valID = 1:nUsers
+        partAssignation = mySubArray(1:totSubArrays(valID));
+        temp = [];
+        for ass = partAssignation
+            temp = [temp problem.Partition{ass}];  %#ok<AGROW>
+        end
+        relevant_positions{valID} = temp;
+        for k = partAssignation
+            mySubArray(mySubArray==k) = [];  % delete assigned antennas
+        end
+    end
+    % Check if the configuration is valid
+    cellsz = cellfun(@length,relevant_positions,'uni',false);
+    n_ant_users = cell2mat(cellsz);
+    totConstraints = nUsers;
+    if any(n_ant_users./totConstraints < Delta3)
+        % Need to refine the solution - even traffic demands
+        candIdxObjF = problem.MinObjF ./ max(problem.MinObjF);
+        idx = find(candIdxObjF>=Delta1);
+        candSet = candSet(idx);  % adapt
+        problem.MinObjF = problem.MinObjF(idx);  % adapt
+        % Need to refine the solution - Cut down number of users scheduled
+        [~,idxList] = sort(problem.MinObjF);
+        if length(idxList) >= 3
+            idxList(end-Delta2+1:end) = [];  % take out the last N users 
+        end
+        candSet = candSet(idxList);  % update
+        problem.MinObjF = problem.MinObjF(idxList);  % update
+        % Re-arrange indexes
+        [candSet,idxSort] = sort(candSet);
+        problem.MinObjF = problem.MinObjF(idxSort);
+    else
+        % We've found a good solution
+        refine = false;  % Stop the loop
+        nUsers = length(candSet);  % update
+    end
 end
-problem.N_Subarrays = problem.NxSubarrays*problem.NySubarrays;
-problem = o_compute_antennas_per_user(problem,candSet);
-% Create subarray partition
-problem = o_create_subarray_partition(problem);
-% Distribute partitions amongst users
-totSubArrays_1 = floor((problem.NxSubarrays * problem.NySubarrays) / nUsers);
-remainder = rem((problem.NxSubarrays * problem.NySubarrays),nUsers);
-totSubArrays = totSubArrays_1 .* ones(1,nUsers);
-totSubArrays(1:remainder) = totSubArrays(1:remainder) + 1;
 % Recreate the conformal array
 problem.NzPatch = problem.NxPatch;
 problem.dz = problem.dx;
@@ -79,23 +132,7 @@ handle_ConformalArray = phased.URA([problem.NyPatch,problem.NzPatch],...
                           'ElementSpacing',[problem.dy,problem.dz]);
 problem.possible_locations = handle_ConformalArray.getElementPosition;
 
-% Antennas assigned to each user (fixed)
-mySubArray = (1:1:(problem.NxSubarrays * problem.NySubarrays));
-relevant_positions = cell(nUsers,1);
-for valID = 1:nUsers
-    partAssignation = mySubArray(1:totSubArrays(valID));
-    temp = [];
-    for ass = partAssignation
-        temp = [temp problem.Partition{ass}];  %#ok<AGROW>
-    end
-    relevant_positions{valID} = temp;
-    for k = partAssignation
-        mySubArray(mySubArray==k) = [];  % delete assigned antennas
-    end
-end
-
 % Compute weights (beamforming)
-PhiTheta = ([-problem.phiUsers(candSet) ; -problem.thetaUsers(candSet)]);
 W_LCMV = zeros(nUsers, problem.NxPatch*problem.NyPatch);
 W_CBF = zeros(nUsers, problem.NxPatch*problem.NyPatch);
 for id = 1:nUsers
@@ -106,15 +143,35 @@ for id = 1:nUsers
                   problem.possible_locations(3,relevant_positions{id})];
     elementPosNorm = elementPos./problem.lambda;
 
+    % Determine which other users to null (based on limitation of LCMV)
+    nullSet = (1:1:nUsers);
+    maxUsersNull = Nant_user - 1;  % case Single-path
+    if maxUsersNull >= (nUsers - 1)
+        % We can nullify all of them
+        nullSet(id) = []; % Take out current user
+    else
+        % We can only nullify a restricted set
+        myListPrior = problem.MinObjF;  % Priorize by traffic
+        myListPrior(id) = [];  % Take out current user
+        [~,priorList] = sort(myListPrior);
+        nullList = priorList(1:maxUsersNull);
+        nullSet(id) = [];  % Take out current user
+        nullSet = nullSet(nullList);
+    end
+
+    % Always locate the intented user on location 1 of the vector
+    totSet = [id nullSet];
+    PhiTheta = ([-problem.phiUsers(candSet(totSet)) ; -problem.thetaUsers(candSet(totSet))]);
+
     % Apply LCMV Beamformer for selected user
     sv = steervec(elementPosNorm,PhiTheta);
     Sn = eye(Nant_user);
-    resp = zeros(nUsers,1) + eps;
-    resp(id) = 1;  % Maximum restricted to limit (33dB)
+    resp = zeros(length(totSet),1) + eps;
+    resp(1) = 1;  % Maximum towards intended direction
     w_lcmv = lcmvweights(sv,resp,Sn);  % LCMV Beamformer method
 
     % Apply Convencional Beamformer for selected user
-    w_cbf = cbfweights(elementPosNorm,PhiTheta(:,id));  % conventional beamformer
+    w_cbf = cbfweights(elementPosNorm,PhiTheta(:,1));  % conventional beamformer
 
     % Normalize weights
     w_lcmv = (1/sqrt(w_lcmv'*w_lcmv)) * w_lcmv;

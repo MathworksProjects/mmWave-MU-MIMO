@@ -1,24 +1,24 @@
 % ---------------- SIMULATION PARAMETERS ---------------- %
 realizations      = 100;
-N_Antennas        = 64;
+N_Antennas        = 256;
 NxSubarrays       = 2;
 NySubarrays       = 2;
 NmaxArray         = 0.2:0.2:1;
 thetaUsers        = [ +15 -15 -15 +15 +30 -30 -30 +30 +15 +15 -30 -30 -15 +30 +30 -15];  % Assign Theta (elevation) values (only if detLocation=true)
 phiUsers          = [ +15 -15 +15 -15 +30 -30 +30 -30 +30 -30 -15 +15 +30 +15 -15 -30];  % Assign Phi (athymut) values (only if detLocation=true)
 anglesInRadians   = false;  % To deterministically specify locations (radians or degrees)
-dUsers            = [  15  15  15  15  15  15  15  15  15  15  15  15  15  15  15  15];  % Assign distances (in m) (only if detLocation=true)
+dUsers            = [  50  50  50  50  50  50  50  50  50  50  50  50  50  50  50  50];  % Assign distances (in m) (only if detLocation=true)
 mindUsers         = 5;
 maxdUsers         = 5;
 MaxObjF           = Inf;
 maxMinObjF        = 2;
 minMinObjF        = 0.01;
-nUsers            = 2;  % Number of users in the coverage area receiving traffic
+nUsers            = 4;  % Number of users in the coverage area receiving traffic
 maxnUsers         = 20;  % Maximum number of users allowed in sim (memory preallocation)
 Tslot             = 10;  % Time slot in milliseconds
 Tsym              = 3e1;  % Total simulation time in milliseconds
 targetPER         = 1e-2;  % The target PER specified linearly (i.e. 1e-2 is PER of 1%)
-DEBUG             = true;  % Enable Debugger and logs for scheduling part
+DEBUG             = false;  % Enable Debugger and logs for scheduling part
 PLOT_DEBUG        = false;  % Enable plotting of traffic scheduled
 % ----------------------------------------------------- %
 
@@ -44,12 +44,14 @@ maxnChannelPaths  = 6;
 
 % ---------------- TRAFFIC PARAMETERS ---------------- %
 FLAGagg           = true;  % Aggregate traffic
-trafficType       = 'dataSet';  % 'synthetic' (deterministic) or 'dataSet' (extracted from DataSet-UPC)
-manuallyAssignApp = true;  % Manually distribute applications across users. Only one application
-numPkts           = 1000;  % Number of (upper layer) packets incoming to every user (only used when trafficType is set to 'synthetic')
-iat               = 30;  % Deterministic (constant) inter-arrival times (iat) in ms
+trafficType       = 'synthetic';  % 'synthetic' (deterministic) or 'dataSet' (extracted from DataSet-UPC)
+loadTraffic       = false;  % Loads a pre-defined traffic based on 'dataSet'
 % payload           = 120000000000;  % (12000 bits = 1500 bytes) Default payload in bits
-payload           = 12000000;  % (12000 bits = 1500 bytes) Default payload in bits
+iat               = 51;  % Deterministic (constant) inter-arrival times (iat) in ms
+payload           = 28875000;  % Always in Bytes (per packet, not per slot)
+deadline          = 50;  % Deadline in milliseconds
+numPkts           = 10;  % Number of (upper layer) packets incoming to every user (only used when trafficType is set to 'synthetic')
+manuallyAssignApp = true;  % Manually distribute applications across users. Only one application
  % appNameInteretList={'Youtube','Justin TV','Facebook','Web Browsing','Twitter'};  % Applications to be considered in the simulations
  % appPresence=[0.3,0.3,0.05,0.3,0.05];  % Presence of the application types specified in 'appNameInteretList' across users
 % ----------------------------------------------------- %
