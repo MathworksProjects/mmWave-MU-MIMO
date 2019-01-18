@@ -1,40 +1,47 @@
-%% function F_HEURISTICS
-%    This function computes the antenna weights and an estimation of the ca
-%    pacity for the MU-MIMO antenna allocation problem in mmWave
-%
-%    Input parameters:
-%    =================
-%    problem: an struct returned by the function O_READ_INPUT_PROBLEM con-
-%             taining all the input variables defining the actual problem
-%    conf:    an struct returned by the function O_READ_CONFIG containing
-%             the parameters used in the execution (verbosity level, algo-
-%             rithms used, etc.).
-%    usersToBeAssigned: [1 x N] vector containing the N users that are to
-%             be allocated antennas
-%
-%    Output:
-%    =======
-%    sol_found: boolean variable stating whether a solution meeting the re-
-%             quirements of the users has been found
-%    W:       [N x A] matrix containing the weights applied per user to
-%             each antenna. That is, the element Wij corresponds to the
-%             weight that the user i will apply to antenna j. Conversely,
-%             row i represents the weights applied for user i, and the
-%             column j will contain only ONE element different from 0.
-%             An example for N=3 and A=4:
-%
-%                   W = [0.0+0.0j, 0.0+0.0j, 0.1+0.4j, 0.0+0.0j;
-%                        0.0+0.0j, 0.4+0.2j, 0.0+0.0j, 0.8+0.3j;
-%                        0.4+0.7j, 0.0+0.0j, 0.0+0.0j, 0.0+0.0j]
-%
-%    handle_ConformalArray: phased.ConformalArray object handle containing
-%             the array used in the system
-%    Cap:     [1 x N] vector containing the capacity (bits/s/Hz)
-%             estimation per user for the assignment obtained as a result
-%             of the optimization
-%             If conf.MinObjFIsSNR = true, this is no longer a capacity but
-%             a SINR in dBs
 function [sol_found,W,handle_ConformalArray,estObj] = f_heuristics(problem,conf,usersToBeAssigned)
+% F_HEURISTICS - Computes the antenna weights and an estimation of the 
+%                capacity for the MU-MIMO antenna allocation problem in mmWave
+%
+% Syntax:  [sol_found,W,handle_ConformalArray,estObj] = f_heuristics(problem,conf,usersToBeAssigned)
+%
+% Inputs:
+%    conf - struct containint configuration in data/config_test.dat
+%    problem - struct containint configuration in data/metaproblem_test.dat
+%    usersToBeAssigned: [1 x N] vector containing the N users that are to
+%                       be allocated antennas
+%
+% Outputs:
+%    sol_found - boolean variable stating whether a solution meeting the re-
+%                quirements of the users has been found
+%    W - [N x A] matrix containing the weights applied per user to
+%        each antenna. That is, the element Wij corresponds to the
+%        weight that the user i will apply to antenna j. Conversely,
+%        row i represents the weights applied for user i, and the
+%        column j will contain only ONE element different from 0.
+%        An example for N=3 and A=4:
+%
+%        W = [0.0+0.0j, 0.0+0.0j, 0.1+0.4j, 0.0+0.0j;
+%             0.0+0.0j, 0.4+0.2j, 0.0+0.0j, 0.8+0.3j;
+%             0.4+0.7j, 0.0+0.0j, 0.0+0.0j, 0.0+0.0j]
+%
+%    handle_ConformalArray - phased.ConformalArray object handle containing
+%                            the array used in the system
+%    Cap - [1 x N] vector containing the capacity (bits/s/Hz)
+%          estimation per user for the assignment obtained as a result
+%          of the optimization
+%          If conf.MinObjFIsSNR = true, this is no longer a capacity but
+%          a SINR in dBs
+%
+% Other m-files required: o_solveSingleNmaxUserInstance,
+%                         o_antennas_to_subarrays, f_BF_results,
+%                         o_getPatch, o_getArrays, o_plot_feasible_comb
+% Subfunctions: None
+% MAT-files required: None
+%
+% See also: main
+%
+%------------- BEGIN CODE --------------
+
 % Check if we inherit Weights from conventional beamformer
 if isfield(problem,'initialW') && ~strcmp(problem.arrayRestriction, 'None')
     error('When inheriting Beamforming weights from LCMV or conventional beamforming, ' + ...
@@ -57,7 +64,7 @@ problem.dz = problem.dx;
 %% Create the antenna handler and the data structure with all possible pos.
 problem.handle_Ant = phased.CosineAntennaElement('FrequencyRange',...
     [problem.freq-(problem.Bw/2) problem.freq+(problem.Bw/2)],...
-    'CosinePower',[1.5 2.5]); % [1.5 2.5] values set porque sí
+    'CosinePower',[1.5 2.5]); % [1.5 2.5] values set porque sï¿½
 handle_ConformalArray = phased.URA([problem.NyPatch,problem.NzPatch],...
     'Lattice','Rectangular','Element',problem.handle_Ant,...
     'ElementSpacing',[problem.dy,problem.dz]);
@@ -151,7 +158,7 @@ while RoomForImprovement
 
     % Parse Results properly
     if conf.MinObjFIsSNR;    estObj = db2pow(SINR).';  % Linear Scale
-    else;                   estObj = db2pow(Cap).';  % Linear Scale
+    else;                    estObj = db2pow(Cap).';  % Linear Scale
     end
     if any((estObj-problem.MinObjF)<0) || any((problem.MaxObjF-estObj)<0)
         aveEstObj = -Inf;

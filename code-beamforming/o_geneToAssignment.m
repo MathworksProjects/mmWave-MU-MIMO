@@ -1,6 +1,31 @@
 function [handle_Conf_Array,W,PRx,I] = o_geneToAssignment(gene,problem,conf)
-%UNTITLED Summary of this function goes here
-%   Detailed explanation goes here
+% o_geneToAssignment - Transformation from Genes (from Genetic
+% Algorithms) into actual antenna assignation. It also computes the
+% beamforming weights using the conventional Beamforming technique (CBF)
+% and the LCMV.
+%
+% Syntax:  [handle_Conf_Array,W,Dir_OK,Dir_NOK,Cap_lin,SINR_PB_lin] =
+%          CBG_geneToAssignment(myGene,problem,conf)
+%
+% Inputs:
+%    gene - description
+%    problem - struct containint configuration in data/metaproblem_test.dat
+%    conf - struct containint configuration in data/config_test.dat
+%
+% Outputs:
+%    handle_Conf_Array - Handle of the antenna patch with antenna
+%                        allocations in 3D
+%    W - Beamforming weights
+%    PRx - Received power in linear towards intended user
+%    I - Generated interference in linear
+%
+% Other m-files required: none
+% Subfunctions: none
+% MAT-files required: none
+%
+% See also: CBG_solveit , CBG_geneToAssignment
+
+%------------- BEGIN CODE --------------
 % Extracting taper values from the input vector
     Taper_value = gene(problem.ant_elem+1:problem.ant_elem*2) .* ...
         exp(1i.*gene(problem.ant_elem*2+1:problem.ant_elem*3));

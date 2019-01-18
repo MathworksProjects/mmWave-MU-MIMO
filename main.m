@@ -21,21 +21,38 @@ function [flows,CapTot,TXbitsTot,THTot,lastSlotSim,lastSelFlow,varargout] = main
 %                         main(runnable,conf,problem,flows)
 %
 % Inputs:
-%    conf [optional] - Description
-%    problem [optional] - Description
-%    flows [optional] - Description
+%    conf [optional] - struct containint configuration in data/config_test.dat
+%    problem [optional] - struct containint configuration in data/metaproblem_test.dat
+%    flows [optional] - Array of structs of length equal to the number of
+%            users. For each user, each flow (belonging to each packet) is
+%            characterized by the amount of bits that needs to be delivered. The
+%            amount of bits are distributed uniformly across the slots until
+%            reaching the deadline. Thus, the variable flows contains four features:
+%            - slots:     For each flow, the slots across it.
+%            - TH:        The average throughput demanded for that flow over the slots
+%                         indicated in the slots field.
+%            - remaining: We set the remaining field of the flow to be the value of
+%                         the Payload.
+%            - deadlines: The deadline of the actual packet in slot ID. 
+%                         This is used in the future to set priorities.
+%            - failed:    Mark whether the flow has failed to be served before the
+%                         deadline (0 or 1).
+%            - success:   Mark whether the flow has been succesfully served before the
+%                         deadline (0 or 1).
+%            - maxSlot:   Maximum deadline slot used as simulation time or Tsym in
+%                         the system in case trafficType is 'dataSet'.
 %
 % Outputs:
-%    flows - Description
-%    CapTot - Description
-%    TXbitsTot - Description
-%    THTot - Description
-%    lastSlotSim - Description
-%    lastSelFlow - Description
+%    flows - Updated structure from input flows.
+%    CapTot - Total capacity achieved throughout the execution.
+%    TXbitsTot - Total number of transmitted bits in the execution.
+%    THTot - Throguhput achieved in the execution per user.
+%    lastSlotSim - Last slot id in the simulation before return.
+%    lastSelFlow - Last selected flow per user in the simulation.
 %    baseFlow [optional] - Description
 %
 % Example:
-%    [flows,TXbitsTot,THTot,lastSlotSim,lastSelFlow,varargout] = main([])
+%    [flows,TXbitsTot,THTot,lastSlotSim,lastSelFlow,varargout] = main;
 %    main_plotting(problem,TXbitsTot,THTot,baseFlows,lastSelFlow);
 %
 % Other m-files required: Requires most of the o_*, s_* and f_* functions
@@ -78,10 +95,14 @@ elseif (nargin==0)
     % No parameters were inputted to the main
     % Clear workspace
     clear; clc; close all;
-    addpath('utilities','-end');  % Add utilities folder at the end of search path
+    addpath('UTILITIES','-end');  % Add utilities folder at the end of search path
+    addpath('code-systems','-end');  % Add system's folder at the end of search path
+    addpath('code-beamforming','-end');  % Add beamforming folder at the end of search path
+    addpath('code-wirelessEmulation','-end');  % Add channel folder at the end of search path
+    addpath('data','-end');  % Add data folder at the end of search path
     % Load configuration
-    problem = o_read_input_problem(fullfile('data','metaproblem_test.mat'));
-    conf = o_read_config(fullfile('data','config_test.dat'));
+    problem = o_read_input_problem('metaproblem_test.dat');
+    conf = o_read_config('config_test.dat');
     % Input parameters
     [problem,~,flows] = f_configuration(conf, problem);  % Struct with configuration parameters
 %     baseFlows = flows;
@@ -105,7 +126,7 @@ CapTot = [];
 lastSelFlow = zeros(problem.nUsers,1);  % For printing purposes at the end of execution
 selFlow = zeros(problem.nUsers,1);  % Inizialization
 while(t<Tsym)
-%     fprintf('** SLOT ID: %d\n',t);
+    if(problem.DEBUG);  fprintf('** SLOT ID: %d\n',t);  end
     % Distribute Flow accross users. Either we aggregate or disaggregate
     % overlapping flows in the current slot. Select the current flow for
     % each user
@@ -130,21 +151,21 @@ while(t<Tsym)
             if strcmp(problem.BFalgorithm,'CBF') && ~isempty(candSet)
                 % Conventional Beamforming (CBF)
                 [~,W,arrayHandle,~,~,candSetUpd] = f_conventionalBF(problem,conf,candSet);
-                [~,~,~,SNRList]  = f_BF_results(W,arrayHandle,candSetUpd,problem,conf,true);
+                [~,~,~,SNRList]  = f_BF_results(W,arrayHandle,candSetUpd,problem,conf,problem.PLOT_DEBUG);
             elseif strcmp(problem.BFalgorithm,'LCMV') && ~isempty(candSet)
                 % Linearly Constrained Minimum Variance (LCMV)
                 [W,~,arrayHandle,~,~,candSetUpd] = f_conventionalBF(problem,conf,candSet);
-                [~,~,~,SNRList]  = f_BF_results(W,arrayHandle,candSetUpd,problem,conf,true);
+                [~,~,~,SNRList]  = f_BF_results(W,arrayHandle,candSetUpd,problem,conf,problem.PLOT_DEBUG);
             elseif strcmp(problem.BFalgorithm,'HEU') && ~isempty(candSet)
                 % Heuristics with LCMV as main BF
                 [~,W,~,~,~,~] = CBG_solveit(problem,conf,candSet);
-                [~,~,~,SNRList]  = f_BF_results(W,arrayHandle,candSet,problem,conf,true);
+                [~,~,~,SNRList]  = f_BF_results(W,arrayHandle,candSet,problem,conf,problem.PLOT_DEBUG);
             elseif strcmp(problem.BFalgorithm,'HEU-LCMV') && ~isempty(candSet)
                 % Heuristics with LCMV as main BF and initial ant location
                 [W_init,~,arrayHandle,~,~] = f_conventionalBF(problem,conf,candSet);
                 problem.initialW = W_init;
                 [~,W,~,~,~,~] = CBG_solveit(problem,conf,candSet);
-                [~,~,~,SNRList]  = f_BF_results(W,arrayHandle,candSet,problem,conf,false);
+                [~,~,~,SNRList]  = f_BF_results(W,arrayHandle,candSet,problem,conf,problem.PLOT_DEBUG);
             elseif strcmp(problem.BFalgorithm,'table-LCMV') && ~isempty(candSet)
                 SNRList = repmat(problem.SINR_LCMV,length(candSet),1);
             elseif strcmp(problem.BFalgorithm,'table-CBF') && ~isempty(candSet)

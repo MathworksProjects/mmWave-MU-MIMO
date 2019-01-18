@@ -1,6 +1,40 @@
 function [x,fval,bestScores,exitflag,output,population,score] = o_CA_Position_Objective_optim_ga(conf,...
     problem,lb,ub,PopulationSize_Data,EliteCount_Data,CrossoverFraction_Data,...
     MaxGenerations_Data,MaxStallGenerations_Data,FunctionTolerance_Data)
+    % o_CA_Position_Objective_optim_ga - Configures the input parameters
+    % to run GA for antenna allocation and calls Mathworks function "ga".
+    % We configure our GA with a single point crossover and an order
+    % changing mutation procedure. These two functions are implemented
+    % locally in this script.
+    %
+    % Syntax:  [x,fval,bestScores,exitflag,output,population,score] = o_CA_Position_Objective_optim_ga(conf,...
+    %           problem,lb,ub,PopulationSize_Data,EliteCount_Data,CrossoverFraction_Data,...
+    %           MaxGenerations_Data,MaxStallGenerations_Data,FunctionTolerance_Data)
+    %
+    % Inputs:
+    %    problem - struct containint configuration in data/metaproblem_test.dat
+    %    conf - struct containint configuration in data/config_test.dat
+    %    ...
+    %
+    % Outputs:
+    %    x - Solution, returned as a real vector. x is the best point that 
+    %        ga located during its iterations.
+    %    fval - Objective function value at the solution, returned as a 
+    %           real number. Generally, fval = fun(x).
+    %    bestScores - Vector containing the best solutions per iteration
+    %    exitflag - Reason that ga stopped, returned as an integer.
+    %    output - here
+    %    population - Final population, returned as a PopulationSize-by-nvars 
+    %                 matrix. The rows of population are the individuals.
+    %    score - Final scores, returned as a column vector.
+    %
+    % Other m-files required: None
+    % Subfunctions: p_crossoverArrayGA, p_mutationArrayGA
+    % MAT-files required: none
+    %
+    % See also: CBG_solveit , ga (Mathworks), CBG_CA_Position_Objective_optim_ga
+
+    %------------- BEGIN CODE --------------
     %% This is an auto generated MATLAB file from Optimization Tool.
     % Copyright 2017  The MathWorks, Inc.
     % global variable to save all the best scores

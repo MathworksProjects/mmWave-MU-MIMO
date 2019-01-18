@@ -4,6 +4,11 @@
 %   % The output of this script returns the statistical PER, in percent
 %   mcsTable.MCSPERTable(snr==mcsTable.snrRange,mcs==mcsTable.mcsRange)
 
+addpath('../UTILITIES','-end');  % Add utilities folder at the end of search path
+addpath('../code-systems','-end');  % Add system's folder at the end of search path
+addpath('../code-beamforming','-end');  % Add beamforming folder at the end of search path
+addpath('../code-wirelessEmulation','-end');  % Add channel folder at the end of search path
+
 T = readtable('PER_TABLES/CDL_ALL_DelaySpread16ns.txt');
 profile = 'CDL-C';
 

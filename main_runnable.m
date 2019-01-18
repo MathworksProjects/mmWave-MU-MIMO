@@ -1,11 +1,83 @@
+%% main_runnable (Script)
+% This script is conceived as a developing experiment script where the user
+% configures the experiments, which end up calling the functions
+% CBG_solveit (HELB) and (optional) main (in case upper-layer parameters
+% are involved, like disimilar traffic arrivals).
+%
+% The script has 9 preconfigured experiments that assess the performance of
+% conventional beamforming techniques (CBF, LCMV) as well as the proposed
+% beamformer (HELB). Each experiment conceives certain parameters to be
+% fixed and varies one or two parameters. Each experiment has its own goal.
+% For instance, finding the evolution of the fitness value over time,
+% evaluating the directivities achieved when varying the array dimmensions
+% or the user location in space, evaluating the effectivity of the proposed
+% crosslayer scheduler when having dissimilar traffic arrivals, etc.
+%
+% Once programmed the experiments, they shall be called using the variable
+% experimentlist.
+%
+% Each experiment is divided into execution and plotting. The IDs are given
+% in the following way: execution (X) and plotting (X1), where X is a
+% scalar representing the experiment ID. For example, setting the
+% experimentlist to experimentList = [6 61], would result in the execution
+% of experiment 6, storing the results in a temporary file temp/exp6* and
+% plotting the results.
+%
+% Experiment list:
+% EXPERIMENT 1 - Evolution of throughput over time given an initial 
+%                upper-layer traffic (user demands), array dimmensions, 
+%                number of users and respective location in space.
+% EXPERIMENT 2 - Directivities achieved when varying (1) the user's
+%                location in space and (2) the number of antennas available 
+%                at the transmitter.
+% EXPERIMENT 3 - Chances of serving the users when we have uniform,
+%                constant and equally distributed traffic for all the users 
+%                but varying application deadlines in time.
+% EXPERIMENT 4 - Obtain the approximate number of generations that we need
+%                to obtain a certain quality of solution by comparing the 
+%                Genetic Algorithm convergence with the global optimum 
+%                found by means of an Exhaustive Search.
+% EXPERIMENT 5 - Evaluate the average received power (Prx) at the intended
+%                users and Interference (Int) generated at other users. The
+%                secuential allocation policy leads to an unfair allocation
+%                policy, which leads to different Prx and Int values. This
+%                experiment analyzes how the size of the antenna array and
+%                the place in the priority list impact on the performance
+%                of the system.
+% EXPERIMENT 6 - Compares the performance of 5 beamformers: LCMV (fixed
+%                antenna allocation), CBF (fixed antenna allocation), HEU
+%                (Standard HELB with random initial beamforming weights),
+%                HEU-CBF (HELB with weights bootstrapped from CBF),
+%                HEU-LCMV (HELB with weights bootstrapped from LCMV). The
+%                performance is analyzed for different user locations and
+%                array dimmensions.
+% EXPERIMENT 7 - Compare the performance of the different subarray
+%                allocation techniques in terms of capacity offered. We
+%                need to do long GA executions in order to be sure of
+%                offering the best solution.
+% EXPERIMENT 8 - Compare the performance of our heuristic approach with a
+%                random modification of itself, aiming at analyzing the
+%                performance of our result.
+% EXPERIMENT 9 - Similar to Experiment 6, but here the variables are the
+%                number of users and the array dimensions.
+
 %% Setup the environment
 clear; clc; close all;
-addpath('utilities','-end');  % Add utilities folder at the end of search path
+addpath('UTILITIES','-end');  % Add utilities folder at the end of search path
+addpath('code-systems','-end');  % Add system's folder at the end of search path
+addpath('code-beamforming','-end');  % Add beamforming folder at the end of search path
+addpath('code-wirelessEmulation','-end');  % Add channel folder at the end of search path
 
 %% Define several experiments here and override variable values accordingly
-experimentList = [3];
+experimentList = [9 91];
 
-%% Experiment selection
+
+
+
+
+
+
+
 
 %% EXPERIMENT 1
 if any(experimentList(:)==1)
@@ -298,12 +370,12 @@ end
 %% EXPERIMENT 1
 function experiment1(input)
     % EXPERIMENT 1 - Capacity offered
-    % In this experiment we evaluate the capacity that the heuristics are able
-    % to offer to the devices. Heuristics assigns antennas as a function of the
-    % priority. The traffic is overloaded. The users location and channel
-    % varies across simulations.
+    % In this experiment, we evaluate the capacity that the heuristics are
+    % able to offer to the devices. Heuristics assigns antennas as a
+    % function of the priority. The traffic is overloaded. The users
+    % location and channel varies across simulations.
     %
-    %------------- BEGIN CODE EXPERIMENT 1 --------------
+    % ------------- BEGIN CODE EXPERIMENT 1 --------------
     %
 %     fprintf('Running experiment 1...\n');
 %     fprintf('Input parameters:\n\tnUsers:\t%d\n\tIter:\t%d\n\tAntennas:\t%d\n\tarrayRestriction:\t%s\n\talgorithm:\t%s\n\tdetLocation:\t%s\n\tuseCasesLocation:\t%s\n\tuseCaseLocation:\t%d\n',input.nUsers,input.nIter,input.nAntennas,input.arrayRestriction,input.algorithm,mat2str(input.detLocation),mat2str(input.useCasesLocation),input.useCaseLocation);
@@ -413,8 +485,16 @@ end
 
 
 %% EXPERIMENT 2 - Convergency analysis
-% EXPERIMENT 2 - Chances of achieving the demanded throughput
 function fileName = experiment2(input)
+    % EXPERIMENT 2 - Chances of achieving the demanded throughput
+    % In this experiment, we assume that the users perceive uniform,
+    % constant and equal traffic demands (SNR). We vary the number of
+    % antennas available at the transmitter, given a fixed number of users
+    % and respective locations in space. The experiment computes the
+    % achieved Directivities and capacities for each array dimmensions.
+    %
+    % ------------- BEGIN CODE EXPERIMENT 2 --------------
+    %
     fprintf('Running experiment 2...\n');
     % Store input struct in local
     nUsers              = input.nUsers;
@@ -967,7 +1047,7 @@ function experiment4(nIter,nUsers,nAntennasList,plotFLAG)
     %   1. User location: Fixed, from config file.
     %   2. Sub-array geometry: 'None'.
     %   3. Antenna Array geometry: Fixed to URA.
-    %   4. Algorithm: GA & ES
+    %   4. Algorithm: GA & ES (Exhaustive Search)
     % Variable:
     %   1. Antenna Array size variable: nAntennasList
     %   2. Population size: Fixed with all the rest of GA parameters, in
@@ -1036,13 +1116,13 @@ function experiment4(nIter,nUsers,nAntennasList,plotFLAG)
             % created) a parallelization processes pool
             gcp;
 
-            %% Create subarray partition
+            % Create subarray partition
             problem = o_create_subarray_partition(problem);
 
             problem.NzPatch = problem.NxPatch;
             problem.dz = problem.dx;
 
-            %% Create the antenna handler and the data structure with all possible pos.
+            % Create the antenna handler and the data structure with all possible pos.
             problem.handle_Ant = phased.CosineAntennaElement('FrequencyRange',...
                 [problem.freq-(problem.Bw/2) problem.freq+(problem.Bw/2)],...
                 'CosinePower',[1.5 2.5]); % [1.5 2.5] values set porque si
@@ -1481,6 +1561,33 @@ end
 
 %% EXPERIMENT 6
 function experiment6(input,plotFLAG)
+    % EXPERIMENT 6 -- 
+    % 
+    % Aim: Compares the performance of 5 beamformers: LCMV (fixed
+    %      antenna allocation), CBF (fixed antenna allocation), HEU
+    %      (Standard HELB with random initial beamforming weights),
+    %      HEU-CBF (HELB with weights bootstrapped from CBF),
+    %      HEU-LCMV (HELB with weights bootstrapped from LCMV).
+    % 
+	% Assumptions (Fixed):
+    %   * Sub-array geometry: 'None'.
+    %   * Antenna Array geometry: Fixed to URA.
+    %   * Antenna Array size variable: nAntennasList
+    %   * Algorithm: GA & ES (Exhaustive Search)
+    %   * Population size: Fixed with all the rest of GA parameters, in
+    %                      order to have a unique dependence on #generations
+    % Variable:
+	%   * User location: Fixed, from config file.
+    % 
+    % Syntax:  [] = experiment6(input,plotFLAG);
+    % 
+    % Inputs:
+    %    input - String containing the basic experiment configuration
+    %    plotFLAG - Plot Radiation pattern per iteration if true
+    %
+    % Outputs: None
+    %
+    %------------- BEGIN CODE EXPERIMENT 6 --------------
     %
     fprintf('Running experiment 6...\n');
 	% Store input struct in local
@@ -1610,70 +1717,70 @@ function experiment6(input,plotFLAG)
         DirOKHEU_lin = mean(DirOKHEUTot_lin(:,idxLoc,:),3);
         DirNOKHEU_gntd_lin = sum(mean(DirNOKHEUTot_lin(:,:,idxLoc,:),4),1).'; % Generated interference 
         DirNOKHEU_pcvd_lin = sum(mean(DirNOKHEUTot_lin(:,:,idxLoc,:),4),2); % Perceived interference
-        DirOKHEU = pow2db(DirOKHEU_lin);  %#ok % Directivity generated to intended user (heuristics)
-        DirNOKHEU_gntd = pow2db(DirNOKHEU_gntd_lin);  %#ok  % Directivity being generated by intended user (heuristics)
-        DirNOKHEU_pcvd = pow2db(DirNOKHEU_pcvd_lin);  %#ok  % Directivity inflicted to intended user (heuristics)
+        DirOKHEU = pow2db(DirOKHEU_lin);  % Directivity generated to intended user (heuristics)
+        DirNOKHEU_gntd = pow2db(DirNOKHEU_gntd_lin);  % Directivity being generated by intended user (heuristics)
+        DirNOKHEU_pcvd = pow2db(DirNOKHEU_pcvd_lin);  % Directivity inflicted to intended user (heuristics)
         % Parse results for specific case - Heuristics - Bootstrap from LCMV
         DirOKHEU_LCMVTot_lin = db2pow(DirOKHEU_LCMVTot);
         DirNOKHEU_LCMVTot_lin = db2pow(DirNOKHEU_LCMVTot);
         DirOKHEU_LCMV_lin = mean(DirOKHEU_LCMVTot_lin(:,idxLoc,:),3);
         DirNOKHEU_LCMV_gntd_lin = sum(mean(DirNOKHEU_LCMVTot_lin(:,:,idxLoc,:),4),1).'; % Generated interference 
         DirNOKHEU_LCMV_pcvd_lin = sum(mean(DirNOKHEU_LCMVTot_lin(:,:,idxLoc,:),4),2); % Perceived interference
-        DirOKHEU_LCMV = pow2db(DirOKHEU_LCMV_lin);  %#ok % Directivity generated to intended user (heuristics)
-        DirNOKHEU_LCMV_gntd = pow2db(DirNOKHEU_LCMV_gntd_lin);  %#ok  % Directivity being generated by intended user (heuristics)
-        DirNOKHEU_LCMV_pcvd = pow2db(DirNOKHEU_LCMV_pcvd_lin);  %#ok  % Directivity inflicted to intended user (heuristics)
+        DirOKHEU_LCMV = pow2db(DirOKHEU_LCMV_lin);  % Directivity generated to intended user (heuristics)
+        DirNOKHEU_LCMV_gntd = pow2db(DirNOKHEU_LCMV_gntd_lin);  % Directivity being generated by intended user (heuristics)
+        DirNOKHEU_LCMV_pcvd = pow2db(DirNOKHEU_LCMV_pcvd_lin);  % Directivity inflicted to intended user (heuristics)
         % Parse results for specific case - Heuristics - Bootstrap from CBF
         DirOKHEU_CBFTot_lin = db2pow(DirOKHEU_CBFTot);
         DirNOKHEU_CBFTot_lin = db2pow(DirNOKHEU_CBFTot);
         DirOKHEU_CBF_lin = mean(DirOKHEU_CBFTot_lin(:,idxLoc,:),3);
         DirNOKHEU_CBF_gntd_lin = sum(mean(DirNOKHEU_CBFTot_lin(:,:,idxLoc,:),4),1).'; % Generated interference 
         DirNOKHEU_CBF_pcvd_lin = sum(mean(DirNOKHEU_CBFTot_lin(:,:,idxLoc,:),4),2); % Perceived interference
-        DirOKHEU_CBF = pow2db(DirOKHEU_CBF_lin);  %#ok % Directivity generated to intended user (heuristics)
-        DirNOKHEU_CBF_gntd = pow2db(DirNOKHEU_CBF_gntd_lin);  %#ok  % Directivity being generated by intended user (heuristics)
-        DirNOKHEU_CBF_pcvd = pow2db(DirNOKHEU_CBF_pcvd_lin);  %#ok  % Directivity inflicted to intended user (heuristics)
+        DirOKHEU_CBF = pow2db(DirOKHEU_CBF_lin);  % Directivity generated to intended user (heuristics)
+        DirNOKHEU_CBF_gntd = pow2db(DirNOKHEU_CBF_gntd_lin);  % Directivity being generated by intended user (heuristics)
+        DirNOKHEU_CBF_pcvd = pow2db(DirNOKHEU_CBF_pcvd_lin);  % Directivity inflicted to intended user (heuristics)
         % Parse results for specific case - LCMV
         DirOKLCMVTot_lin = db2pow(DirOKLCMVTot);
         DirNOKLCMVTot_lin = db2pow(DirNOKLCMVTot);
         DirOKLCMV_lin = mean(DirOKLCMVTot_lin(:,idxLoc,:),3);
         DirNOKLCMV_gntd_lin = sum(mean(DirNOKLCMVTot_lin(:,:,idxLoc,:),4),1).'; % Generated interference 
         DirNOKLCMV_pcvd_lin = sum(mean(DirNOKLCMVTot_lin(:,:,idxLoc,:),4),2); % Perceived interference
-        DirOKLCMV = pow2db(DirOKLCMV_lin);  %#ok  % Directivity generated to intended user (LCMV)
-        DirNOKLCMV_gntd = pow2db(DirNOKLCMV_gntd_lin);  %#ok  % Directivity being generated by intended user (LCMV)
-        DirNOKLCMV_pcvd = pow2db(DirNOKLCMV_pcvd_lin);  %#ok  % Directivity inflicted to intended user (LCMV)
+        DirOKLCMV = pow2db(DirOKLCMV_lin);  % Directivity generated to intended user (LCMV)
+        DirNOKLCMV_gntd = pow2db(DirNOKLCMV_gntd_lin);  % Directivity being generated by intended user (LCMV)
+        DirNOKLCMV_pcvd = pow2db(DirNOKLCMV_pcvd_lin);  % Directivity inflicted to intended user (LCMV)
         % Parse results for specific case - CBF (Conventional)
         DirOKCBFTot_lin = db2pow(DirOKCBFTot);
         DirNOKCBFTot_lin = db2pow(DirNOKCBFTot);
         DirOKCBF_lin = mean(DirOKCBFTot_lin(:,idxLoc,:),3);
         DirNOKCBF_gntd_lin = sum(mean(DirNOKCBFTot_lin(:,:,idxLoc,:),4),1).'; % Generated interference 
         DirNOKCBF_pcvd_lin = sum(mean(DirNOKCBFTot_lin(:,:,idxLoc,:),4),2); % Perceived interference
-        DirOKCBF = pow2db(DirOKCBF_lin);  %#ok  % Directivity generated to intended user (Conventional)
-        DirNOKCBF_gntd = pow2db(DirNOKCBF_gntd_lin);  %#ok  % Directivity being generated by intended user (Conventional)
-        DirNOKCBF_pcvd = pow2db(DirNOKCBF_pcvd_lin);  %#ok  % Directivity inflicted to intended user (Conventional)
+        DirOKCBF = pow2db(DirOKCBF_lin);  % Directivity generated to intended user (Conventional)
+        DirNOKCBF_gntd = pow2db(DirNOKCBF_gntd_lin);  % Directivity being generated by intended user (Conventional)
+        DirNOKCBF_pcvd = pow2db(DirNOKCBF_pcvd_lin);  % Directivity inflicted to intended user (Conventional)
         % Compute SINR and Capacities - Heuristics
         SINRHEU_PB_lin = mean(SINRHEUTot(:,idxLoc,:),3);  % Compute SINR Pass-Band (Linear)
-        SINRHEU_PB = pow2db(SINRHEU_PB_lin);  %#ok  % Compute SINR Pass-Band (dB)
+        SINRHEU_PB = pow2db(SINRHEU_PB_lin);  % Compute SINR Pass-Band (dB)
         CapHEU = log2(1 + SINRHEU_PB_lin);  % Compute final Average Capacity (bits/Hz/s)
-        CapSumHEU = sum(CapHEU);  %#ok  % Compute final Total Capacity (bits/Hz/s)
+        CapSumHEU = sum(CapHEU);  % Compute final Total Capacity (bits/Hz/s)
         % Compute SINR and Capacities - Heuristics + Bootstrapping LCMV
         SINRHEU_LCMV_PB_lin = mean(SINRHEU_LCMVTot(:,idxLoc,:),3);  % Compute SINR Pass-Band (Linear)
-        SINRHEU_LCMV_PB = pow2db(SINRHEU_LCMV_PB_lin);  %#ok  % Compute SINR Pass-Band (dB)
+        SINRHEU_LCMV_PB = pow2db(SINRHEU_LCMV_PB_lin);  % Compute SINR Pass-Band (dB)
         CapHEU_LCMV = log2(1 + SINRHEU_LCMV_PB_lin);  % Compute final Average Capacity (bits/Hz/s)
-        CapSumHEU_LCMV = sum(CapHEU_LCMV);  %#ok  % Compute final Total Capacity (bits/Hz/s)
+        CapSumHEU_LCMV = sum(CapHEU_LCMV);  % Compute final Total Capacity (bits/Hz/s)
         % Compute SINR and Capacities - Heuristics + Bootstrapping CBF
         SINRHEU_CBF_PB_lin = mean(SINRHEU_CBFTot(:,idxLoc,:),3);  % Compute SINR Pass-Band (Linear)
-        SINRHEU_CBF_PB = pow2db(SINRHEU_CBF_PB_lin);  %#ok  % Compute SINR Pass-Band (dB)
+        SINRHEU_CBF_PB = pow2db(SINRHEU_CBF_PB_lin);  % Compute SINR Pass-Band (dB)
         CapHEU_CBF = log2(1 + SINRHEU_CBF_PB_lin);  % Compute final Average Capacity (bits/Hz/s)
-        CapSumHEU_CBF = sum(CapHEU_CBF);  %#ok  % Compute final Total Capacity (bits/Hz/s)
+        CapSumHEU_CBF = sum(CapHEU_CBF);  % Compute final Total Capacity (bits/Hz/s)
         % Compute SINR and Capacities - LCMV
         SINRLCMV_PB_lin = mean(SINRLCMVTot(:,idxLoc,:),3);  % Compute SINR Pass-Band (Linear)
-        SINRLCMV_PB = pow2db(SINRLCMV_PB_lin);  %#ok  % Compute SINR Pass-Band (dB)
+        SINRLCMV_PB = pow2db(SINRLCMV_PB_lin);  % Compute SINR Pass-Band (dB)
         CapLCMV = log2(1 + SINRLCMV_PB_lin);  % Compute final Average Capacity (bits/Hz/s)
-        CapLCMVSum = sum(CapLCMV);  %#ok  % Compute final Total Capacity (bits/Hz/s)
+        CapLCMVSum = sum(CapLCMV);  % Compute final Total Capacity (bits/Hz/s)
         % Compute SINR and Capacities - LCMV
         SINRCBF_PB_lin = mean(SINRCBFTot(:,idxLoc,:),3);  % Compute SINR Pass-Band (Linear)
-        SINRCBF_PB = pow2db(SINRCBF_PB_lin);  %#ok  % Compute SINR Pass-Band (dB)
+        SINRCBF_PB = pow2db(SINRCBF_PB_lin);  % Compute SINR Pass-Band (dB)
         CapCBF = log2(1 + SINRCBF_PB_lin);  % Compute final Average Capacity (bits/Hz/s)
-        CapCBFSum = sum(CapCBF);  %#ok  % Compute final Total Capacity (bits/Hz/s)
+        CapCBFSum = sum(CapCBF);  % Compute final Total Capacity (bits/Hz/s)
         % Store results in mat file
         fileName = fullfile('temp',strcat('exp6_',conf.algorithm,'_',problem.arrayRestriction,'_',mat2str(nUsers),'_',mat2str(nAntennas),'_',mat2str(conf.detLocation),'_',mat2str(conf.useCasesLocation),'_',mat2str(conf.useCaseLocation)));
         save(fileName,'DirOKHEU','DirNOKHEU_gntd','DirNOKHEU_pcvd','SINRHEU_PB','CapHEU','CapSumHEU',...

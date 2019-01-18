@@ -1,5 +1,5 @@
 function [MCS,PER, RATE] = f_selectMCS(candSet,SNRList_lin,PERtarget,MCSPER,mcsPolicy,DEBUG)
-% f_selectMCS - This function selects the MCS upon the estimated SNR with
+% F_SELECTMCS - This function selects the MCS upon the estimated SNR with
 % the optimal Beamformin configuration. The PER-MCS mapping is determined
 % previously and stored in problem.MCSPER. A primary approach is taken
 % using the AWGN channel, but we are still developping the same tables

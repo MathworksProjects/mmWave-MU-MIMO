@@ -1,7 +1,13 @@
 % The purpose of this script is to simulate 802.11ad performance of MCS 1 - 12
 
+clear; close all; clc;
+addpath('../UTILITIES','-end');  % Add utilities folder at the end of search path
+addpath('../code-systems','-end');  % Add system's folder at the end of search path
+addpath('../code-beamforming','-end');  % Add beamforming folder at the end of search path
+addpath('../code-wirelessEmulation','-end');  % Add channel folder at the end of search path
+addpath('../data','-end');  % Add data folder at the end of search path
+
 diary('SNR_TEMP.log');
-clear all; close all;
 
 lengthPSDU = 1000;
 

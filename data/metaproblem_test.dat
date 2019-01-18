@@ -16,9 +16,9 @@ minMinObjF        = 0.01;
 nUsers            = 4;  % Number of users in the coverage area receiving traffic
 maxnUsers         = 20;  % Maximum number of users allowed in sim (memory preallocation)
 Tslot             = 10;  % Time slot in milliseconds
-Tsym              = 3e1;  % Total simulation time in milliseconds
+Tsym              = 100;  % Total simulation time in milliseconds
 targetPER         = 1e-2;  % The target PER specified linearly (i.e. 1e-2 is PER of 1%)
-DEBUG             = false;  % Enable Debugger and logs for scheduling part
+DEBUG             = true;  % Enable Debugger and logs for scheduling part
 PLOT_DEBUG        = false;  % Enable plotting of traffic scheduled
 % ----------------------------------------------------- %
 

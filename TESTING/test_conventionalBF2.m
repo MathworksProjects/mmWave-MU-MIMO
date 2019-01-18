@@ -1,8 +1,12 @@
 clear; close all; clc;
-addpath('utilities','-end');  % Add utilities folder at the end of search path
+addpath('../UTILITIES','-end');  % Add utilities folder at the end of search path
+addpath('../code-systems','-end');  % Add system's folder at the end of search path
+addpath('../code-beamforming','-end');  % Add beamforming folder at the end of search path
+addpath('../code-wirelessEmulation','-end');  % Add channel folder at the end of search path
+addpath('../data','-end');  % Add data folder at the end of search path
 %% Basic comms parameters
-problem = o_read_input_problem(fullfile('data','metaproblem_test.dat'));
-conf = o_read_config(fullfile('data','config_test.dat'));
+problem = o_read_input_problem('metaproblem_test.dat');
+conf = o_read_config('config_test.dat');
 %% Input parameters
 maxIter              = 1;  % Maximum number of iterations
 configList           = -1;  % antenna configuration (distribution across users) (-1 for random asignation)

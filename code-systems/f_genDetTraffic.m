@@ -31,8 +31,9 @@ function [traffic] = f_genDetTraffic(trafficClass,trafficType,loadTraffic,PLOT_D
 %                            in time.
 %
 % Example: 
-%       problem = o_read_input_problem('data/metaproblem_test.dat');
-%       conf = o_read_config('data/config_test.dat');
+%       addpath('data','-end');
+%       problem = o_read_input_problem('metaproblem_test.dat');
+%       conf = o_read_config('config_test.dat');
 %       problem = f_configureTraffic(problem);  % Struct with configuration parameters
 %       [traffic,maxTime] = f_genDetTraffic(problem.class,problem.trafficType,false);
 %
@@ -72,7 +73,7 @@ elseif strcmp(trafficType,'dataSet')
     end
     if loadTraffic
         % Load pre-generated traffic
-        load(fullfile('data','TrafficPreStored.mat'),'myIAT_Pre','myPayload_Pre');
+        load('TrafficPreStored.mat','myIAT_Pre','myPayload_Pre');
     end
     for id = 1:Nclasses
         traffic(id).name = trafficClass(id).name;
