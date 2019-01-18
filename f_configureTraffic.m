@@ -57,7 +57,7 @@ end
 % Determine application presency based on DataSet
 if ~problem.manuallyAssignApp && strcmp(problem.trafficType,'dataSet')
     if ~exist('traffic','var') || ~exist('appNameList','var') || ~exist('appColorList','var')
-        load('data/TrafficDataSetUPC','traffic','appNameList','appColorList');
+        load(fullfile('data','TrafficDataSetUPC'),'traffic','appNameList','appColorList');
     end
     % Allocate app types to users based on the population
     % distribution
@@ -105,8 +105,8 @@ if strcmp(problem.trafficType,'synthetic')
     end
 elseif strcmp(problem.trafficType,'dataSet')
     if ~exist('traffic','var') || ~exist('appNameList','var') || ~exist('appColorList','var')
-%         load('data/TrafficDataSetUPC','traffic','appNameList','appColorList');  % old set
-        load('data/TrafficDataSetUPC2','traffic','appNameList','appColorList'); % new set
+%         load(fullfile('data','TrafficDataSetUPC'),'traffic','appNameList','appColorList');  % old set
+        load(fullfile('data','TrafficDataSetUPC2'),'traffic','appNameList','appColorList'); % new set
     end
     for u = 1:problem.nUsers
         appType = appTypePerUser(u);

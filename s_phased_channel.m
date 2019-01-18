@@ -32,7 +32,8 @@ classdef s_phased_channel < matlab.System
                 'NoiseMethod',                  'Signal to noise ratio (SNR)', ...
                 'SNR',                          obj.SNR);
             
-            cdlChan = nr5gCDLChannel;
+%             cdlChan = nr5gCDLChannel;  % old library (R2018a or older)
+            cdlChan = nrCDLChannel;  % new 5G library (R2018b or newer)
             cdlChan.SampleRate = 1760e6 / 1; %% SC-1760e6 sa/s, OFDM 2640e6 sa/s
             cdlChan.TransmitAntennaArray.Size = [obj.numInputElements_row, obj.numInputElements_col, 1, 1, 1];
             cdlChan.ReceiveAntennaArray.Size = [obj.numOutputElements_col, obj.numOutputElements_row, 1, 1, 1];

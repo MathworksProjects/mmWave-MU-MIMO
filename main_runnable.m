@@ -3,7 +3,7 @@ clear; clc; close all;
 addpath('utilities','-end');  % Add utilities folder at the end of search path
 
 %% Define several experiments here and override variable values accordingly
-experimentList = [31];
+experimentList = [3];
 
 %% Experiment selection
 
@@ -73,7 +73,7 @@ if any(experimentList(:)==2)
             DirNOK_tot(restIdx,:) = DirNOKTot;
         end
         % Save results
-        fileName = strcat('temp/exp2_',input.algorithm,'_TOT_',mat2str(input.nUsers),'_',mat2str(input.detLocation),'_',mat2str(input.useCasesLocation),'_',mat2str(input.useCaseLocation));
+        fileName = fullfile('temp',strcat('exp2_',input.algorithm,'_TOT_',mat2str(input.nUsers),'_',mat2str(input.detLocation),'_',mat2str(input.useCasesLocation),'_',mat2str(input.useCaseLocation)));
         nAntennasList = input.nAntennasList; Maxgenerations_Data=input.Maxgenerations_Data;
         save(fileName,'score_tot','DirOK_tot','DirNOK_tot','nAntennasList','arrRestctList','Maxgenerations_Data');
         % Plot results
@@ -87,7 +87,7 @@ if any(experimentList(:)==21)
     algorithm = 'GA';
     nUsers = 2;
     useCaseLocation = 4;
-%     fileName = strcat('temp/exp2_',algorithm,'_TOT_',mat2str(nUsers),'_true_true_',mat2str(useCaseLocation));
+%     fileName = fullfile('temp',strcat('exp2_',algorithm,'_TOT_',mat2str(nUsers),'_true_true_',mat2str(useCaseLocation)));
 %     experiment2_plot(fileName);
     % Call plot
     useCaseLocationList = [1 2 3 4 5 6];
@@ -176,7 +176,7 @@ if any(experimentList(:)==5)
         Cap_tot(:,restIdx) = pow2db(mean(Cap_lin,1)).';
     end
     % Save results
-    fileName = strcat('temp/exp5_GA_TOT_',mat2str(input.nUsers),'_',mat2str(input.detLocation),'_',mat2str(input.useCasesLocation),'_',mat2str(input.useCaseLocation));
+    fileName = fullfile('temp',strcat('exp5_GA_TOT_',mat2str(input.nUsers),'_',mat2str(input.detLocation),'_',mat2str(input.useCasesLocation),'_',mat2str(input.useCaseLocation)));
     nUsers = input.nUsers;  nAntennasList = input.nAntennasList;
     save(fileName,'Cap_tot','SINR_BB_tot','SINR_PB_tot','nUsers','nAntennasList','arrRestctList');
 end
@@ -338,7 +338,7 @@ function experiment1(input)
     end
     fprintf('Nusers %d -> OK = %.2f(%%)\n',input.nUsers,mean(mean(ratioOKTot,2)));
     % Store results in temp file (to be retrieved by plotting function)
-    fileName = strcat('temp/exp1_',conf.algorithm,'_',problem.arrayRestriction,'_',mat2str(problem.nUsers),'_',mat2str(problem.payload),'_',mat2str(problem.N_Antennas),'_',mat2str(conf.detLocation),'_',mat2str(conf.useCasesLocation),'_',mat2str(conf.useCaseLocation));
+    fileName = fullfile('temp',strcat('exp1_',conf.algorithm,'_',problem.arrayRestriction,'_',mat2str(problem.nUsers),'_',mat2str(problem.payload),'_',mat2str(problem.N_Antennas),'_',mat2str(conf.detLocation),'_',mat2str(conf.useCasesLocation),'_',mat2str(conf.useCaseLocation)));
     % Store in local to store in file
     ratioOK          = mean(ratioOKTot,2);  %#ok
     ratioNOK         = mean(ratioNOKTot,2);  %#ok
@@ -367,14 +367,14 @@ function experiment1_plot(input)
     MarkerList = {'s','*','d','+'};
     for payload = input.payloadList
         for nUsers = input.nUsersList
-            fileName = strcat('temp/exp1_',input.algorithm,'_',...
+            fileName = fullfile('temp',strcat('exp1_',input.algorithm,'_',...
                                            input.arrayRestriction,'_',...
                                            mat2str(nUsers),'_',...
                                            mat2str(payload),'_',...
                                            mat2str(input.nAntennas),'_',...
                                            mat2str(input.detLocation),'_',...
                                            mat2str(input.useCasesLocation),'_',...
-                                           mat2str(input.useCaseLocation));
+                                           mat2str(input.useCaseLocation)));
             load(fileName,'ratioOK','ratioNOK');
             ratioOK_av(nUsers==input.nUsersList) = mean(ratioOK);
             ratioNOK_av(nUsers==input.nUsersList) = mean(ratioNOK);
@@ -453,7 +453,7 @@ function fileName = experiment2(input)
     bestScores = zeros(length(nAntennasList),conf.Maxgenerations_Data);  % final
     DirOKTot = -Inf(1,length(nAntennasList));  % final
     DirNOKTot = -Inf(nUsers-1,length(nAntennasList));  % final
-    fileName = strcat('temp/exp2_',conf.algorithm,'_',problem.arrayRestriction,'_',mat2str(nUsers),'_',mat2str(conf.detLocation),'_',mat2str(conf.useCasesLocation),'_',mat2str(conf.useCaseLocation));
+    fileName = fullfile('temp',strcat('exp2_',conf.algorithm,'_',problem.arrayRestriction,'_',mat2str(nUsers),'_',mat2str(conf.detLocation),'_',mat2str(conf.useCasesLocation),'_',mat2str(conf.useCaseLocation)));
     % For each case we execute ES and the GA
     for idxAnt = 1:length(nAntennasList)
         DirOK1 = -Inf(1,nIter);
@@ -626,7 +626,7 @@ function experiment2_plot(varargin)
         
         for idx = 1:length(useCaseLocationList)
             userLocation = useCaseLocationList(idx);
-            fileName = strcat('temp/exp2_',algorithm,'_TOT_',mat2str(nUsers),'_true_true_',mat2str(userLocation));
+            fileName = fullfile('temp',strcat('exp2_',algorithm,'_TOT_',mat2str(nUsers),'_true_true_',mat2str(userLocation)));
             load(fileName,'score_tot','DirOK_tot','DirNOK_tot','nAntennasList','arrRestctList');
             DirOK_None(idx,:) = DirOK_tot(1,:);  %#ok
             DirOK_Localized(idx,:) = DirOK_tot(2,:);  %#ok
@@ -881,7 +881,7 @@ function experiment3(input)
         fprintf('\tNusers %d -> OK=%.2f(%%)\n',input.nUsers,mean(ratioOKTot(:,iter)));
     end
     % Store results in temp file (to be retrieved by plotting function)
-    fileName = strcat('temp/exp3_',conf.algorithm,'_',problem.arrayRestriction,'_',mat2str(problem.nUsers),'_',mat2str(problem.deadline),'_',mat2str(problem.N_Antennas),'_',mat2str(conf.detLocation),'_',mat2str(conf.useCasesLocation),'_',mat2str(conf.useCaseLocation));
+    fileName = fullfile('temp',strcat('exp3_',conf.algorithm,'_',problem.arrayRestriction,'_',mat2str(problem.nUsers),'_',mat2str(problem.deadline),'_',mat2str(problem.N_Antennas),'_',mat2str(conf.detLocation),'_',mat2str(conf.useCasesLocation),'_',mat2str(conf.useCaseLocation)));
     % Store in local to store in file
     ratioOK          = mean(ratioOKTot,2);  %#ok
     ratioNOK         = mean(ratioNOKTot,2);  %#ok
@@ -910,14 +910,14 @@ function experiment3_plot(input)
     MarkerList = {'s','*','d','+'};
     for deadline = input.deadlineList
         for nUsers = input.nUsersList
-            fileName = strcat('temp/exp3_',input.algorithm,'_',...
+            fileName = fullfile('temp',strcat('exp3_',input.algorithm,'_',...
                                            input.arrayRestriction,'_',...
                                            mat2str(nUsers),'_',...
                                            mat2str(deadline),'_',...
                                            mat2str(input.nAntennas),'_',...
                                            mat2str(input.detLocation),'_',...
                                            mat2str(input.useCasesLocation),'_',...
-                                           mat2str(input.useCaseLocation));
+                                           mat2str(input.useCaseLocation)));
             load(fileName,'ratioOK','ratioNOK');
             ratioOK_av(nUsers==input.nUsersList) = mean(ratioOK);
             ratioNOK_av(nUsers==input.nUsersList) = mean(ratioNOK);
@@ -1217,8 +1217,8 @@ function fileName = experiment5(input,plotFLAG)
     SINRTot = zeros(problem.nUsers,length(nAntennasList),nIter);
     DirOKTot = -Inf(problem.nUsers,length(nAntennasList),nIter);
     DirNOKTot = -Inf(problem.nUsers,problem.nUsers,length(nAntennasList),nIter);
-    fileName_temp = strcat('temp/exp5_',problem.arrayRestriction,'_',mat2str(nUsers),'_',conf.algorithm,'_so_far');
-    fileName = strcat('temp/exp5_',conf.algorithm,'_',problem.arrayRestriction,'_',mat2str(nUsers),'_',mat2str(conf.detLocation),'_',mat2str(conf.useCasesLocation),'_',mat2str(conf.useCaseLocation));
+    fileName_temp = fullfile('temp',strcat('exp5_',problem.arrayRestriction,'_',mat2str(nUsers),'_',conf.algorithm,'_so_far'));
+    fileName = fullfile('temp',strcat('exp5_',conf.algorithm,'_',problem.arrayRestriction,'_',mat2str(nUsers),'_',mat2str(conf.detLocation),'_',mat2str(conf.useCasesLocation),'_',mat2str(conf.useCaseLocation)));
     % Main execution
     for idxAnt = 1:length(nAntennasList)
         for idxIter = 1:nIter
@@ -1407,7 +1407,7 @@ function experiment5_plot(varargin)
         for locIdx = 1:length(locList)
             fileNameList{1} = strcat('temp/exp5_GA_',arrRestctList{1},'_2_true_true_',mat2str(locList(locIdx)));
             fileNameList{2} = strcat('temp/exp5_GA_',arrRestctList{2},'_2_true_true_',mat2str(locList(locIdx)));
-            fileName = strcat('temp/exp5_GA_TOT_',mat2str(nUsers),'_true_true_',mat2str(locList(locIdx)));
+            fileName = fullfile('temp',strcat('exp5_GA_TOT_',mat2str(nUsers),'_true_true_',mat2str(locList(locIdx))));
             % Store global results
             load(fileName,'Cap_tot','SINR_BB_tot','SINR_PB_tot','nUsers','nAntennasList','arrRestctList');
             Cap_TOT(:,locIdx) = Cap_tot(:,1);  %#ok
@@ -1675,7 +1675,7 @@ function experiment6(input,plotFLAG)
         CapCBF = log2(1 + SINRCBF_PB_lin);  % Compute final Average Capacity (bits/Hz/s)
         CapCBFSum = sum(CapCBF);  %#ok  % Compute final Total Capacity (bits/Hz/s)
         % Store results in mat file
-        fileName = strcat('temp/exp6_',conf.algorithm,'_',problem.arrayRestriction,'_',mat2str(nUsers),'_',mat2str(nAntennas),'_',mat2str(conf.detLocation),'_',mat2str(conf.useCasesLocation),'_',mat2str(conf.useCaseLocation));
+        fileName = fullfile('temp',strcat('exp6_',conf.algorithm,'_',problem.arrayRestriction,'_',mat2str(nUsers),'_',mat2str(nAntennas),'_',mat2str(conf.detLocation),'_',mat2str(conf.useCasesLocation),'_',mat2str(conf.useCaseLocation)));
         save(fileName,'DirOKHEU','DirNOKHEU_gntd','DirNOKHEU_pcvd','SINRHEU_PB','CapHEU','CapSumHEU',...
                       'DirOKHEU_LCMV','DirNOKHEU_LCMV_gntd','DirNOKHEU_LCMV_pcvd','SINRHEU_LCMV_PB','CapHEU_LCMV','CapSumHEU_LCMV',...
                       'DirOKHEU_CBF','DirNOKHEU_CBF_gntd','DirNOKHEU_CBF_pcvd','SINRHEU_CBF_PB','CapHEU_CBF','CapSumHEU_CBF',...
@@ -1714,8 +1714,10 @@ function experiment6_plot(nUsersList,input)
         for idxUsers = 1:length(nUsersList)
             nUsers = nUsersList(idxUsers);
             loc = useCaseLocationList(idxLoc);
-            fileName = strcat('temp/exp6_',algorithm,'_',arrRestct,'_',mat2str(nUsers),'_',mat2str(nAntennas),'_',mat2str(detLocation),'_',...
-                mat2str(useCasesLocation),'_',mat2str(loc));
+            fileName = fullfile('temp',strcat('exp6_',algorithm,'_',...
+                                       arrRestct,'_',mat2str(nUsers),'_',...
+                                       mat2str(nAntennas),'_',mat2str(detLocation),...
+                                       '_',mat2str(useCasesLocation),'_',mat2str(loc)));
             load(fileName,'SINRHEU_PB','CapHEU','CapSumHEU',...
                           'SINRHEU_LCMV_PB','CapHEU_LCMV','CapSumHEU_LCMV',...
                           'SINRHEU_CBF_PB','CapHEU_CBF','CapSumHEU_CBF',...
@@ -2113,7 +2115,7 @@ function experiment9(input,plotFLAG)
         CapHEU = log2(1 + SINRHEU_PB_lin);  % Compute final Average Capacity (bits/Hz/s)
         CapHEUSum = sum(CapHEU);  %#ok  % Compute final Total Capacity (bits/Hz/s)
         % Store results in mat file
-        fileName = strcat('temp/exp9_',conf.algorithm,'_',problem.arrayRestriction,'_',mat2str(nUsers),'_',mat2str(nAntennasList(idxAnt)),'_',mat2str(conf.detLocation),'_',mat2str(conf.useCasesLocation),'_',mat2str(conf.useCaseLocation));
+        fileName = fullfile('temp',strcat('exp9_',conf.algorithm,'_',problem.arrayRestriction,'_',mat2str(nUsers),'_',mat2str(nAntennasList(idxAnt)),'_',mat2str(conf.detLocation),'_',mat2str(conf.useCasesLocation),'_',mat2str(conf.useCaseLocation)));
         save(fileName,'DirOKLCMV','DirNOKLCMV_gntd','DirNOKLCMV_pcvd','SINRLCMV_PB','CapLCMV','CapLCMVSum',...
                       'DirOKCBF','DirNOKCBF_gntd','DirNOKCBF_pcvd','SINRCBF_PB','CapCBF','CapCBFSum',...
                       'DirOKHEU','DirNOKHEU_gntd','DirNOKHEU_pcvd','SINRHEU_PB','CapHEU','CapHEUSum',...
@@ -2144,8 +2146,8 @@ function experiment9_plot(nUsersList,input)
         for idxUsers = 1:length(nUsersList)
             nUsers = nUsersList(idxUsers);
             nAntennas = nAntennasList(idxAnt);
-            fileName = strcat('temp/exp9_',algorithm,'_',arrRestct,'_',mat2str(nUsers),'_',mat2str(nAntennas),'_',mat2str(detLocation),'_',...
-                mat2str(useCasesLocation),'_',mat2str(useCaseLocation));
+            fileName = fullfile('temp',strcat('exp9_',algorithm,'_',arrRestct,'_',mat2str(nUsers),'_',mat2str(nAntennas),'_',mat2str(detLocation),'_',...
+                mat2str(useCasesLocation),'_',mat2str(useCaseLocation)));
             load(fileName,'SINRLCMV_PB','CapLCMV','CapLCMVSum',...
                           'SINRCBF_PB','CapCBF','CapCBFSum',...
                           'SINRHEU_PB','CapHEU','CapHEUSum',...

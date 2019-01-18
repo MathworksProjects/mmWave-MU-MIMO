@@ -34,7 +34,7 @@ function [flows,CapTot,TXbitsTot,THTot,lastSlotSim,lastSelFlow,varargout] = main
 %    lastSelFlow - Description
 %    baseFlow [optional] - Description
 %
-% Example: 
+% Example:
 %    [flows,TXbitsTot,THTot,lastSlotSim,lastSelFlow,varargout] = main([])
 %    main_plotting(problem,TXbitsTot,THTot,baseFlows,lastSelFlow);
 %
@@ -80,8 +80,8 @@ elseif (nargin==0)
     clear; clc; close all;
     addpath('utilities','-end');  % Add utilities folder at the end of search path
     % Load configuration
-    problem = o_read_input_problem('data/metaproblem_test.dat');
-    conf = o_read_config('data/config_test.dat');
+    problem = o_read_input_problem(fullfile('data','metaproblem_test.mat'));
+    conf = o_read_config(fullfile('data','config_test.dat'));
     % Input parameters
     [problem,~,flows] = f_configuration(conf, problem);  % Struct with configuration parameters
 %     baseFlows = flows;

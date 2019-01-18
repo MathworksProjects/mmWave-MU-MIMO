@@ -17,13 +17,13 @@ function [problem,traffic,flows] = f_configuration(conf,problem)
                             problem.maxnChannelPaths);
     end
     % Load the PER-MCS table in the problem struct
-    if strcmp(conf.DelayProfile,'CDL-D'); load('data/MCSPERTable-CDLD-SC.mat','mcsTable');
-    elseif strcmp(conf.DelayProfile,'CDL-C'); load('data/MCSPERTable-CDLC-SC.mat','mcsTable');
+    if strcmp(conf.DelayProfile,'CDL-D'); load(fullfile('data','MCSPERTable-CDLD-SC.mat'),'mcsTable');
+    elseif strcmp(conf.DelayProfile,'CDL-C'); load(fullfile('data','MCSPERTable-CDLC-SC.mat'),'mcsTable');
     end
 %     load('data/MCSPERTable.mat','mcsTable');  % Simplistic channel model
     problem.MCSPER = mcsTable;
     % Load the SNR table for faster execution
-    load('data\TABLE-SNR-loc4.mat','SINRLCMV','SINRCBF','SINRHEU','nAntennasList','nUsersList');
+    load(fullfile('data','TABLE-SNR-loc4.mat'),'SINRLCMV','SINRCBF','SINRHEU','nAntennasList','nUsersList');
     [~,idxUsr] = min(abs(problem.nUsers - nUsersList));
     [~,idxAnt] = min(abs(problem.N_Antennas - nAntennasList));
     problem.SINR_CBF  = db2pow(SINRCBF(idxUsr,idxAnt));  % in linear scale

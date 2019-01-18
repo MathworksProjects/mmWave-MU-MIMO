@@ -1,8 +1,8 @@
 clear; close all; clc;
 addpath('utilities','-end');  % Add utilities folder at the end of search path
 %% Basic comms parameters
-problem = o_read_input_problem('data/metaproblem_test.dat');
-conf = o_read_config('data/config_test.dat');
+problem = o_read_input_problem(fullfile('data','metaproblem_test.dat'));
+conf = o_read_config(fullfile('data','config_test.dat'));
 %% Input parameters
 maxIter              = 1;  % Maximum number of iterations
 configList           = -1;  % antenna configuration (distribution across users) (-1 for random asignation)

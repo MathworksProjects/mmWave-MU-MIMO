@@ -12,7 +12,7 @@
 %   % The output of this script returns the statistical PER
 %   mcsTable.MCSPERTable(snr==mcsTable.snrRange,mcs==mcsTable.mcsRange)
 
-load('data/MCSPERTable_unparsed.mat');
+load(fullfile('data','MCSPERTable_unparsed.mat'));
 snrRange = (-1:0.5:20);
 mcsRange = (13:1:24);
 MCSPERTable = zeros(length(snrRange),length(mcsRange));
@@ -29,4 +29,4 @@ end
 mcsTable.MCSPERTable = MCSPERTable;
 mcsTable.snrRange = snrRange;
 mcsTable.mcsRange = mcsRange;
-save('data/MCSPERTable','mcsTable');
+save(fullfile('data','MCSPERTable'),'mcsTable');

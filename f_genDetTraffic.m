@@ -72,7 +72,7 @@ elseif strcmp(trafficType,'dataSet')
     end
     if loadTraffic
         % Load pre-generated traffic
-        load('data/TrafficPreStored.mat','myIAT_Pre','myPayload_Pre');
+        load(fullfile('data','TrafficPreStored.mat'),'myIAT_Pre','myPayload_Pre');
     end
     for id = 1:Nclasses
         traffic(id).name = trafficClass(id).name;
