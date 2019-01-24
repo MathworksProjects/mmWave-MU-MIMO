@@ -4,7 +4,8 @@ function [sol_found,W,handle_ConformalArray,PRx,I,bestScores] = CBG_solveit(prob
 % restrictions, the number of users, their channels and the demanded SNR
 % per application.
 %
-% Syntax:  [sol_found,W,handle_ConformalArray,PRx,I,bestScores] = CBG_solveit(problem,conf,usersToBeAssigned)
+% Syntax:  [sol_found,W,handle_ConformalArray,PRx,I,bestScores] = ...
+%                               CBG_solveit(problem,conf,usersToBeAssigned)
 %
 % Inputs:
 %    problem - struct containint configuration in data/metaproblem_test.dat

@@ -57,9 +57,9 @@ function [flows,CapTot,TXbitsTot,THTot,lastSlotSim,lastSelFlow,varargout] = main
 %
 % Other m-files required: Requires most of the o_*, s_* and f_* functions
 % Subfunctions: Calls most of the o_*, s_* and f_* functions
-% MAT-files required: ToDo
+% MAT-files required: Most of the included in data/
 %
-% See also: main_runnable , main_plotting
+% See also: main_runnable , main_plotting, CBG_solveit
 %
 %------------- BEGIN CODE --------------
 
