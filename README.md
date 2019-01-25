@@ -196,7 +196,7 @@ The code is entirely Matlab based and requires Release R2018a or older to work p
 
 - **Optimization Toolbox**: Allowed to configure the Heuristic stage in HELB with Genetic Algorithms, specifying genes, generations, elite count, mutation and crossover.
 - **Communication System Toolbox**: Used to model the channel impairments, small and large scale fading parameters and AWGN in the wireless communication link.
-- **5G Plugin**: Offered Clustered Delay Line (CDL) channel models to account for the clustered feature in the mmWave wireless 5G channel.
+- **5G Plugin** (Release R2018a) or **5G Toolbox** (Release R2018b): Offered Clustered Delay Line (CDL) channel models to account for the clustered feature in the mmWave wireless 5G channel.
 - **WLAN System Toolbox**: The PHY frames were confectioned following the 802.11ad standard's guidelines, accounting for required headers and payload fields with realistic properties such as MCS, field sizes, etc.
 - **Phased Array Toolbox**: Used to simulate the antenna radiation pattern with user specified antenna locations that match irregular antenna patches, containing antennas operating in the mmWave band.
 
