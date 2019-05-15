@@ -45,6 +45,7 @@ function [problem] = o_read_input_problem(problem_file)
                 struct('name','Tsym','type','float');
                 struct('name','targetPER','type','float');
                 struct('name','BFalgorithm','type','char');
+                struct('name','refine','type','char');
                 struct('name','loadTraffic','type','bool');
                 struct('name','deadline','type','int');
                 };

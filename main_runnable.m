@@ -20,10 +20,10 @@
 % in the following way: execution (X) and plotting (X1), where X is a
 % scalar representing the experiment ID. For example, setting the
 % experimentlist to experimentList = [6 61], would result in the execution
-% of experiment 6, storing the results in a temporary file temp/exp6* and
+% of experiment 6, storing the results in a temporary file temp/exp6 * and
 % plotting the results.
 %
-% Experiment list:
+% Experiment list: 
 % EXPERIMENT 1 - Evolution of throughput over time given an initial 
 %                upper-layer traffic (user demands), array dimmensions, 
 %                number of users and respective location in space.
@@ -67,9 +67,10 @@ addpath('UTILITIES','-end');  % Add utilities folder at the end of search path
 addpath('code-systems','-end');  % Add system's folder at the end of search path
 addpath('code-beamforming','-end');  % Add beamforming folder at the end of search path
 addpath('code-wirelessEmulation','-end');  % Add channel folder at the end of search path
+addpath('data','-end');  % Add channel folder at the end of search path
 
 %% Define several experiments here and override variable values accordingly
-experimentList = [9 91];
+experimentList = [12];
 
 
 
@@ -85,12 +86,14 @@ if any(experimentList(:)==1)
     input.payloadList          = (1/8).*(50/10).*[385e6 962.5e6 1155e6 1540e6 1925e6 2502e6 3080e6 4620e6].*10e-3;
     % Input parameters
     input.nIter                = 1;
-    input.nAntennas            = 4.^2;
+    input.nAntennas            = 12.^2;
     input.arrayRestriction     = 'None';
     input.algorithm            = 'GA';
     input.detLocation          = true;
     input.useCasesLocation     = true;
     input.useCaseLocation      = 4;
+    input.BFalgorithm          = 'table-LCMV';  % 'CBF', 'LCMV', 'HEU', 'HEU-LCMV', 'dummy', 'table-LCMV', 'table-CBF', 'table-HEU'
+    input.refine               = true;
     plotFLAG                   = false;
     for payload = input.payloadList
         input.payload = payload;
@@ -105,13 +108,49 @@ end
 if any(experimentList(:)==11)
     input.nUsersList           = [2 4 6 8 10];
     input.payloadList          = (1/8).*(50/10).*[385e6 962.5e6 1155e6 1540e6 1925e6 2502e6 3080e6 4620e6].*10e-3;
-    input.nAntennas            = 4.^2;
+    input.nAntennas            = 12.^2;
     input.arrayRestriction     = 'None';
     input.algorithm            = 'GA';
     input.detLocation          = true;
     input.useCasesLocation     = true;
     input.useCaseLocation	   = 4;
     experiment1_plot(input);
+end
+
+%% EXPERIMENT 12
+if any(experimentList(:)==12)
+    input.nUsersList           = [2 4 6 8 10 12];
+    input.payloadList          = (1/8).*(50/10).*[385e6 962.5e6 1155e6 1540e6 1925e6 2502e6 3080e6 4620e6].*10e-3;
+    % Input parameters
+    input.nIter                = 1;
+    input.nAntennas            = 8.^2;
+    input.arrayRestriction     = 'None';
+    input.algorithm            = 'GA';
+    input.detLocation          = true;
+    input.useCasesLocation     = true;
+    input.useCaseLocation      = 4;
+%     BFalgorithmList            = {'CBF','CBF','LCMV','LCMV','HEU-LCMV','HEU-LCMV'};
+%     refinementList             = {'false','true','false','true','false','true'};
+%     BFalgorithmColor           = {'k','k','r','r','b','b'};  % 'CBF', 'LCMV', 'HEU', 'HEU-LCMV', 'dummy', 'table-LCMV', 'table-CBF', 'table-HEU'
+    BFalgorithmList            = {'CBF','LCMV'};
+    refinementList             = {'true','true'};
+    BFalgorithmColor           = {'k','r'};  % 'CBF', 'LCMV', 'HEU', 'HEU-LCMV', 'dummy', 'table-LCMV', 'table-CBF', 'table-HEU'
+    plotFLAG                   = false;
+    for idxbfAlgorithm = 1:length(BFalgorithmList)
+        input.BFalgorithm = BFalgorithmList{idxbfAlgorithm};
+        input.color = BFalgorithmColor{idxbfAlgorithm};
+        input.refine = refinementList{idxbfAlgorithm};
+        for payload = input.payloadList
+            input.payload = payload;
+            for nUsers = input.nUsersList
+                input.nUsers = nUsers;
+                experiment1(input);
+            end
+        end
+        experiment1_plot(input);
+    end
+    L1 = findobj(2,'type','line');
+    copyobj(L1,findobj(4,'type','axes'));
 end
 
 %% EXPERIMENT 2
@@ -126,7 +165,7 @@ if any(experimentList(:)==2)
     input.algorithm           = 'GA';  % Heuristic algorithm
     input.detLocation         = true;  % Deterministic locations if true
     input.useCasesLocation    = true;  % Use-Case locations if true
-    useCaseLocationList = 1;
+    useCaseLocationList       = 1;
     for locID = 1:length(useCaseLocationList)
         input.useCaseLocation     = useCaseLocationList(locID);  % Use-case ID
         fileNameList = cell(length(arrRestctList),1);
@@ -219,19 +258,19 @@ if any(experimentList(:)==5)
     fileNameList = cell(length(arrRestctList),1);
     for restIdx = 1:length(arrRestctList)
         % Input parameters
-        input.nIter            = 5;  % Total number of iterations
+        input.nIter            = 1;  % Total number of iterations
         input.nUsers           = 2;  % Number of users deployed
-        input.nAntennasList    = [4 8 12 16 20 24 28 32].^2;  % Number of antennas in array
+        input.nAntennasList    = [4 16 20 24 28 32].^2;  % Number of antennas in array
         input.arrayRestriction = arrRestctList{restIdx};
         input.algorithm        = 'GA';  % Heuristic algorithm
-        input.detLocation      = true;  % Deterministic locations if true
-        input.useCasesLocation = true;  % Use-Case locations if true
-        input.useCaseLocation  = 3;  % Use-case ID
+        input.detLocation      = false;  % Deterministic locations if true
+        input.useCasesLocation = false;  % Use-Case locations if true
+        input.useCaseLocation  = 1;  % Use-case ID
         plotFLAG = false;  % Plotting flag
         % Main
         fileNameList{restIdx} = experiment5(input,plotFLAG);
-        % Plot
-        experiment5_plot(fileNameList{restIdx});
+%         % Plot
+%         experiment5_plot(fileNameList{restIdx});
     end
     % Parse results along array geometry
     SINR_PB_tot = zeros(length(input.nAntennasList),length(arrRestctList));
@@ -260,21 +299,25 @@ if any(experimentList(:)==51)
 %     my_nAntennasList = [4 8 12 16].^2;  % List of antennas to plot over
     my_nAntennasList    = [4 8 12 16 20 24 28 32].^2;  % Number of antennas in array
     locList = [1 2 3 4 5 6];  % List of locations to plot over
+%     my_nAntennasList    = [8 12 16 20 24 28 32].^2;  % Number of antennas in array
+%     locList = [2];  % List of locations to plot over
     % Call plot
     experiment5_plot(nUsers,arrRestctList,locList,my_nAntennasList);
 end
 
 %% EXPERIMENT 6
 if any(experimentList(:)==6)
-    nUsersList = [2 4 6];
+%     nUsersList = [2 4 6 8 10];
+%     nUsersList = (1:1:6);
+    nUsersList = 4;
     % Input parameters
     input.nIter                = 1;
-    input.nAntennas            = 12.^2;
+    input.nAntennas            = 6.^2;
     input.arrayRestriction     = 'None';
     input.algorithm            = 'GA';
     input.detLocation          = true;
     input.useCasesLocation     = true;
-    input.useCaseLocationList  = 1;  % List of locations to plot over;
+    input.useCaseLocationList  = 4;
     plotFLAG                   = false;  % Plotting flag
     for nUsers = nUsersList
         input.nUsers = nUsers;
@@ -284,13 +327,14 @@ end
 
 %% EXPERIMENT 6 - PLOTTING
 if any(experimentList(:)==61)
-    nUsersList = [2 4 6];
-    input.nAntennas            = 12.^2;
+%     nUsersList = [2 4 6 8 10];
+     nUsersList = (1:1:6);
+    input.nAntennas            = 6.^2;
     input.arrRestct            = 'None';
     input.algorithm            = 'GA';
     input.detLocation          = true;
     input.useCasesLocation     = true;
-    input.useCaseLocationList  = 1;  % List of locations to plot over;
+    input.useCaseLocationList  = 4;
     % Call plot
     experiment6_plot(nUsersList,input);
 end
@@ -318,11 +362,11 @@ end
 %% EXPERIMENT 9
 if any(experimentList(:)==9)
 %     nUsersList = [2 4 6 8 10 12];
-    nUsersList = [2 4 6];
+    nUsersList = [10];
     % Input parameters
     input.nIter                = 1;
-%     input.nAntennasList        = [12 14 16 18 20 22].^2;
-    input.nAntennasList        = [6].^2;
+    input.nAntennasList        = [12 14 16 18 20 22].^2;
+%     input.nAntennasList        = [6].^2;
     input.arrayRestriction     = 'None';
     input.algorithm            = 'GA';
     input.detLocation          = true;
@@ -339,10 +383,10 @@ end
 if any(experimentList(:)==91)
 %     nUsersList = [2 4 6 8 10 12];
 %     nUsersList = [2 4 6 8];
-    nUsersList = [2 4 6];
-%     input.nAntennasList        = [12 14 16 18 20 22].^2;
+    nUsersList = [10];
+    input.nAntennasList        = [12 14 16 18 20 22].^2;
 %     input.nAntennasList        = [8 10].^2;
-    input.nAntennasList        = [6].^2;
+%     input.nAntennasList        = [6].^2;
     input.arrRestct            = 'None';
     input.algorithm            = 'GA';
     input.detLocation          = true;
@@ -383,22 +427,30 @@ function experiment1(input)
     problem = o_read_input_problem('data/metaproblem_test.dat');
     conf = o_read_config('data/config_test.dat');
     % Override parameters (config)
-    conf.verbosity            = 0;
+    conf.verbosity            = 1;
     conf.algorithm            = input.algorithm;
 	conf.detLocation          = input.detLocation;
     conf.useCasesLocation     = input.useCasesLocation;
     conf.useCaseLocation      = input.useCaseLocation;
+    conf.Maxgenerations_Data      = 30;
+    conf.MaxStallgenerations_Data = 10;
     % Override parameters (problem)
     problem.nUsers            = input.nUsers;
     problem.N_Antennas        = input.nAntennas;
     problem.payload           = input.payload;
     problem.arrayRestriction  = input.arrayRestriction;
+    problem.BFalgorithm       = input.BFalgorithm;
+    problem.refine            = input.refine;
     problem.DEBUG             = true;  % no ouput messages (Scheduling)
     problem.PLOT_DEBUG        = false;  % No plotting
     problem.numPkts           = 2;
+    problem.trafficType       = 'synthetic';  % 'synthetic' or 'dataSet'
     % Output variables
     ratioOKTot = zeros(input.nUsers,input.nIter);
     ratioNOKTot = zeros(input.nUsers,input.nIter);
+    % Adjust patch dimensions
+	problem.NxPatch = floor(sqrt(problem.N_Antennas));
+    problem.NyPatch = floor(problem.N_Antennas./problem.NxPatch);
     for iter = 1:input.nIter
         % Configure the simulation environment
         [problem,~,flows] = f_configuration(conf,problem);
@@ -437,6 +489,9 @@ function experiment1_plot(input)
     leg = cell(length(input.payloadList),1);
     LineStyleList = {'-.','-','--',':'};
     MarkerList = {'s','*','d','+'};
+    if isfield(input,'color'); myColor = input.color;
+    else;                      myColor = 'k';
+    end
     for payload = input.payloadList
         for nUsers = input.nUsersList
             fileName = fullfile('temp',strcat('exp1_',input.algorithm,'_',...
@@ -455,12 +510,12 @@ function experiment1_plot(input)
         idxLineStyle = ceil(find(payload==input.payloadList)/4);
         % No interpolation
         figure(figIdx); hold on; grid minor;
-        plot(input.nUsersList,ratioOK_av,'LineWidth',1,'LineStyle',LineStyleList{idxLineStyle},'Marker',MarkerList{idxMarkerStyle},'Color','k');
+        plot(input.nUsersList,ratioOK_av,'LineWidth',1,'LineStyle',LineStyleList{idxLineStyle},'Marker',MarkerList{idxMarkerStyle},'Color',myColor);
         % With interpolation
         figure(figIdx+1); hold on; grid minor;
         xq = (1:1:input.nUsersList(end));
         ratioOK_av_int = interp1(input.nUsersList,ratioOK_av,xq,'pchip');
-        plot(xq,ratioOK_av_int,'LineWidth',1,'LineStyle',LineStyleList{idxLineStyle},'Marker',MarkerList{idxMarkerStyle},'Color','k');
+        plot(xq,ratioOK_av_int,'LineWidth',1,'LineStyle',LineStyleList{idxLineStyle},'Marker',MarkerList{idxMarkerStyle},'Color',myColor);
         % Legend
         leg(payload==input.payloadList) = strcat('Network sat.',{' '},sprintf('%.2f',payload/max(input.payloadList)),'x');
     end
@@ -1278,7 +1333,7 @@ function fileName = experiment5(input,plotFLAG)
     problem.MinObjF = 100.*ones(1,problem.nUsers);  % Same #ant per user. Random SNR (30dB)
     problem.arrayRestriction = arrayRestriction;  % Possibilities: "None", "Localized", "Interleaved", "DiagInterleaved"
     % Override (conf) parameters
-    conf.verbosity = 0;
+    conf.verbosity = 1;
     conf.algorithm = algorithm;  % Heuristic algorithm
     conf.PopulationSize_Data = 30;
     conf.Maxgenerations_Data = 150;
@@ -1307,24 +1362,37 @@ function fileName = experiment5(input,plotFLAG)
             % locations and create new channels to have statistically
             % meaningful results
             [problem,~,~] = f_configuration(conf,problem);
-            % Select number of antennas
-            problem.N_Antennas = nAntennasList(idxAnt);
             % Adjust parameters
-            problem.NxPatch = floor(sqrt(problem.N_Antennas));
-            problem.NyPatch = floor(problem.N_Antennas./problem.NxPatch);
+            problem.NxPatch = floor(sqrt(nAntennasList(idxAnt)));
+            problem.NyPatch = floor(nAntennasList(idxAnt)./problem.NxPatch);
+            problem.NzPatch = problem.NxPatch;
+            % Select number of antennas
             problem.N_Antennas = problem.NxPatch.*problem.NyPatch;
             % Call heuristics
             fprintf('\t** %d Antennas and %d Users...\n',problem.N_Antennas,problem.nUsers);
-            [~,W,arrayHandle,estObj] = f_heuristics(problem,conf,candSet);
-            % Heuristics - Post Processing
-            if conf.MinObjFIsSNR;     CapTot(:,idxAnt,idxIter)  = log2(estObj+1);  % in bps/Hz
-                                      SINRTot(:,idxAnt,idxIter) = pow2db(estObj);  % in dB
-            else;                     CapTot(:,idxAnt,idxIter)  = estObj;  % in bps/Hz
-                                      SINRTot(:,idxAnt,idxIter) = pow2db(2.^(estTH/problem.Bw) - 1);  % in dB
+            problem.MaxObjF = ones(1,length(candSet));
+            problem.MinObjF = ones(1,length(candSet));
+            if conf.MinObjFIsSNR;     problem.MinObjF = 2.^problem.MinObjF - 1;
             end
-            % Process results after Beamforming
-            [DirOKTot(:,idxAnt,idxIter),DirNOKTot(:,:,idxAnt,idxIter)]  = ...
-                f_BF_results(W,arrayHandle,problem,conf,false);
+            % LCMV beamformer
+            [W_LCMV,~,arrayHandle,~,~] = f_conventionalBF(problem,conf,candSet);
+            % Normalize weights
+            for id = 1:problem.nUsers; W_LCMV(id,:) = (1/sqrt(W_LCMV(id,:)*W_LCMV(id,:)'))*W_LCMV(id,:); end
+            if strcmp(arrayRestriction,'None')
+                % HELB beamformer
+                problem.initialW = W_LCMV;
+                [~,W_HEU,arrayHandle,~,~,~] = CBG_solveit(problem,conf,candSet);
+                % Normalize weights
+                for id = 1:problem.nUsers; W_HEU(id,:) = (1/sqrt(W_HEU(id,:)*W_HEU(id,:)'))*W_HEU(id,:); end
+                W = W_HEU;
+            else
+                W = W_LCMV;
+            end
+            % Results
+            [DirOKTot(:,idxAnt,idxIter),DirNOKTot(:,:,idxAnt,idxIter),...
+             CapTot(:,idxAnt,idxIter),SINRTot(:,idxAnt,idxIter)]  = ...
+                f_BF_results(W,arrayHandle,candSet,problem,conf,false);
+            % Save to file
             save(fileName_temp,'DirOKTot','DirNOKTot','nUsers','nAntennasList');
         end
     end
@@ -1354,6 +1422,7 @@ function fileName = experiment5(input,plotFLAG)
     SINR_PB = pow2db(SINR_PB_lin);  %#ok
     SINR_BB_lin = mean(db2pow(SINRTot),3);  % Compute SINR Base-Band (BB)
     SINR_BB = pow2db(SINR_BB_lin);  %#ok
+    CapTot = log2(1 + SINR_PB_lin);
     Cap = mean(CapTot,3);  %#ok % Compute Average Capacities in the system
     % Store results in .mat file
     save(fileName,'Cap','SINR_BB','SINR_PB',...
@@ -1599,6 +1668,7 @@ function experiment6(input,plotFLAG)
     detLocation          = input.detLocation;
     useCasesLocation     = input.useCasesLocation;
     useCaseLocationList  = input.useCaseLocationList;
+    refine               = false;  % do not attempt to leave out users
     fprintf('Input parameters:\n\tnUsers:\t%d\n\tIter:\t%d\n\tAntennas:\t%d\n\tarrayRestriction:\t%s\n\talgorithm:\t%s\n\tdetLocation:\t%s\n\tuseCasesLocation:\t%s\n\tuseCaseLocation:\t%s\n',nUsers,nIter,nAntennas,arrayRestriction,algorithm,mat2str(detLocation),mat2str(useCasesLocation),mat2str(useCaseLocationList));
     % Load basic parameters
     problem = o_read_input_problem('data/metaproblem_test.dat');
@@ -1672,20 +1742,19 @@ function experiment6(input,plotFLAG)
             problem.NyPatch = floor(problem.N_Antennas./problem.NxPatch);
             problem.N_Antennas = problem.NxPatch.*problem.NyPatch;
             % Conventional Beamforming + LCMV
-            [W_LCMV,W_CBF,handle_ConformalArray,~,~] = f_conventionalBF(problem,conf,candSet);
+            [W_LCMV,W_CBF,handle_ConformalArray,~,~,candSetUpd] = f_conventionalBF(problem,conf,candSet,refine);
             fprintf('SOLVING LCMV\n');
             % Compute directivity for LCMV
-            [DirOKLCMVTot(:,idxLoc,idxIter),DirNOKLCMVTot(:,:,idxLoc,idxIter), ...
-             CapLCMVTot(:,idxLoc,idxIter),SINRLCMVTot(:,idxLoc,idxIter)]     = ...
-               f_BF_results(W_LCMV,handle_ConformalArray,candSet,problem,conf,plotFLAG);
+            [DirOKLCMVTot(candSetUpd,idxLoc,idxIter),DirNOKLCMVTot(candSetUpd,:,idxLoc,idxIter), ...
+             CapLCMVTot(candSetUpd,idxLoc,idxIter),SINRLCMVTot(candSetUpd,idxLoc,idxIter)]     = ...
+               f_BF_results(W_LCMV,handle_ConformalArray,candSetUpd,problem,conf,plotFLAG);
             % Compute directivity for Conventional
             fprintf('SOLVING CBF\n');
             [DirOKCBFTot(:,idxLoc,idxIter),DirNOKCBFTot(:,:,idxLoc,idxIter), ...
              CapCBFTot(:,idxLoc,idxIter),SINRCBFTot(:,idxLoc,idxIter)]     = ...
-               f_BF_results(W_CBF,handle_ConformalArray,candSet,problem,conf,plotFLAG);
+               f_BF_results(W_CBF,handle_ConformalArray,candSetUpd,problem,conf,plotFLAG);
             % Call heuristics - No bootstrapping
             fprintf('SOLVING HEURISTICS\n');
-%             [~,W,handle_ConformalArray,~] = f_heuristics(problem,conf,candSet);
             [~,W,handle_ConformalArray,~] = CBG_solveit(problem,conf,candSet);
             % Compute directivity for Heuristics
             [DirOKHEUTot(:,idxLoc,idxIter),DirNOKHEUTot(:,:,idxLoc,idxIter), ...
@@ -1694,8 +1763,7 @@ function experiment6(input,plotFLAG)
            % Call heuristics - bootstrapping from LCMV
             fprintf('SOLVING HEURISTICS - BOOTSTRAPPING LCMV\n');
             problem.initialW = W_LCMV;
-%             [~,W,handle_ConformalArray,~] = f_heuristics(problem,conf,candSet);
-            [~,W,handle_ConformalArray,~] = CBG_solveit(problem,conf,candSet);
+            [~,W,handle_ConformalArray,~] = CBG_solveit(problem,conf,candSetUpd);
             % Compute directivity for Heuristics + bootstrapped LCMV
             [DirOKHEU_LCMVTot(:,idxLoc,idxIter),DirNOKHEU_LCMVTot(:,:,idxLoc,idxIter), ...
              CapHEU_LCMVTot(:,idxLoc,idxIter),SINRHEU_LCMVTot(:,idxLoc,idxIter)]     = ...
@@ -1703,8 +1771,7 @@ function experiment6(input,plotFLAG)
            % Call heuristics - bootstrapping from CBF
             fprintf('SOLVING HEURISTICS - BOOTSTRAPPING CBF\n');
             problem.initialW = W_CBF;
-%             [~,W,handle_ConformalArray,~] = f_heuristics(problem,conf,candSet);
-            [~,W,handle_ConformalArray,~,~,~] = CBG_solveit(problem,conf,candSet);
+            [~,W,handle_ConformalArray,~,~,~] = CBG_solveit(problem,conf,candSetUpd);
             % Compute directivity for Heuristics + bootstrapped CBF
             [DirOKHEU_CBFTot(:,idxLoc,idxIter),DirNOKHEU_CBFTot(:,:,idxLoc,idxIter), ...
              CapHEU_CBFTot(:,idxLoc,idxIter),SINRHEU_CBFTot(:,idxLoc,idxIter)]     = ...

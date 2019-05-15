@@ -49,7 +49,7 @@ nUsers = length(candSet);  % Turn it into local variable
 % Output parameters
 DirOK = -Inf(nUsers,1);  % Directivity target (heuristics)
 DirNOK = -Inf(nUsers,nUsers);  % Directivity others (heuristics)
-
+ 
 % Antenna location in the array
 possible_locations = handle_ConformalArray.getElementPosition;
 

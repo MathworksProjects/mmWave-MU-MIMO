@@ -92,7 +92,7 @@ for id = 1:Nusers
         valor.success(pkt) = 0;
     end
     flows(id) = valor;
-    maxSlot = max(maxSlot,max(flows(id).deadlines)+1);
+    maxSlot = max(maxSlot,max(flows(id).deadlines)+5);
 end
 
 

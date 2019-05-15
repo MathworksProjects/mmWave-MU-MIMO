@@ -1,19 +1,20 @@
 % ---------------- SIMULATION PARAMETERS ---------------- %
 realizations      = 100;
-N_Antennas        = 256;
+N_Antennas        = 64;
 NxSubarrays       = 2;
 NySubarrays       = 2;
 NmaxArray         = 0.2:0.2:1;
 thetaUsers        = [ +15 -15 -15 +15 +30 -30 -30 +30 +15 +15 -30 -30 -15 +30 +30 -15];  % Assign Theta (elevation) values (only if detLocation=true)
 phiUsers          = [ +15 -15 +15 -15 +30 -30 +30 -30 +30 -30 -15 +15 +30 +15 -15 -30];  % Assign Phi (athymut) values (only if detLocation=true)
 anglesInRadians   = false;  % To deterministically specify locations (radians or degrees)
-dUsers            = [  50  50  50  50  50  50  50  50  50  50  50  50  50  50  50  50];  % Assign distances (in m) (only if detLocation=true)
+%dUsers            = [  50  50  50  50  50  50  50  50  50  50  50  50  50  50  50  50];  % Assign distances (in m) (only if detLocation=true)
+dUsers            = [  75  75  75  75  75  75  75  75  75  75  75  75  75  75  75  75];  % Assign distances (in m) (only if detLocation=true)
 mindUsers         = 5;
 maxdUsers         = 5;
 MaxObjF           = Inf;
 maxMinObjF        = 2;
 minMinObjF        = 0.01;
-nUsers            = 4;  % Number of users in the coverage area receiving traffic
+nUsers            = 6;  % Number of users in the coverage area receiving traffic
 maxnUsers         = 20;  % Maximum number of users allowed in sim (memory preallocation)
 Tslot             = 10;  % Time slot in milliseconds
 Tsym              = 100;  % Total simulation time in milliseconds
@@ -36,6 +37,7 @@ mcsPolicy         = 'aggressive'; % Possibilities are 'aggressive', 'conservativ
 arrayRestriction  = 'None';  % Possibilities: "None", "Localized", "Interleaved", "DiagInterleaved"
 invdAntennas      = 2;
 BFalgorithm       = 'LCMV'  % Possibilities are: 'CBF', 'LCMV', 'HEU', 'HEU-LCMV', 'dummy', 'table-LCMV', 'table-CBF', 'table-HEU'
+refine 			  = 'true'  % Boolean controlling the option to leave out some users in the slot given the shortage in antenna elements
 % ----------------------------------------------------- %
 
 % ---------------- CHANNEL PARAMETERS ---------------- %

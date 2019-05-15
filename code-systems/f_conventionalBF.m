@@ -1,4 +1,4 @@
-function [W_LCMV,W_CBF,handle_ConformalArray,estObj_LCMV,estObj_CBF,candSet] = f_conventionalBF(problem,conf,candSet)
+function [W_LCMV,W_CBF,handle_ConformalArray,estObj_LCMV,estObj_CBF,candSet] = f_conventionalBF(problem,conf,candSet,refine)
 %
 % Syntax:  [W_LCMV,W_CBF,handle_ConformalArray,estObj_LCMV,estObj_CBF] = ...
 %                                    f_conventionalBF(problem,conf,candSet)
@@ -8,6 +8,8 @@ function [W_LCMV,W_CBF,handle_ConformalArray,estObj_LCMV,estObj_CBF,candSet] = f
 %    conf - Struct containing configuration in data/config_test.dat
 %    candSet - Vector containing the users ID being considered in the 
 %              current slot
+%    refine - RBoolean, Refine to find solution, select users with highest
+%             priority
 %
 % Outputs:
 %    W_LCMV - Matrix [nUser x nAntennas] containg the weights for LCMV
@@ -45,20 +47,62 @@ function [W_LCMV,W_CBF,handle_ConformalArray,estObj_LCMV,estObj_CBF,candSet] = f
 
 %------------- BEGIN CODE --------------
 
+% Initial number of users
+nUsers = length(candSet);
 
 % Restrict sub-arrays to Localized for LCMV
 problem.arrayRestriction = 'Localized';
-% Restrict the number of users to the candidate Set for current slot
-refine = true;
+
+% Compute number of sub-arrays to assign per user. We ensure each user
+% receives one array and locate them horizontaly
+if ceil(sqrt(problem.N_Antennas)) > nUsers
+    problem.NySubarrays = nUsers;
+    problem.NxSubarrays = 1;
+else
+    if mod(nUsers,2)~=0;  t = factor(nUsers + 1);  % odd
+    else;                 t = factor(nUsers);  % even
+    end
+    t = [t(1) prod(t(2:end))];
+    problem.NxSubarrays = t(1);
+    problem.NySubarrays = t(2);
+end
+problem.N_Subarrays = problem.NxSubarrays*problem.NySubarrays;
+problem = o_compute_antennas_per_user(problem,candSet); 
+
+% Create initial assignation to users
+problem = o_create_subarray_partition(problem);
+
+% Distribute partitions amongst users
+totSubArrays_1 = floor((problem.NxSubarrays * problem.NySubarrays) / nUsers);
+remainder = rem((problem.NxSubarrays * problem.NySubarrays),nUsers);
+totSubArrays = totSubArrays_1 .* ones(1,nUsers);
+totSubArrays(1:remainder) = totSubArrays(1:remainder) + 1;
+
+% Antennas assigned to each user (initial, prior refinement in case needed)
+mySubArray = (1:1:(problem.NxSubarrays * problem.NySubarrays));
+relevant_positions = cell(nUsers,1);
+for valID = 1:nUsers
+    partAssignation = mySubArray(1:totSubArrays(valID));
+    temp = [];
+    for ass = partAssignation
+        temp = [temp problem.Partition{ass}];  %#ok<AGROW>
+    end
+    relevant_positions{valID} = temp;
+    for k = partAssignation
+        mySubArray(mySubArray==k) = [];  % delete assigned antennas
+    end
+end
+
+% Initialize refinement parameters for user selection in case of shortage
+% of antenna resources. Some users will be left out.
 Delta1 = 2e-1;  % 20% tolerance = 5x max difference on number of antennas
 Delta2 = 1;     % Number of devices to cut out for next iteration
-Delta3 = 1.5;   % Tolerance of number of antennas
+Delta3 = 1.3;   % Tolerance of number of antennas
 % Iterate until finding a candSet that allows for good cancellation amongst
 % users. The less number of users scheduled to transmit, the more antennas
 % for each, the more antennas per constraint, the least interference
 % generated, the higher performance.
 while refine
-    nUsers = length(candSet);
     % Compute number of sub-arrays to assign per user. We ensure each user
     % receives one array and locate them horizontaly
     if ceil(sqrt(problem.N_Antennas)) > nUsers
@@ -73,14 +117,17 @@ while refine
         problem.NySubarrays = t(2);
     end
     problem.N_Subarrays = problem.NxSubarrays*problem.NySubarrays;
-    problem = o_compute_antennas_per_user(problem,candSet);
+    problem = o_compute_antennas_per_user(problem,candSet); 
+    
     % Create subarray partition
     problem = o_create_subarray_partition(problem);
+    
     % Distribute partitions amongst users
     totSubArrays_1 = floor((problem.NxSubarrays * problem.NySubarrays) / nUsers);
     remainder = rem((problem.NxSubarrays * problem.NySubarrays),nUsers);
     totSubArrays = totSubArrays_1 .* ones(1,nUsers);
     totSubArrays(1:remainder) = totSubArrays(1:remainder) + 1;
+    
     % Antennas assigned to each user (fixed)
     mySubArray = (1:1:(problem.NxSubarrays * problem.NySubarrays));
     relevant_positions = cell(nUsers,1);
@@ -95,6 +142,7 @@ while refine
             mySubArray(mySubArray==k) = [];  % delete assigned antennas
         end
     end
+    
     % Check if the configuration is valid
     cellsz = cellfun(@length,relevant_positions,'uni',false);
     n_ant_users = cell2mat(cellsz);
@@ -118,9 +166,12 @@ while refine
     else
         % We've found a good solution
         refine = false;  % Stop the loop
-        nUsers = length(candSet);  % update
     end
+    
+    % Update number of users
+    nUsers = length(candSet);
 end
+
 % Recreate the conformal array
 problem.NzPatch = problem.NxPatch;
 problem.dz = problem.dx;
@@ -196,5 +247,5 @@ else
 end
 
     
-    
 % EOF
+

@@ -119,7 +119,7 @@ function xoverKids = p_crossoverArrayGA(parents,options,nvars,~,~,thisPopulation
         % not be assigned because parent 1 already assigned them)
         [~,idx] = find(child==0);
         if ~isempty(idx)
-            % Shuffle list
+            % Shuffle listpossible_locations
             newTotUsers = totUsers(randperm(length(totUsers)));
             child(idx) = newTotUsers;
         end
@@ -139,11 +139,13 @@ function mutationChildren  = p_mutationArrayGA(parents,options,nvars,~,~,~,thisP
     mutationChildren = zeros(nMutateKids,nvars);
     
     nAntennas = sum(problem.NmaxArray);
+    nParents = length(parents);
     
     % Antenna swapping array
-    swap = ceil(nAntennas * rand(nAntennas,2));
+%     swap = ceil(nAntennas * rand(nAntennas,2));  % potential bug -erase
+    swap = ceil(nAntennas * rand(nParents,2));
     
-    for i=1:length(parents)
+    for i=1:nParents
         % Initialize before making changes
         parent = thisPopulation(parents(i),:);
         child = parent;

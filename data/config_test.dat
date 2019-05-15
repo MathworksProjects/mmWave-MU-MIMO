@@ -39,7 +39,7 @@ DelayProfile   = 'CDL-C';  % Sets the channel delay profile ('AWGN, 'CDL-A', 'CD
 % ----------------------------------------------------------------------- %
 
 % ---------------- DEBUGGING PARAMETERS --------------------------------- %
-verbosity      = 1;  % Verbosity level (0 no output, 1 some informative output, 2 DEBUG mode)
+verbosity      = 0;  % Verbosity level (0 no output, 1 some informative output, 2 DEBUG mode)
 % ----------------------------------------------------------------------- %
 
 % ---------------- PLOTTING PARAMETERS ---------------------------------- %

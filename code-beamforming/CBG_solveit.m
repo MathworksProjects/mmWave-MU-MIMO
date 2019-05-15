@@ -1,16 +1,16 @@
-function [sol_found,W,handle_ConformalArray,PRx,I,bestScores] = CBG_solveit(problem,conf,usersToBeAssigned)
+function [sol_found,W,handle_ConformalArray,PRx,I,bestScores] = CBG_solveit(problem,conf,candSet)
 % CBG_solveit - Main PHY script that finds the optimal solution for HELB
 % (see submited paper for further description), given the mmWave sub-array
 % restrictions, the number of users, their channels and the demanded SNR
 % per application.
 %
 % Syntax:  [sol_found,W,handle_ConformalArray,PRx,I,bestScores] = ...
-%                               CBG_solveit(problem,conf,usersToBeAssigned)
+%                               CBG_solveit(problem,conf,candSet)
 %
 % Inputs:
 %    problem - struct containint configuration in data/metaproblem_test.dat
 %    conf - struct containint configuration in data/config_test.dat
-%    usersToBeAssigned - Vector containing the users IDs
+%    candSet - Vector containing the users IDs
 %
 % Outputs:
 %    sol_found - flag indicating whether the solution was found
@@ -34,8 +34,8 @@ function [sol_found,W,handle_ConformalArray,PRx,I,bestScores] = CBG_solveit(prob
 sol_found = true;
 
 % Localize variables
-problem.nUsers = length(usersToBeAssigned);
-problem.candSet = usersToBeAssigned;
+problem.nUsers = length(candSet);
+problem.candSet = candSet;
 
 % Create subarray partition
 problem = o_create_subarray_partition(problem);
@@ -45,14 +45,14 @@ problem.dz = problem.dx;
 % Create the antenna handler and the data structure with all possible pos.
 problem.handle_Ant = phased.CosineAntennaElement('FrequencyRange',...
                        [problem.freq-(problem.Bw/2) problem.freq+(problem.Bw/2)],...
-                       'CosinePower',[1.5 2.5]); % [1.5 2.5] values set porque s�
+                       'CosinePower',[1.5 2.5]); % [1.5 2.5] values set porque si
 handle_ConformalArray = phased.URA([problem.NyPatch,problem.NzPatch],...
                         'Lattice','Rectangular','Element',problem.handle_Ant,...
                         'ElementSpacing',[problem.dy,problem.dz]);
 problem.possible_locations = handle_ConformalArray.getElementPosition;
 
 % Allocate number of antennas to users (QoS)
-problem = o_compute_antennas_per_user(problem,usersToBeAssigned);
+problem = o_compute_antennas_per_user(problem,candSet);
 
 if conf.verbosity >= 1
     fprintf('We distribute %d antennas amongst users\n',problem.N_Antennas)

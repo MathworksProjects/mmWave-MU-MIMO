@@ -14,7 +14,7 @@ function [problem,traffic,flows] = f_configuration(conf,problem)
 %    traffic - todo
 %    flows - Array of structs of length equal to the number of
 %            users. For each user, each flow (belonging to each packet) is
-%            characterized by the amount of bits that needs to be delivered. The
+%            characterized by the amount of bits that  needs to be delivered. The
 %            amount of bits are distributed uniformly across the slots until
 %            reaching the deadline. Thus, the variable flows contains four features:
 %            - slots:     For each flow, the slots across it.
@@ -70,8 +70,14 @@ end
 problem.MCSPER = mcsTable;
 % Load the SNR table for faster execution
 load('TABLE-SNR-loc4.mat','SINRLCMV','SINRCBF','SINRHEU','nAntennasList','nUsersList');
+% load('TABLE-SNR-loc4-v2.mat','SINRLCMV','SINRCBF','SINRHEU','nAntennasList','nUsersList');
 [~,idxUsr] = min(abs(problem.nUsers - nUsersList));
 [~,idxAnt] = min(abs(problem.N_Antennas - nAntennasList));
+% Temporal - cause longer distances, higher attenuation
+correction = 25;
+SINRCBF    = SINRCBF - correction;
+SINRLCMV   = SINRLCMV - correction;
+SINRHEU    = SINRHEU - correction;
 problem.SINR_CBF  = db2pow(SINRCBF(idxUsr,idxAnt));  % in linear scale
 problem.SINR_LCMV = db2pow(SINRLCMV(idxUsr,idxAnt));  % in linear scale
 problem.SINR_HEU  = db2pow(SINRHEU(idxUsr,idxAnt));  % in linear scale

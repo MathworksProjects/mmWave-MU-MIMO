@@ -1,4 +1,4 @@
-classdef s_phased_channel_SRM < matlab.System
+ classdef s_phased_channel_SRM < matlab.System
     % phased_channel Add summary here
     %
     % NOTE: When renaming the class name phased_channel, the file name

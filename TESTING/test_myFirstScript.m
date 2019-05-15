@@ -12,7 +12,7 @@ conf = o_read_config('config_test.dat');
 %% Input parameters
 problem.N_Antennas   = 8.^2; % Number of antennas
 problem.nUsers       = 4;  % Number of users
-candSet              = (1:1:problem.nUsers);  % Users to be considered for antenna alloc.
+candSet              = (1:1:problem.nUsers);  % Users  to be considered for antenna alloc.
 conf.detLocation     = false;  % true to use preconfigured locations, false for random
 conf.useCaseLocation = false;  % if detLocation is true, retrieve locations
 conf.useCaseLocation = 1;  % Use-case location ID

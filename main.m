@@ -117,6 +117,7 @@ end
 %% Main simulator - MAIN SECTION
 Tsym = problem.Tsym;
 Tslot = problem.Tslot;
+refine = problem.refine;
 % Represent the time (in slot ID) throughout the execution. It is the even
 % in our DES
 t = 1;
@@ -150,11 +151,11 @@ while(t<Tsym)
             % Evaluate SINR using BF algorithm
             if strcmp(problem.BFalgorithm,'CBF') && ~isempty(candSet)
                 % Conventional Beamforming (CBF)
-                [~,W,arrayHandle,~,~,candSetUpd] = f_conventionalBF(problem,conf,candSet);
+                [~,W,arrayHandle,~,~,candSetUpd] = f_conventionalBF(problem,conf,candSet,refine);
                 [~,~,~,SNRList]  = f_BF_results(W,arrayHandle,candSetUpd,problem,conf,problem.PLOT_DEBUG);
             elseif strcmp(problem.BFalgorithm,'LCMV') && ~isempty(candSet)
                 % Linearly Constrained Minimum Variance (LCMV)
-                [W,~,arrayHandle,~,~,candSetUpd] = f_conventionalBF(problem,conf,candSet);
+                [W,~,arrayHandle,~,~,candSetUpd] = f_conventionalBF(problem,conf,candSet,refine);
                 [~,~,~,SNRList]  = f_BF_results(W,arrayHandle,candSetUpd,problem,conf,problem.PLOT_DEBUG);
             elseif strcmp(problem.BFalgorithm,'HEU') && ~isempty(candSet)
                 % Heuristics with LCMV as main BF
@@ -162,16 +163,19 @@ while(t<Tsym)
                 [~,~,~,SNRList]  = f_BF_results(W,arrayHandle,candSet,problem,conf,problem.PLOT_DEBUG);
             elseif strcmp(problem.BFalgorithm,'HEU-LCMV') && ~isempty(candSet)
                 % Heuristics with LCMV as main BF and initial ant location
-                [W_init,~,arrayHandle,~,~] = f_conventionalBF(problem,conf,candSet);
+                [W_init,~,arrayHandle,~,~,candSetUpd] = f_conventionalBF(problem,conf,candSet,refine);
                 problem.initialW = W_init;
-                [~,W,~,~,~,~] = CBG_solveit(problem,conf,candSet);
+                [~,W,~,~,~,~] = CBG_solveit(problem,conf,candSetUpd);
                 [~,~,~,SNRList]  = f_BF_results(W,arrayHandle,candSet,problem,conf,problem.PLOT_DEBUG);
             elseif strcmp(problem.BFalgorithm,'table-LCMV') && ~isempty(candSet)
                 SNRList = repmat(problem.SINR_LCMV,length(candSet),1);
+                candSetUpd = candSet;
             elseif strcmp(problem.BFalgorithm,'table-CBF') && ~isempty(candSet)
                 SNRList = repmat(problem.SINR_CBF,length(candSet),1);
+                candSetUpd = candSet;
             elseif strcmp(problem.BFalgorithm,'table-HEU') && ~isempty(candSet)
                 SNRList = repmat(problem.SINR_HEU,length(candSet),1);
+                candSetUpd = candSet;
             elseif strcmp(problem.BFalgorithm,'dummy') && ~isempty(candSet)
                 [~,SNRList,~] = f_heuristicsDummy(problem.MinObjF,conf.MinObjFIsSNR,problem.MCSPER.snrRange);
             end

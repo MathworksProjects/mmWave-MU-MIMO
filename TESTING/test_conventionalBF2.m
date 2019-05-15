@@ -1,4 +1,4 @@
-clear; close all; clc;
+ clear; close all; clc;
 addpath('../UTILITIES','-end');  % Add utilities folder at the end of search path
 addpath('../code-systems','-end');  % Add system's folder at the end of search path
 addpath('../code-beamforming','-end');  % Add beamforming folder at the end of search path
@@ -8,15 +8,15 @@ addpath('../data','-end');  % Add data folder at the end of search path
 problem = o_read_input_problem('metaproblem_test.dat');
 conf = o_read_config('config_test.dat');
 %% Input parameters
-maxIter              = 1;  % Maximum number of iterations
-configList           = -1;  % antenna configuration (distribution across users) (-1 for random asignation)
-problem.N_Antennas   = 8.^2; % Number of antennas
-nUserList            = [1 2 4 8];  % Number of users to iterate over
-candSet              = (1:1:problem.nUsers);  % Subset to be allocated antennas
-conf.detLocation     = false;
-conf.useCaseLocation = false;
-conf.useCaseLocation = 1;  % Use-case location ID
-conf.verbosity       = 1;  % Use-case location ID
+maxIter               = 1;  % Maximum number of iterations
+configList            = -1;  % antenna configuration (distribution across users) (-1 for random asignation)
+problem.N_Antennas    = 8.^2; % Number of antennas
+nUserList             = [1 2 4 8];  % Number of users to iterate over
+candSet               = (1:1:problem.nUsers);  % Subset to be allocated antennas
+conf.detLocation      = true;
+conf.useCasesLocation = true;
+conf.useCaseLocation  = 3;  % Use-case location ID
+conf.verbosity        = 0;  % Use-case location ID
 %% Output parameters
 Cap_LCMV_tot = zeros(length(configList),1);
 Cap_CBF_tot = zeros(length(configList),1);
