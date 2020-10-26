@@ -15,9 +15,11 @@ function [FullChannels, thetaChannels, phiChannels, alphaChannels] = o_generate_
     for u=1:nUsers
         ZOD_LOS = thetaUsers(u);
         AOD_LOS = phiUsers(u);
-        if strcmp(MatlabRelease,'2018a');      cdlChan = nr5gCDLChannel;            
-        elseif strcmp(MatlabRelease,'2018b');  cdlChan = nrCDLChannel;
-        else;  error('Need either Matlab R2018a or R2018b');
+        if strcmp(MatlabRelease,'2018a');      cdlChan = nr5gCDL_Channel;            
+        elseif strcmp(MatlabRelease,'2018b') || ...
+               strcmp(MatlabRelease,'2019a') || ... 
+               strcmp(MatlabRelease,'2019b');  cdlChan = nrCDLChannel;
+        else;  error('Need a Matlab version newer than 18a');
         end
         cdlChan.SampleRate = 1760e6 / 1; %% SC-1760e6 sa/s, OFDM 2640e6 sa/s
         cdlChan.TransmitAntennaArray.Size = [NxPatch, NyPatch, 1, 1, 1];

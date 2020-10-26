@@ -87,6 +87,14 @@ function [ conf ] = o_readDATInputData( filePath, arguments )
                     fprintf('The column and row size of a matrix must be an integer\n');
                     return
                 end
+            elseif strcmp(a.type,'stringArray')
+                if ischar(a.size)
+                    conf.(a.name) = readCells(l,a.name,'string',conf.(a.size));
+                elseif floor(a.size) == a.size
+                    conf.(a.name) = readCells(l,a.name,'string',a.size);
+                else
+                    fprintf('The size of an array must be an integer\n');
+                end
             else
                 fprintf('Unknown type %s\n',a.type)
                 return
@@ -162,6 +170,19 @@ function [ arg ] = readMatrix( string, argument, type, Nx, Ny)
             arg(i,:) = r;
         end
     end
+end
+
+function [ arg ] = readCells( string, argument, type, size )
+    nls = '\r\n';
+    formatSpec = [argument,' = { ',];
+    if strcmp(type,'string')
+        formatSpec = [formatSpec,repmat('%s ',1,size),'};',nls];
+    end
+    arg = sscanf(string, formatSpec, size)';
+    t = split(arg.','}');  % drop possible comments at the end
+    tmp = t{1};
+    tmp = split(tmp,'''');
+    arg = tmp(~cellfun('isempty',tmp));  % drop empty strings
 end
 
 function [ lines ] = readLines( filePath )
