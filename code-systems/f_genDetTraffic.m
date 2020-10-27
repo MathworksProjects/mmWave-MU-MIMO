@@ -67,6 +67,8 @@ if strcmp(trafficType,'synthetic')
             traffic(id).arrivalTimes(pkt,1) = pkt*trafficClass(id).iat;
             traffic(id).deadlines(pkt,1) = traffic(id).arrivalTimes(pkt) + trafficClass(id).deadline;
             traffic(id).ID(pkt,1) = Pkt_last_ID_assigned + pkt;
+            traffic(id).OK(pkt,1) = 0;
+            traffic(id).NOK(pkt,1) = 0;
         end
         Pkt_last_ID_assigned = traffic(id).ID(pkt,1);
     end
