@@ -15,6 +15,7 @@ function [traffic] = f_genDetTraffic(trafficClass,trafficType,loadTraffic,PLOT_D
 %            2. deadline: Packet deadlines in millisecond
 %            3. numPkts: Number of packets to generate for that class
 %            4. Payload: Number of bits in each Network packet
+%            5. ID: Unique Identifier per packet
 %    trafficType -  Defines the origin of the data ('synthetic' or
 %                   'dataSet')
 %    loadTraffic -  Boolean that defines whether we generate the traffic
@@ -46,6 +47,7 @@ function [traffic] = f_genDetTraffic(trafficClass,trafficType,loadTraffic,PLOT_D
 %------------- BEGIN CODE --------------
 
 Nclasses = length(trafficClass);  % Number of classes traffic (users)
+Pkt_last_ID_assigned = 0;
 traffic = struct('name',string(),...
                  'payload',{},...
                  'arrivalTimes',[],...
@@ -64,7 +66,9 @@ if strcmp(trafficType,'synthetic')
             traffic(id).payload(pkt,1) = trafficClass(id).payload;
             traffic(id).arrivalTimes(pkt,1) = pkt*trafficClass(id).iat;
             traffic(id).deadlines(pkt,1) = traffic(id).arrivalTimes(pkt) + trafficClass(id).deadline;
+            traffic(id).ID(pkt,1) = Pkt_last_ID_assigned + pkt;
         end
+        Pkt_last_ID_assigned = traffic(id).ID(pkt,1);
     end
 elseif strcmp(trafficType,'dataSet')
     % Traffic is generated following the empirical distribution in dataSet
