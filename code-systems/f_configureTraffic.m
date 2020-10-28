@@ -40,28 +40,28 @@ function problem = f_configureTraffic(problem)
 problem.Nclasses = 1;  % Number of classes (applications running)
 deadlineApps = zeros(length(problem.appNameInteretList),1);
 iatApps = zeros(length(problem.appNameInteretList),1);
-for appType = problem.appNameInteretList
-    nUserstoApps = strcmp(appType,problem.appNameInteretList);
+for appType = problem.appNames
+    idx_apps_in_users = strcmp(appType,problem.appNameInteretList);
     % Configure delays for the applications. Note that it is needed that
     % any delay is greater than Tslot.
     if strcmp(appType,'Youtube') || strcmp(appType,'Justin TV') || strcmp(appType,'Vimeo')
         % Application type is video
-        deadlineApps(nUserstoApps) = 50;  % 50ms deadline time for app type
-        iatApps(nUserstoApps) = problem.iat;  % read from the metadata file
+        deadlineApps(idx_apps_in_users) = 50;  % 50ms deadline time for app type
+        iatApps(idx_apps_in_users) = problem.iat;  % read from the metadata file
     elseif strcmp(appType,'Facebook')
         % Application type is Facebook
-        deadlineApps(nUserstoApps) = 100;  % 100ms deadline time for app type
-        iatApps(nUserstoApps) = problem.iat;  % read from the metadata file
+        deadlineApps(idx_apps_in_users) = 100;  % 100ms deadline time for app type
+        iatApps(idx_apps_in_users) = problem.iat;  % read from the metadata file
         % Application type is other
     elseif strcmp(appType,'Web Browsing') || strcmp(appType,'Twitter')
-        deadlineApps(nUserstoApps) = 500;  % 500ms deadline time for app type
-        iatApps(nUserstoApps) = problem.iat;  % read from the metadata file
+        deadlineApps(idx_apps_in_users) = 500;  % 500ms deadline time for app type
+        iatApps(idx_apps_in_users) = problem.iat;  % read from the metadata file
     elseif strcmp(appType,'HD-Video')
-        deadlineApps(nUserstoApps) = 2000;
-        iatApps(nUserstoApps) = 5000;  % read from the metadata file
+        deadlineApps(idx_apps_in_users) = problem.deadlineList(strcmp(problem.appNames,appType));
+        iatApps(idx_apps_in_users) = problem.iatList(strcmp(problem.appNames,appType));
     elseif strcmp(appType,'FTP')
-        deadlineApps(nUserstoApps) = 5000;
-        iatApps(nUserstoApps) = 10000;  % read from the metadata file
+        deadlineApps(idx_apps_in_users) = problem.deadlineList(strcmp(problem.appNames,appType));
+        iatApps(idx_apps_in_users) = problem.iatList(strcmp(problem.appNames,appType));
     end
 end
 

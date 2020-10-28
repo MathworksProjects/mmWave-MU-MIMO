@@ -54,7 +54,10 @@ payload           = 28875000;  % Always in Bytes (per packet, not per slot)
 deadline          = 50;  % Deadline in milliseconds
 numPkts           = 10;  % Number of (upper layer) packets incoming to every user (only used when trafficType is set to 'synthetic')
 manuallyAssignApp = true;  % Manually distribute applications across users. Only one application
-appNameInteretList= { 'Youtube' 'Justin TV' 'Facebook' 'Web Browsing' 'Twitter'};  % Applications to be considered in the simulations
+appNames          = { 'Youtube' 'Justin TV' 'Facebook' 'Web Browsing' 'Twitter' 'HD-Video' 'FTP'};  % Applications to be considered in the simulations
+iatList           = [ 51 100 100 100 200 1000 2000];  % IAT list for each traffic type in appNames
+deadlineList      = [ 50 100 100 100 200 3000 5000];  % Deadlines (in ms) for each traffic type in appNames
+appNameInteretList= { 'Youtube' 'Justin TV' 'Facebook' 'Web Browsing' 'Twitter' 'HD-Video' 'FTP'};  % Applications assigned to users
 appPresence       = [ 0.3 0.3 0.05 0.3 0.05];  % Presence of the application types specified in 'appNameInteretList' across users
 appColor          = [ 0.9290 0.6940 0.1250];
 % ----------------------------------------------------- %

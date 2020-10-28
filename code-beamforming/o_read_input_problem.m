@@ -48,8 +48,11 @@ function [problem] = o_read_input_problem(problem_file)
                 struct('name','refine','type','char');
                 struct('name','loadTraffic','type','bool');
                 struct('name','deadline','type','int');
-                struct('name','appPresence','type','floatArray','size','maxnUsers');
+                struct('name','appNames','type','stringArray','size','maxnUsers');
+                struct('name','iatList','type','floatArray','size','maxnUsers');
+                struct('name','deadlineList','type','floatArray','size','maxnUsers');
                 struct('name','appNameInteretList','type','stringArray','size','maxnUsers');
+                struct('name','appPresence','type','floatArray','size','maxnUsers');
                 struct('name','appColor','type','floatArray','size','maxnUsers');
                 };
     problem = o_readDATInputData(problem_file,inputArgList);
